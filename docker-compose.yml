@@ -3,12 +3,7 @@ version: '3.8'
 services:
   app:
     build: .
+    container_name: bboard-app
     ports:
-      - "5173:5173"
-    volumes:
-      - ./src:/app/src
-      - ./public:/app/public
-      - ./index.html:/app/index.html
-      - ./vite.config.js:/app/vite.config.js
-    environment:
-      - NODE_ENV=development
+      - "8080:80"
+    restart: always

@@ -1,22 +1,25 @@
-# syntax=docker/dockerfile:1
-FROM node:18-alpine
+# Stage 1: Build the React application
+FROM node:18-alpine as build
 
 WORKDIR /app
 
-# Ne copier que package.json au début pour profiter du cache Docker
-COPY package.json ./
+# Copy package files and install dependencies
+COPY package*.json ./
+RUN npm ci
 
-# Set config to avoid hanging on some environments
-RUN npm config set registry http://registry.npmjs.org/ && \
-    npm config set fetch-retry-maxtimeout 600000 && \
-    npm config set maxsockets 1 && \
-    npm config set strict-ssl false && \
-    npm install
-
-# Copier le reste de l'application
+# Copy source code and build
 COPY . .
+RUN npm run build
 
-EXPOSE 5173
+# Stage 2: Serve with Nginx
+FROM nginx:alpine
 
-# Lancer le serveur de développement Vite
-CMD ["npm", "run", "dev"]
+# Copy built assets from builder stage
+COPY --from=build /app/dist /usr/share/nginx/html
+
+# Copy custom Nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

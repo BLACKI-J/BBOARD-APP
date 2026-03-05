@@ -159,7 +159,7 @@ export default function App() {
                         <div style={{ background: 'var(--primary-color)', color: 'white', padding: '0.5rem', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <Tent size={24} />
                         </div>
-                        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>CampManager</h1>
+                        <h1 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>BBOARD</h1>
                     </div>
 
                     {/* Right: Navigation */}
