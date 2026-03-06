@@ -40,9 +40,11 @@ fi
 # 3. Correctif de sécurité (Ubuntu 24.04 / AppArmor)
 # Ce correctif empêche l'erreur "permission denied" sur les nouvelles distros
 if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
-    echo "🛡️  Application du correctif de sécurité AppArmor..."
-    echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns > /dev/null
-    echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/60-apparmor-docker.conf > /dev/null
+    echo "🛡️  Tentative d'application du correctif AppArmor..."
+    # On ignore l'erreur si le système de fichiers est en lecture seule (cas du LXC Proxmox)
+    (echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns > /dev/null 2>&1) || echo "⚠️  Note : Impossible de modifier /proc (système de fichiers en lecture seule). Si vous êtes en LXC, ignorez ce message ou appliquez ce réglage sur l'HÔTE Proxmox."
+    
+    (echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/60-apparmor-docker.conf > /dev/null 2>&1) || true
     sudo sysctl -p /etc/sysctl.d/60-apparmor-docker.conf >/dev/null 2>&1 || true
 fi
 
