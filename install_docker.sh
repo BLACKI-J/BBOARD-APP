@@ -87,6 +87,6 @@ sudo usermod -aG docker $USER
 echo "--------------------------------------------------------"
 echo "✅ Installation réussie !"
 echo "--------------------------------------------------------"
-echo "🚀 Pour lancer le projet :"
+echo "🚀 Pour lancer le projet (Port 8080) :"
 echo "   docker compose up -d --build"
 echo "--------------------------------------------------------"

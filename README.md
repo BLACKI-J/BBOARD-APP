@@ -40,7 +40,7 @@ bash install_docker.sh
 # 3. Launch the application
 docker compose up -d --build
 ```
-*Your application will be live at `http://localhost`.*
+*Your application will be live at `http://localhost:8080`.*
 
 ---
 
