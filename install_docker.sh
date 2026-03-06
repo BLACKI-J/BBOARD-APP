@@ -61,23 +61,28 @@ if ! docker compose version >/dev/null 2>&1; then
     fi
 fi
 
-# 6. Configuration des permissions (Groupe Docker)
+# 6. Optimisation spécifique pour BBOARD (Base de données et Proxmox)
+echo "📂 Préparation des répertoires de données..."
+mkdir -p server/data
+chmod 777 server/data
+echo "✅ Répertoire server/data prêt (Permissions 777 pour compatibilité LXC)."
+
+# 7. Détection LXC et conseils spécifiques
+if [ -f /run/systemd/container ] || grep -q "lxc" /proc/1/environ 2>/dev/null; then
+    echo "🏗️  Environnement de conteneur (LXC/Docker) détecté."
+    echo "💡 Astuce Proxmox : Assurez-vous que 'Nesting' est coché dans Options > Features."
+fi
+
+# 8. Configuration des permissions (Groupe Docker)
 if ! getent group docker > /dev/null; then
     sudo groupadd docker
 fi
 sudo usermod -aG docker $USER
 
-# 7. Finalisation
+# 9. Finalisation
 echo "--------------------------------------------------------"
 echo "✅ Installation réussie !"
 echo "--------------------------------------------------------"
-echo "ℹ️  Note pour Proxmox LXC :"
-echo "   Si vous êtes sur Proxmox LXC, n'oubliez pas d'activer"
-echo "   l'option [Nesting] dans les 'Features' du conteneur."
-echo ""
-echo "⚠️  IMPORTANT : Tapez 'newgrp docker' ou reconnectez-vous"
-echo "   pour utiliser 'docker' sans sudo."
-echo ""
 echo "🚀 Pour lancer le projet :"
 echo "   docker compose up -d --build"
 echo "--------------------------------------------------------"
