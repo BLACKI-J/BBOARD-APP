@@ -3,7 +3,18 @@ version: '3.8'
 services:
   app:
     build: .
-    container_name: bboard-app
+    container_name: bboard-frontend
     ports:
-      - "8080:80"
+      - "80:80"
+    restart: always
+    depends_on:
+      - server
+
+  server:
+    build: ./server
+    container_name: bboard-backend
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server/database.sqlite:/app/database.sqlite
     restart: always

@@ -1,0 +1,140 @@
+/* App.css - Styles extraits pour une meilleure structure */
+
+.hidden-desktop {
+    display: none !important;
+}
+
+@media (min-width: 769px) {
+    .hidden-desktop {
+        display: none !important;
+    }
+}
+
+.nav-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 280px;
+    background: white;
+    z-index: 70;
+    transform: translateX(100%);
+    transition: transform var(--transition-normal);
+    box-shadow: var(--shadow-xl);
+}
+
+.nav-drawer.open {
+    transform: translateX(0);
+}
+
+@media (min-width: 769px) {
+    .nav-drawer {
+        display: none;
+    }
+}
+
+@media (max-width: 768px) {
+    .desktop-only {
+        display: none !important;
+    }
+
+    .mobile-only {
+        display: block !important;
+    }
+}
+
+/* Print Styles */
+@media print {
+    @page {
+        size: A4 landscape;
+        margin: 0.5cm;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    .seat-map-container,
+    .seat-map-container * {
+        visibility: visible;
+    }
+
+    .no-print,
+    .sidebar,
+    .sidebar-overlay,
+    .content-header,
+    .seat-map-controls,
+    button {
+        display: none !important;
+    }
+
+    html,
+    body,
+    #root,
+    .app-container,
+    .main-content,
+    .workspace-area {
+        background: white !important;
+        height: auto !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        display: block !important;
+    }
+
+    .seat-map-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100% !important;
+        padding: 1cm !important;
+    }
+
+    .print-header {
+        display: block !important;
+        margin-bottom: 2rem;
+        text-align: center;
+        width: 100%;
+    }
+
+    .vehicle-area {
+        display: block !important;
+        text-align: center !important;
+        width: 100% !important;
+    }
+
+    .vehicle-wrapper {
+        display: inline-block !important;
+        width: 45% !important;
+        margin: 0 2% 2rem 2% !important;
+        vertical-align: top !important;
+        break-inside: avoid !important;
+        page-break-inside: avoid !important;
+        transform: scale(0.85);
+        transform-origin: top center;
+    }
+
+    .vehicle-wrapper:nth-child(2n) {
+        break-after: page !important;
+        page-break-after: always !important;
+    }
+
+    .vehicle-wrapper:last-child {
+        break-after: auto !important;
+        page-break-after: auto !important;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .print-notes {
+        display: block !important;
+    }
+
+    .edit-notes {
+        display: none !important;
+    }
+}

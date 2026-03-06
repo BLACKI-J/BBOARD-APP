@@ -6,6 +6,7 @@ export default function Sidebar({ participants, setParticipants, groups }) {
     const [filterAllergies, setFilterAllergies] = useState(false);
     const [filterAge, setFilterAge] = useState('all'); // 'all', '6-8', '9-11', '12+'
     const [filterGroup, setFilterGroup] = useState('all');
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Handle Drag Start
     const handleDragStart = (e, participant) => {
@@ -27,13 +28,13 @@ export default function Sidebar({ participants, setParticipants, groups }) {
     const getGroupStyle = (groupId) => {
         const group = groups.find(g => g.id === groupId);
         if (!group) return { background: '#e5e7eb', color: '#374151' };
-        
+
         // Convert hex to rgba for background
         const hex = group.color.replace('#', '');
         const r = parseInt(hex.substring(0, 2), 16);
         const g = parseInt(hex.substring(2, 4), 16);
         const b = parseInt(hex.substring(4, 6), 16);
-        
+
         return {
             background: `rgba(${r}, ${g}, ${b}, 0.2)`,
             color: group.color, // Darker text for contrast could be better, but using main color for now
@@ -45,15 +46,15 @@ export default function Sidebar({ participants, setParticipants, groups }) {
         <div
             key={participant.id}
             className="card sidebar-card"
-            style={{ 
-                padding: '0.75rem', 
-                display: 'flex', 
+            style={{
+                padding: '0.75rem',
+                display: 'flex',
                 flexDirection: 'row', // Explicitly set row to avoid conflicts
-                alignItems: 'center', 
-                gap: '0.75rem', 
+                alignItems: 'center',
+                gap: '0.75rem',
                 cursor: 'grab',
-                borderLeft: participant.role === 'animator' ? '4px solid var(--secondary-color)' : 
-                            (participant.role === 'direction' ? '4px solid #8b5cf6' : '4px solid var(--primary-color)'),
+                borderLeft: participant.role === 'animator' ? '4px solid var(--secondary-color)' :
+                    (participant.role === 'direction' ? '4px solid #8b5cf6' : '4px solid var(--primary-color)'),
                 position: 'relative',
                 background: 'white',
                 marginBottom: '0.5rem',
@@ -87,17 +88,17 @@ export default function Sidebar({ participants, setParticipants, groups }) {
                     <div style={{ fontWeight: 'bold', fontSize: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
                         {participant.firstName} {participant.lastName}
                     </div>
-                    
+
                     {participant.photo && (
                         <div style={{ width: '100%', height: '120px', backgroundImage: `url(${participant.photo})`, backgroundSize: 'cover', backgroundPosition: 'center', borderRadius: '4px' }}></div>
                     )}
-                    
+
                     <div style={{ fontSize: '0.85rem' }}>
                         <strong>Âge:</strong> {participant.birthDate ? `${new Date().getFullYear() - new Date(participant.birthDate).getFullYear()} ans` : 'N/A'}
                     </div>
-                    
+
                     {participant.role === 'child' && (
-                         <div style={{ fontSize: '0.85rem' }}>
+                        <div style={{ fontSize: '0.85rem' }}>
                             <strong>Groupe:</strong> {groups.find(g => g.id === participant.group)?.name || participant.group || 'Aucun'}
                         </div>
                     )}
@@ -118,7 +119,7 @@ export default function Sidebar({ participants, setParticipants, groups }) {
                     )}
                 </div>
             </div>
-            
+
             <style>{`
                 .sidebar-card:hover .participant-tooltip {
                     opacity: 1;
@@ -131,9 +132,9 @@ export default function Sidebar({ participants, setParticipants, groups }) {
 
             {/* Avatar */}
             <div style={{
-                width: '40px', height: '40px', borderRadius: '50%', 
-                backgroundColor: participant.role === 'animator' ? 'var(--secondary-color)' : 
-                                (participant.role === 'direction' ? '#8b5cf6' : 'var(--primary-color)'),
+                width: '40px', height: '40px', borderRadius: '50%',
+                backgroundColor: participant.role === 'animator' ? 'var(--secondary-color)' :
+                    (participant.role === 'direction' ? '#8b5cf6' : 'var(--primary-color)'),
                 color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', flexShrink: 0,
                 backgroundImage: participant.photo ? `url(${participant.photo})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center',
                 fontSize: '0.9rem', fontWeight: 'bold'
@@ -148,7 +149,7 @@ export default function Sidebar({ participants, setParticipants, groups }) {
                         {participant.firstName} {participant.lastName}
                     </h4>
                     {participant.group && (
-                        <span style={{ 
+                        <span style={{
                             fontSize: '0.65rem', padding: '0.1rem 0.3rem', borderRadius: '4px', fontWeight: 'bold',
                             ...getGroupStyle(participant.group)
                         }}>
@@ -160,9 +161,9 @@ export default function Sidebar({ participants, setParticipants, groups }) {
                     )}
                 </div>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                    {participant.role === 'animator' ? 'Animateur' : 
-                     (participant.role === 'direction' ? 'Direction' : 
-                     (participant.birthDate && new Date().getFullYear() - new Date(participant.birthDate).getFullYear() + " ans"))}
+                    {participant.role === 'animator' ? 'Animateur' :
+                        (participant.role === 'direction' ? 'Direction' :
+                            (participant.birthDate && new Date().getFullYear() - new Date(participant.birthDate).getFullYear() + " ans"))}
                 </p>
             </div>
         </div>
@@ -179,6 +180,9 @@ export default function Sidebar({ participants, setParticipants, groups }) {
     const allChildren = participants.filter(p => !p.role || p.role === 'child');
 
     const filteredChildren = allChildren.filter(child => {
+        // Search filter
+        if (searchQuery && !(`${child.firstName} ${child.lastName}`).toLowerCase().includes(searchQuery.toLowerCase())) return false;
+
         // Allergy/Constraint filter
         if (filterAllergies && !child.allergies && !child.constraints) return false;
 
@@ -193,7 +197,17 @@ export default function Sidebar({ participants, setParticipants, groups }) {
             if (filterAge === '9-11' && (age < 9 || age > 11)) return false;
             if (filterAge === '12+' && age < 12) return false;
         }
-    
+
+        return true;
+    });
+
+    const filteredAnimators = animators.filter(p => {
+        if (searchQuery && !(`${p.firstName} ${p.lastName}`).toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        return true;
+    });
+
+    const filteredDirection = direction.filter(p => {
+        if (searchQuery && !(`${p.firstName} ${p.lastName}`).toLowerCase().includes(searchQuery.toLowerCase())) return false;
         return true;
     });
 
@@ -211,43 +225,60 @@ export default function Sidebar({ participants, setParticipants, groups }) {
                 </div>
             </div>
 
-            {/* Filters Section */}
-            <div style={{ padding: '0.75rem 1rem', borderBottom: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.02)' }}>
+            {/* Search & Filters Section */}
+            <div style={{ padding: '1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <input
+                    type="text"
+                    placeholder="Rechercher un nom..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    style={{
+                        width: '100%',
+                        padding: '0.625rem 1rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border-color)',
+                        fontSize: '0.9rem',
+                        background: 'var(--bg-main)'
+                    }}
+                />
+
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button 
+                    <button
                         onClick={() => setFilterAllergies(!filterAllergies)}
                         title="Afficher seulement les allergies/contraintes"
                         style={{
-                            padding: '0.25rem 0.5rem',
-                            borderRadius: '4px',
-                            border: filterAllergies ? '1px solid var(--danger-color)' : '1px solid var(--border-color)',
+                            padding: '0.4rem 0.75rem',
+                            borderRadius: '8px',
+                            border: filterAllergies ? '1.5px solid var(--danger-color)' : '1px solid var(--border-color)',
                             background: filterAllergies ? 'rgba(239, 68, 68, 0.1)' : 'white',
                             color: filterAllergies ? 'var(--danger-color)' : 'var(--text-main)',
                             fontSize: '0.75rem',
+                            fontWeight: '600',
                             cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            gap: '0.25rem'
+                            gap: '0.25rem',
+                            transition: 'all 0.2s'
                         }}
                     >
-                        <AlertCircle size={12} /> Santé
+                        <AlertCircle size={14} /> Santé
                     </button>
-                    
-                    <select 
-                        value={filterGroup} 
+
+                    <select
+                        value={filterGroup}
                         onChange={e => setFilterGroup(e.target.value)}
-                        style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.75rem', background: 'white' }}
+                        style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.75rem', background: 'white', fontWeight: '500' }}
                     >
                         <option value="all">Tous Groupes</option>
                         {groups.map(g => (
                             <option key={g.id} value={g.id}>{g.name}</option>
                         ))}
                     </select>
-            
-                    <select 
-                        value={filterAge} 
+
+                    <select
+                        value={filterAge}
                         onChange={e => setFilterAge(e.target.value)}
-                        style={{ padding: '0.25rem', borderRadius: '4px', border: '1px solid var(--border-color)', fontSize: '0.75rem', background: 'white' }}
+                        style={{ padding: '0.4rem', borderRadius: '8px', border: '1px solid var(--border-color)', fontSize: '0.75rem', background: 'white', fontWeight: '500' }}
                     >
                         <option value="all">Tout âge</option>
                         <option value="6-8">6-8 ans</option>
@@ -265,34 +296,34 @@ export default function Sidebar({ participants, setParticipants, groups }) {
                     </div>
                 )}
 
-                {direction.length > 0 && (
+                {filteredDirection.length > 0 && (
                     <div style={{ marginBottom: '1rem' }}>
-                        <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                            Direction ({direction.length})
+                        <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.625rem', paddingLeft: '0.25rem' }}>
+                            Direction ({filteredDirection.length})
                         </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {direction.map(renderParticipantCard)}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                            {filteredDirection.map(renderParticipantCard)}
                         </div>
                     </div>
                 )}
 
-                {animators.length > 0 && (
+                {filteredAnimators.length > 0 && (
                     <div style={{ marginBottom: '1rem' }}>
-                        <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
-                            Animateurs ({animators.length})
+                        <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.625rem', paddingLeft: '0.25rem' }}>
+                            Animateurs ({filteredAnimators.length})
                         </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            {animators.map(renderParticipantCard)}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
+                            {filteredAnimators.map(renderParticipantCard)}
                         </div>
                     </div>
                 )}
 
                 {filteredChildren.length > 0 && (
                     <div>
-                        <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
+                        <h3 style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.625rem', paddingLeft: '0.25rem' }}>
                             Enfants ({filteredChildren.length})
                         </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                             {filteredChildren.map(renderParticipantCard)}
                         </div>
                     </div>

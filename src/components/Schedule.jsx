@@ -18,11 +18,11 @@ const COMMON_ACTIVITIES = [
 // Activity Card Component (List View)
 const ActivityCard = ({ activity, onEdit, onDelete }) => {
     return (
-        <div 
-            className="card animate-fade-in" 
-            style={{ 
-                marginBottom: '1rem', 
-                padding: '0', 
+        <div
+            className="card animate-fade-in activity-card"
+            style={{
+                marginBottom: '1rem',
+                padding: '0',
                 borderLeft: '4px solid var(--primary-color)',
                 display: 'flex',
                 flexDirection: 'row',
@@ -30,9 +30,9 @@ const ActivityCard = ({ activity, onEdit, onDelete }) => {
             }}
         >
             {/* Time Column */}
-            <div style={{ 
-                padding: '1.5rem 1rem', 
-                background: '#f8fafc', 
+            <div className="activity-time" style={{
+                padding: '1.5rem 1rem',
+                background: '#f8fafc',
                 borderRight: '1px solid #e2e8f0',
                 display: 'flex',
                 flexDirection: 'column',
@@ -55,9 +55,9 @@ const ActivityCard = ({ activity, onEdit, onDelete }) => {
                     <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 'bold', color: '#1e293b' }}>
                         {activity.title}
                     </h3>
-                    <button 
+                    <button
                         onClick={() => onDelete(activity.id)}
-                        className="btn-icon" 
+                        className="btn-icon"
                         style={{ color: '#ef4444', padding: '4px' }}
                         title="Supprimer"
                     >
@@ -76,28 +76,28 @@ const ActivityCard = ({ activity, onEdit, onDelete }) => {
 
                 {/* Tags / Participants */}
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                     {/* Placeholder for tags if we had them, e.g. groups */}
-                     {activity.participants && activity.participants.length > 0 && (
-                        <span style={{ 
-                            background: '#e0f2fe', color: '#0369a1', 
-                            padding: '4px 10px', borderRadius: '16px', 
+                    {/* Placeholder for tags if we had them, e.g. groups */}
+                    {activity.participants && activity.participants.length > 0 && (
+                        <span style={{
+                            background: '#e0f2fe', color: '#0369a1',
+                            padding: '4px 10px', borderRadius: '16px',
                             fontSize: '0.8rem', fontWeight: '600',
                             display: 'flex', alignItems: 'center', gap: '4px'
                         }}>
                             <Users size={14} /> {activity.participants.length} participants
                         </span>
-                     )}
+                    )}
                 </div>
             </div>
-            
+
             {/* Edit Button Area (Hover or explicit) */}
-             <div 
+            <div
                 onClick={() => onEdit(activity)}
-                style={{ 
-                    width: '50px', 
+                style={{
+                    width: '50px',
                     cursor: 'pointer',
-                    display: 'flex', 
-                    alignItems: 'center', 
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'center',
                     borderLeft: '1px solid #f1f5f9',
                     color: '#cbd5e1',
@@ -115,7 +115,7 @@ const ActivityCard = ({ activity, onEdit, onDelete }) => {
 };
 
 export default function Schedule({ activities, setActivities, participants, groups }) {
-    const [currentDate, setCurrentDate] = useState(new Date()); 
+    const [currentDate, setCurrentDate] = useState(new Date());
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
@@ -129,7 +129,7 @@ export default function Schedule({ activities, setActivities, participants, grou
         repeatEndDate: formatDate(new Date(new Date().setDate(new Date().getDate() + 7))),
         customDays: [] // 0-6 for Sunday-Saturday
     });
-    
+
     // Autocomplete state
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
@@ -159,7 +159,7 @@ export default function Schedule({ activities, setActivities, participants, grou
         .sort((a, b) => (a.startTime || a.time || '').localeCompare(b.startTime || b.time || ''));
 
     const handleEdit = (activity) => {
-        setFormData({ 
+        setFormData({
             ...activity,
             startTime: activity.startTime || activity.time || '09:00',
             endTime: activity.endTime || '10:00',
@@ -179,7 +179,7 @@ export default function Schedule({ activities, setActivities, participants, grou
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
+
         const baseActivity = {
             ...formData,
             time: formData.startTime,
@@ -199,7 +199,7 @@ export default function Schedule({ activities, setActivities, participants, grou
             if (formData.repeatType === 'daily') {
                 const startDate = new Date(formData.date);
                 const endDate = new Date(formData.repeatEndDate);
-                
+
                 // Iterate from start to end date
                 for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
                     newActivities.push({
@@ -209,18 +209,18 @@ export default function Schedule({ activities, setActivities, participants, grou
                     });
                 }
             } else if (formData.repeatType === 'custom') {
-                 const startDate = new Date(formData.date);
-                 const endDate = new Date(formData.repeatEndDate);
-                 
-                 for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
-                     if (formData.customDays.includes(d.getDay())) {
+                const startDate = new Date(formData.date);
+                const endDate = new Date(formData.repeatEndDate);
+
+                for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    if (formData.customDays.includes(d.getDay())) {
                         newActivities.push({
                             ...baseActivity,
                             id: uuidv4(),
                             date: formatDate(d)
                         });
-                     }
-                 }
+                    }
+                }
             } else {
                 // Single activity
                 newActivities.push({ ...baseActivity, id: uuidv4() });
@@ -238,18 +238,18 @@ export default function Schedule({ activities, setActivities, participants, grou
             setFormData({ ...formData, participants: [...formData.participants, id] });
         }
     };
-    
+
     // Autocomplete Logic
     const handleTitleChange = (e) => {
         const value = e.target.value;
         setFormData({ ...formData, title: value });
-        
+
         if (value.length > 0) {
             // Merge static common activities with existing activity titles from history
             const existingTitles = [...new Set(activities.map(a => a.title))];
             const allOptions = [...new Set([...COMMON_ACTIVITIES, ...existingTitles])];
-            
-            const filtered = allOptions.filter(option => 
+
+            const filtered = allOptions.filter(option =>
                 option.toLowerCase().includes(value.toLowerCase())
             );
             setSuggestions(filtered);
@@ -268,13 +268,13 @@ export default function Schedule({ activities, setActivities, participants, grou
     const renderCalendar = () => {
         const year = calendarMonth.getFullYear();
         const month = calendarMonth.getMonth();
-        
+
         const firstDay = new Date(year, month, 1);
         const lastDay = new Date(year, month + 1, 0);
-        
+
         const daysInMonth = lastDay.getDate();
         const startDayOfWeek = firstDay.getDay() === 0 ? 6 : firstDay.getDay() - 1; // Mon=0
-        
+
         const days = [];
         // Empty slots
         for (let i = 0; i < startDayOfWeek; i++) {
@@ -288,10 +288,10 @@ export default function Schedule({ activities, setActivities, participants, grou
             const hasActivity = activities.some(a => a.date === dateStr);
 
             days.push(
-                <div 
-                    key={d} 
+                <div
+                    key={d}
                     onClick={() => setCurrentDate(new Date(dateStr))}
-                    style={{ 
+                    style={{
                         height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer', borderRadius: '50%', fontSize: '0.9rem',
                         background: isSelected ? 'var(--primary-color)' : (isToday ? '#e0f2fe' : 'transparent'),
@@ -312,33 +312,42 @@ export default function Schedule({ activities, setActivities, participants, grou
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', gap: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '0 1rem' }}>
-            
+        <div className="schedule-container" style={{ height: '100%', display: 'flex', gap: '2rem', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '0 1rem' }}>
+            <style>{`
+                @media (max-width: 900px) {
+                    .schedule-container { flex-direction: column !important; gap: 1rem !important; overflow-y: auto !important; }
+                    .calendar-sidebar { width: 100% !important; order: -1; padding: 1rem 0 !important; }
+                    .schedule-main { padding-bottom: 2rem; }
+                    .activity-card { flex-direction: column !important; }
+                    .activity-time { min-width: 0 !important; width: 100% !important; padding: 1rem !important; flex-direction: row !important; border-right: none !important; border-bottom: 1px solid #e2e8f0; gap: 1rem; }
+                }
+            `}</style>
+
             {/* LEFT COLUMN: Main Schedule List */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div className="schedule-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                 {/* Header Controls */}
-                <div style={{ padding: '2rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ padding: '2rem 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
                     <div>
-                        <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)', marginBottom: '0.25rem' }}>Planning</h1>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '1rem', textTransform: 'capitalize' }}>
+                        <h1 style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'var(--text-main)', margin: 0 }}>Planning</h1>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem', textTransform: 'capitalize' }}>
                             {currentDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
                         </div>
                     </div>
 
-                    <button className="btn btn-primary" onClick={() => { 
-                        setFormData({ 
-                            date: formatDate(currentDate), 
-                            startTime: '09:00', 
-                            endTime: '10:00', 
-                            title: '', 
-                            description: '', 
+                    <button className="btn btn-primary" onClick={() => {
+                        setFormData({
+                            date: formatDate(currentDate),
+                            startTime: '09:00',
+                            endTime: '10:00',
+                            title: '',
+                            description: '',
                             participants: [],
                             repeatType: 'none',
                             repeatEndDate: formatDate(new Date(new Date().setDate(new Date().getDate() + 7))),
                             customDays: []
                         });
                         setEditingId(null);
-                        setIsFormOpen(true); 
+                        setIsFormOpen(true);
                     }}>
                         <Plus size={18} /> Activité
                     </button>
@@ -353,15 +362,15 @@ export default function Schedule({ activities, setActivities, participants, grou
                             </div>
                             <h3 style={{ color: '#64748b', marginBottom: '0.5rem' }}>Aucune activité</h3>
                             <p style={{ color: '#94a3b8', maxWidth: '400px', margin: '0 auto' }}>
-                                Rien de prévu. Utilisez le calendrier à droite pour naviguer.
+                                Rien de prévu. Utilisez le calendrier pour naviguer.
                             </p>
                         </div>
                     ) : (
                         dayActivities.map(activity => (
-                            <ActivityCard 
-                                key={activity.id} 
-                                activity={activity} 
-                                onEdit={handleEdit} 
+                            <ActivityCard
+                                key={activity.id}
+                                activity={activity}
+                                onEdit={handleEdit}
                                 onDelete={handleDelete}
                             />
                         ))
@@ -370,7 +379,7 @@ export default function Schedule({ activities, setActivities, participants, grou
             </div>
 
             {/* RIGHT COLUMN: Calendar Widget */}
-            <div style={{ width: '300px', padding: '2rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div className="calendar-sidebar" style={{ width: '300px', padding: '2rem 0', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <div className="card" style={{ padding: '1.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                         <span style={{ fontWeight: 'bold', textTransform: 'capitalize' }}>
@@ -398,28 +407,29 @@ export default function Schedule({ activities, setActivities, participants, grou
                     </div>
 
                     <button className="btn btn-outline" onClick={goToToday} style={{ width: '100%', marginTop: '1rem', justifyContent: 'center', fontSize: '0.9rem' }}>
-                        Revenir à aujourd'hui
+                        Aujourd'hui
                     </button>
                 </div>
-                
+
                 {/* Optional: Quick Stats or Legend */}
-                <div className="card" style={{ padding: '1.5rem' }}>
+                <div className="card mobile-hidden" style={{ padding: '1.5rem' }}>
                     <h4 style={{ fontSize: '0.9rem', marginBottom: '0.5rem', color: '#64748b' }}>Légende</h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.85rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)' }}></div>
-                            <span>Jour sélectionné</span>
+                            <span>Sélection</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#e0f2fe' }}></div>
                             <span>Aujourd'hui</span>
                         </div>
-                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <div style={{ width: '4px', height: '4px', borderRadius: '50%', background: 'var(--primary-color)', margin: '0 2px' }}></div>
-                            <span>Activité prévue</span>
-                        </div>
                     </div>
                 </div>
+                <style>{`
+                    @media (max-width: 900px) {
+                        .mobile-hidden { display: none !important; }
+                    }
+                `}</style>
             </div>
 
             {/* Modal Form */}
@@ -431,30 +441,30 @@ export default function Schedule({ activities, setActivities, participants, grou
                             <button className="close-btn" onClick={() => setIsFormOpen(false)}><X size={20} /></button>
                         </div>
                         <form onSubmit={handleSubmit} className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            
+
                             <div className="input-group" style={{ position: 'relative' }}>
                                 <label className="input-label">Titre de l'activité</label>
-                                <input 
-                                    type="text" 
-                                    className="input-field" 
-                                    required 
-                                    value={formData.title} 
+                                <input
+                                    type="text"
+                                    className="input-field"
+                                    required
+                                    value={formData.title}
                                     onChange={handleTitleChange}
                                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                                     onFocus={(e) => e.target.value && setShowSuggestions(true)}
-                                    placeholder="Ex: Petit déjeuner, Football..." 
-                                    autoFocus 
+                                    placeholder="Ex: Petit déjeuner, Football..."
+                                    autoFocus
                                 />
                                 {showSuggestions && suggestions.length > 0 && (
-                                    <div style={{ 
-                                        position: 'absolute', top: '100%', left: 0, right: 0, 
+                                    <div style={{
+                                        position: 'absolute', top: '100%', left: 0, right: 0,
                                         background: 'white', border: '1px solid #cbd5e1', borderRadius: '8px',
                                         zIndex: 1000, boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                                         maxHeight: '200px', overflowY: 'auto'
                                     }}>
                                         {suggestions.map((s, i) => (
-                                            <div 
-                                                key={i} 
+                                            <div
+                                                key={i}
                                                 onClick={() => selectSuggestion(s)}
                                                 style={{ padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '0.9rem' }}
                                                 onMouseEnter={(e) => e.target.style.background = '#f1f5f9'}
@@ -491,14 +501,14 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     <label className="input-label" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
                                         <Repeat size={14} /> Répétition
                                     </label>
-                                    
+
                                     <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
-                                            <input type="radio" name="repeat" checked={formData.repeatType === 'none'} onChange={() => setFormData({...formData, repeatType: 'none'})} />
+                                            <input type="radio" name="repeat" checked={formData.repeatType === 'none'} onChange={() => setFormData({ ...formData, repeatType: 'none' })} />
                                             Jamais
                                         </label>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', cursor: 'pointer' }}>
-                                            <input type="radio" name="repeat" checked={formData.repeatType === 'daily'} onChange={() => setFormData({...formData, repeatType: 'daily'})} />
+                                            <input type="radio" name="repeat" checked={formData.repeatType === 'daily'} onChange={() => setFormData({ ...formData, repeatType: 'daily' })} />
                                             Tous les jours
                                         </label>
                                         {/* Simplified: Custom days */}
@@ -508,7 +518,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                         <div className="animate-fade-in">
                                             <div className="input-group">
                                                 <label className="input-label" style={{ fontSize: '0.85rem' }}>Jusqu'au</label>
-                                                <input type="date" className="input-field" value={formData.repeatEndDate} onChange={e => setFormData({...formData, repeatEndDate: e.target.value})} />
+                                                <input type="date" className="input-field" value={formData.repeatEndDate} onChange={e => setFormData({ ...formData, repeatEndDate: e.target.value })} />
                                             </div>
                                         </div>
                                     )}
@@ -519,12 +529,12 @@ export default function Schedule({ activities, setActivities, participants, grou
                                 <label className="input-label">Lieu / Description</label>
                                 <div style={{ position: 'relative' }}>
                                     <MapPin size={16} style={{ position: 'absolute', top: '12px', left: '12px', color: '#94a3b8' }} />
-                                    <input 
-                                        type="text" 
-                                        className="input-field" 
+                                    <input
+                                        type="text"
+                                        className="input-field"
                                         style={{ paddingLeft: '2.5rem' }}
-                                        value={formData.description} 
-                                        onChange={e => setFormData({ ...formData, description: e.target.value })} 
+                                        value={formData.description}
+                                        onChange={e => setFormData({ ...formData, description: e.target.value })}
                                         placeholder="Réfectoire, Terrain A..."
                                     />
                                 </div>

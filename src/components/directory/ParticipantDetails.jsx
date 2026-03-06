@@ -9,10 +9,10 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
 
     return (
         <div className="modal-overlay" onClick={() => setViewingParticipant(null)}>
-            <div className="modal-content animate-scale-in" style={{ width: '400px', padding: '0', overflow: 'hidden', display: 'flex', flexDirection: 'column', borderRadius: '20px', height: 'auto', maxHeight: '90vh' }} onClick={(e) => e.stopPropagation()}>
-                
+            <div className="modal-content animate-scale-in" style={{ borderRadius: '20px', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+
                 {/* Header Image */}
-                <div style={{ 
+                <div style={{
                     height: '140px', // Increased height
                     background: `linear-gradient(135deg, ${viewingParticipant.role === 'animator' ? '#10b981' : (viewingParticipant.role === 'direction' ? '#8b5cf6' : '#3b82f6')} 0%, #f8fafc 100%)`,
                     position: 'relative',
@@ -30,7 +30,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                             <Avatar participant={viewingParticipant} size={120} /> {/* Increased size */}
                         </div>
                         <h2 style={{ fontSize: '1.4rem', color: '#1e293b', margin: '0 0 0.5rem 0', fontWeight: '700', textAlign: 'center' }}>
-                            {viewingParticipant.firstName} <span style={{fontWeight: 400}}>{viewingParticipant.lastName}</span>
+                            {viewingParticipant.firstName} <span style={{ fontWeight: 400 }}>{viewingParticipant.lastName}</span>
                         </h2>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                             <RoleBadge role={viewingParticipant.role} />
@@ -44,20 +44,37 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                             <span className="label">Âge</span>
                             <span className="value">{getAge(viewingParticipant.birthDate)} <span className="sub">({viewingParticipant.birthDate || 'N/A'})</span></span>
                         </div>
-                        <div className="info-item">
-                            <span className="label">Email</span>
-                            <div className="value-row">
-                                <Mail size={16} className="icon"/>
-                                <span style={{ fontSize: '0.9rem' }}>{(viewingParticipant.firstName || '').toLowerCase()}.{(viewingParticipant.lastName || '').toLowerCase()}@example.com</span>
+
+                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.training && (
+                            <div className="info-item">
+                                <span className="label">Formation</span>
+                                <span className="value">{viewingParticipant.training}</span>
                             </div>
-                        </div>
-                        <div className="info-item">
-                            <span className="label">Mobile</span>
-                            <div className="value-row">
-                                <Phone size={16} className="icon"/>
-                                <span>+33 6 12 34 56 78</span>
+                        )}
+
+                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.phone && (
+                            <div className="info-item">
+                                <span className="label">Téléphone</span>
+                                <div className="value-row">
+                                    <Phone size={14} className="icon" />
+                                    <span>{viewingParticipant.phone}</span>
+                                </div>
                             </div>
-                        </div>
+                        )}
+
+                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.address && (
+                            <div className="info-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
+                                <span className="label" style={{ alignSelf: 'flex-start' }}>Adresse</span>
+                                <span className="value" style={{ textAlign: 'left', fontSize: '0.85rem' }}>{viewingParticipant.address}</span>
+                            </div>
+                        )}
+
+                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.emergencyContact && (
+                            <div className="info-item" style={{ background: '#fffbeb', margin: '4px', borderRadius: '8px', border: '1px solid #fef3c7' }}>
+                                <span className="label" style={{ color: '#92400e' }}>Urgence</span>
+                                <span className="value" style={{ color: '#92400e' }}>{viewingParticipant.emergencyContact}</span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Medical / Notes */}
@@ -90,12 +107,12 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                     {/* Actions Footer */}
                     <div className="drawer-footer" style={{ marginTop: '0', paddingTop: '0', borderTop: 'none' }}>
                         <button className="btn btn-outline" onClick={() => setViewingParticipant(null)}>Fermer</button>
-                        <button className="btn btn-primary" onClick={() => { 
-                            const p = viewingParticipant; 
-                            setViewingParticipant(null); 
-                            handleEdit(p); 
+                        <button className="btn btn-primary" onClick={() => {
+                            const p = viewingParticipant;
+                            setViewingParticipant(null);
+                            handleEdit(p);
                         }}>
-                            <Edit2 size={16} style={{marginRight: '8px'}}/> Modifier
+                            <Edit2 size={16} style={{ marginRight: '8px' }} /> Modifier
                         </button>
                     </div>
                 </div>

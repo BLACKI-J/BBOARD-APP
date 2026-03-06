@@ -23,10 +23,10 @@ export default function Directory({ participants = [], setParticipants, groups =
     const [viewMode, setViewMode] = useState('table');
     const [filterRole, setFilterRole] = useState('all');
     const [filterGroup, setFilterGroup] = useState('all');
-    
+
     // Selection State
     const [selectedParticipants, setSelectedParticipants] = useState([]);
-    
+
     // Viewing State - Drawer Mode
     const [viewingParticipant, setViewingParticipant] = useState(null);
 
@@ -41,7 +41,12 @@ export default function Directory({ participants = [], setParticipants, groups =
         constraints: '',
         photo: '',
         role: 'child',
-        group: ''
+        group: '',
+        // Animator specific fields
+        training: '',
+        phone: '',
+        address: '',
+        emergencyContact: ''
     });
 
     // Group Management State
@@ -123,15 +128,18 @@ export default function Directory({ participants = [], setParticipants, groups =
     };
 
     const resetForm = () => {
-        setFormData({ firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '' });
+        setFormData({
+            firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '',
+            training: '', phone: '', address: '', emergencyContact: ''
+        });
         setEditingId(null);
         setIsFormOpen(false);
     };
 
     const handleEdit = (participant) => {
         if (!participant) return;
-        setFormData({ 
-            ...participant, 
+        setFormData({
+            ...participant,
             role: participant.role || 'child',
             firstName: participant.firstName || '',
             lastName: participant.lastName || '',
@@ -139,7 +147,11 @@ export default function Directory({ participants = [], setParticipants, groups =
             allergies: participant.allergies || '',
             constraints: participant.constraints || '',
             photo: participant.photo || '',
-            group: participant.group || ''
+            group: participant.group || '',
+            training: participant.training || '',
+            phone: participant.phone || '',
+            address: participant.address || '',
+            emergencyContact: participant.emergencyContact || ''
         });
         setEditingId(participant.id);
         setIsFormOpen(true);
@@ -180,11 +192,11 @@ export default function Directory({ participants = [], setParticipants, groups =
             const lName = (p.lastName || '').toLowerCase();
             const role = (p.role || '').toLowerCase();
             const searchLower = searchTerm.toLowerCase();
-            
+
             const matchesSearch = (fName + ' ' + lName).includes(searchLower) || role.includes(searchLower);
             const matchesRole = filterRole === 'all' || p.role === filterRole;
             const matchesGroup = filterGroup === 'all' || (filterGroup === 'none' ? !p.group : p.group === filterGroup);
-            
+
             return matchesSearch && matchesRole && matchesGroup;
         });
     }, [safeParticipants, searchTerm, filterRole, filterGroup]);
@@ -197,8 +209,8 @@ export default function Directory({ participants = [], setParticipants, groups =
                 let bValue = b[sortConfig.key] || '';
 
                 if (sortConfig.key === 'age') {
-                   aValue = a.birthDate || '';
-                   bValue = b.birthDate || '';
+                    aValue = a.birthDate || '';
+                    bValue = b.birthDate || '';
                 }
 
                 if (aValue < bValue) {
@@ -243,8 +255,8 @@ export default function Directory({ participants = [], setParticipants, groups =
 
     return (
         <div className="directory-container" style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)', overflow: 'hidden', position: 'relative' }}>
-            
-            <DirectoryHeader 
+
+            <DirectoryHeader
                 stats={stats}
                 selectedCount={selectedParticipants.length}
                 handleBulkDelete={handleBulkDelete}
@@ -254,7 +266,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 handleImport={handleImport}
             />
 
-            <DirectoryFilters 
+            <DirectoryFilters
                 searchTerm={searchTerm}
                 setSearchTerm={setSearchTerm}
                 filterRole={filterRole}
@@ -271,7 +283,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 {sortedParticipants.length === 0 ? (
                     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                         <div style={{ background: '#f1f5f9', padding: '2rem', borderRadius: '50%', marginBottom: '1.5rem' }}>
-                             <Search size={48} color="#cbd5e1" />
+                            <Search size={48} color="#cbd5e1" />
                         </div>
                         <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: '#64748b' }}>Aucun résultat</h3>
                         <p>Essayez de modifier vos filtres ou votre recherche.</p>
@@ -279,7 +291,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 ) : (
                     <>
                         {viewMode === 'table' ? (
-                            <ParticipantTable 
+                            <ParticipantTable
                                 participants={sortedParticipants}
                                 selectedParticipants={selectedParticipants}
                                 toggleSelection={toggleSelection}
@@ -295,7 +307,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                             <div style={{ padding: '2rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignContent: 'start' }}>
                                 {sortedParticipants.map(p => (
                                     <div key={p.id} style={{ flex: '0 0 300px' }}>
-                                        <ParticipantCard 
+                                        <ParticipantCard
                                             participant={p}
                                             isSelected={selectedParticipants.includes(p.id)}
                                             toggleSelection={toggleSelection}
@@ -313,8 +325,8 @@ export default function Directory({ participants = [], setParticipants, groups =
             </div>
 
             {/* --- Modals --- */}
-            
-            <GroupManager 
+
+            <GroupManager
                 isOpen={isGroupManagerOpen}
                 onClose={() => setIsGroupManagerOpen(false)}
                 groups={safeGroups}
@@ -327,14 +339,14 @@ export default function Directory({ participants = [], setParticipants, groups =
                 onDeleteGroup={handleDeleteGroup}
             />
 
-            <ParticipantDetails 
+            <ParticipantDetails
                 viewingParticipant={viewingParticipant}
                 setViewingParticipant={setViewingParticipant}
                 handleEdit={handleEdit}
                 groups={safeGroups}
             />
 
-            <ParticipantForm 
+            <ParticipantForm
                 isOpen={isFormOpen}
                 onClose={() => setIsFormOpen(false)}
                 formData={formData}
@@ -343,7 +355,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 editingId={editingId}
                 groups={safeGroups}
             />
-            
+
             {/* Styles injectés localement pour ce composant (et ses enfants) */}
             <style>{`
                 /* Badges */
