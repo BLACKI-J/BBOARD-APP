@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # 🏕️ BBOARD App
-=======
-# BBOARD App
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 > **La solution moderne de gestion de colonies de vacances et centres aérés.**
 > 
@@ -10,138 +6,114 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)
-![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=flat&logo=vite&logoColor=white)
+![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white)
+![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=flat&logo=sqlite&logoColor=white)
+![Socket.io](https://img.shields.io/badge/socket.io-black?style=flat&logo=socket.io&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
 
 ---
 
-<<<<<<< HEAD
 ## 📋 Présentation
 
-**BBOARD** est une application web progressive (PWA) conçue pour simplifier la vie des directeurs et animateurs de séjours de vacances. Elle remplace les fichiers Excel complexes et les papiers volants par une interface centralisée, fluide et pensée pour le terrain.
+**BBOARD** est une application web conçue pour simplifier la vie des directeurs et animateurs de séjours de vacances. Elle centralise la gestion des participants, des transports et du planning dans une interface fluide et réactive.
 
 ### ✨ Fonctionnalités Clés
-=======
-## Présentation
 
-**BBOARD** est une application web progressive (PWA) conçue pour simplifier la vie des directeurs et animateurs de séjours de vacances. Elle remplace les fichiers Excel complexes et les papiers volants par une interface centralisée, fluide et pensée pour le terrain.
-
-### Fonctionnalités Clés
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
-
-*   **🚌 Plans de Transport (SeatMap)** : Créez visuellement vos plans de bus/minibus avec glisser-déposer. Gérez les places, les chauffeurs et imprimez les listes d'émargement.
-*   **📅 Planning Interactif** : Emploi du temps de la semaine avec gestion des activités, des lieux et des horaires.
-*   **📄 Fiches de Sortie** : Génération automatique de fiches de sortie conformes (A4) avec listes des participants, infos médicales (PAI/Allergies) et signatures.
-*   **📝 Récapitulatif Quotidien** : Outil de prise de notes pour les réunions du soir et suivi des tâches (To-Do List).
-*   **👥 Annuaire Centralisé** : Gestion complète des enfants, animateurs et direction (Fiches sanitaires, Groupes d'âge, Photos).
-*   **💾 100% Local & Sécurisé** : Les données sont stockées localement dans votre navigateur (LocalStorage) avec option d'export/import JSON complet. Pas de serveur de base de données requis.
+*   **🚌 Plans de Transport (SeatMap)** : Créez visuellement vos plans de bus/minibus avec glisser-déposer. Gestion en temps réel via WebSockets.
+*   **📅 Planning Interactif** : Emploi du temps quotidien et hebdomadaire.
+*   **📄 Fiches de Sortie** : Génération automatique de fiches de sortie conformes (A4) avec infos médicales.
+*   **👥 Annuaire Centralisé** : Gestion complète des enfants et de l'équipe (Fiches sanitaires, Groupes, Photos).
+*   **🔄 Temps Réel** : Synchronisation instantanée entre tous les postes de travail.
 
 ---
 
-<<<<<<< HEAD
 ## 🛠️ Stack Technique
-=======
-## Stack Technique
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
-Le projet est construit avec des technologies modernes pour assurer performance et maintenabilité :
-
-*   **Core** : [React 18](https://reactjs.org/) (Hooks, Context API)
-*   **Build Tool** : [Vite](https://vitejs.dev/) (Ultra-rapide)
-*   **UI/UX** : CSS Modules, Lucide React (Icônes), Google Fonts (Outfit)
-*   **Drag & Drop** : `@dnd-kit/core` (Gestion fluide du glisser-déposer tactile)
-*   **Déploiement** : Docker + Nginx (Image légère < 30Mo)
+*   **Frontend** : [React 18](https://reactjs.org/), [Vite](https://vitejs.dev/), TailwindCSS, Socket.io-client.
+*   **Backend** : [Node.js](https://nodejs.org/), Express, Socket.io.
+*   **Base de données** : [SQLite](https://sqlite.org/) (SGBD léger et performant).
+*   **Conteneurisation** : Docker & Docker-compose.
 
 ---
 
-<<<<<<< HEAD
 ## 🚀 Installation & Démarrage
 
 ### 1️⃣ En Local (Développement)
-=======
-## Installation & Démarrage
 
-### 1️ En Local (Développement)
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
+#### Pré-requis :
+- Node.js 18+
+- npm
 
-Pré-requis : Node.js 18+ installé.
+#### Étapes :
+1. **Cloner le projet** :
+   ```bash
+   git clone https://github.com/BLACKI-J/BBOARD-APP.git
+   cd BBOARD-APP
+   ```
 
-```bash
-# Cloner le projet
-git clone https://github.com/BLACKI-J/BBOARD-APP.git
-cd BBOARD-APP
+2. **Lancer le Backend** :
+   ```bash
+   cd server
+   npm install
+   node index.js
+   ```
+   *Le serveur écoute sur le port 3001.*
 
-# Installer les dépendances
-npm install
+3. **Lancer le Frontend** (dans un autre terminal) :
+   ```bash
+   # Retour à la racine
+   cd ..
+   npm install
+   npm run dev
+   ```
+   *L'application est accessible sur http://localhost:5173.*
 
-# Lancer le serveur de développement
-npm run dev
-```
-> L'application sera accessible sur `http://localhost:5173`
+---
 
-<<<<<<< HEAD
 ### 2️⃣ Déploiement avec Docker (Production)
-=======
-### 2️ Déploiement avec Docker (Production)
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
-C'est la méthode recommandée pour un déploiement sur serveur (VPS, NAS, etc.).
+C'est la méthode recommandée pour un déploiement simple et rapide.
 
 ```bash
-# Construire et lancer le conteneur en arrière-plan
+# Lancer toute la stack (Frontend + Backend)
 docker-compose up -d --build
 ```
-> L'application sera accessible sur le port **8080** de votre serveur (ex: `http://votre-ip:8080`).
 
-**Structure de l'image Docker :**
-*   **Stage 1 (Build)** : Node.js compile l'application React.
-*   **Stage 2 (Run)** : Nginx (Alpine) sert les fichiers statiques.
-*   **Optimisation** : Configuration Nginx personnalisée pour le support SPA (Single Page Application).
-
-<<<<<<< HEAD
-### 3️⃣ Déploiement Classique (Apache/Nginx)
-=======
-### 3️ Déploiement Classique (Apache/Nginx)
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
-
-Si vous n'utilisez pas Docker :
-
-1.  Générez les fichiers de production :
-    ```bash
-    npm run build
-    ```
-2.  Copiez le contenu du dossier `dist/` vers votre hébergement web (`/var/www/html` ou via FTP).
-3.  Assurez-vous que votre serveur redirige toutes les routes vers `index.html` (SPA).
+- **Frontend** : Accessible sur [http://localhost](http://localhost) (Port 80 par défaut).
+- **Backend** : Géré automatiquement par le conteneur.
+- **Persistance** : La base de données est stockée dans un volume Docker pour ne pas perdre les données au redémarrage.
 
 ---
 
-<<<<<<< HEAD
-## 💾 Gestion des Données
-=======
-## Gestion des Données
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
+## 🛰️ Guide Git & GitHub
 
-BBOARD fonctionne en "Offline-First". 
+### Configurer votre identité (une seule fois)
+```bash
+git config user.email "votre@email.com"
+git config user.name "VotreNom"
+```
 
-*   **Sauvegarde** : Allez dans l'onglet *Paramètres* > *Sauvegarde complète* pour télécharger un fichier `.json` contenant toutes vos données.
-*   **Restauration** : Utilisez le même fichier pour restaurer vos données sur un autre appareil ou après un nettoyage du cache.
-*   **Confidentialité** : Aucune donnée ne transite par un serveur tiers. Tout reste sur votre machine.
+### Pousser vos modifications
+Si vous avez fait des changements et voulez les mettre à jour sur GitHub :
 
----
+1. **Ajouter les fichiers** :
+   ```bash
+   git add .
+   ```
 
-<<<<<<< HEAD
-## 🤝 Contribuer
-=======
-## Contribuer
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
+2. **Créer un commit** :
+   ```bash
+   git commit -m "Description de vos changements"
+   ```
 
-Les contributions sont les bienvenues ! 
+3. **Envoyer vers GitHub** :
+   ```bash
+   git push origin main
+   ```
 
-1.  Forkez le projet
-2.  Créez votre branche (`git checkout -b feature/AmazingFeature`)
-3.  Commitez vos changements (`git commit -m 'Add some AmazingFeature'`)
-4.  Push sur la branche (`git push origin feature/AmazingFeature`)
-5.  Ouvrez une Pull Request
+> [!TIP]
+> Si GitHub demande vos identifiants à chaque fois, vous pouvez configurer votre URL avec un Token (PAT) :
+> `git remote set-url origin https://VOTRE_USERNAME:VOTRE_TOKEN@github.com/BLACKI-J/BBOARD-APP.git`
 
 ---
 
