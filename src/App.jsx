@@ -78,7 +78,7 @@ export default function App() {
     const isInitialLoad = useRef(true);
 
     useEffect(() => {
-        const socket = io(window.location.origin.includes('localhost') ? 'http://localhost:3001' : window.location.origin);
+        const socket = io(); // Connects to the same host/port by default
 
         const fetchData = async () => {
             try {
