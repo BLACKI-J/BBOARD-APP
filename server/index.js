@@ -43,12 +43,6 @@ async function initDb() {
     await db.exec(`
         CREATE TABLE IF NOT EXISTS participants (
             id TEXT PRIMARY KEY,
-            firstName TEXT,
-            lastName TEXT,
-            role TEXT,
-            groupId TEXT,
-            allergies TEXT,
-            constraints TEXT,
             data TEXT
         );
         CREATE TABLE IF NOT EXISTS groups (
@@ -69,6 +63,18 @@ async function initDb() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         );
     `);
+
+    // Ensure participants table has the new columns
+    const columns = await db.all("PRAGMA table_info(participants)");
+    const columnNames = columns.map(c => c.name);
+    const requiredColumns = ['firstName', 'lastName', 'role', 'groupId', 'allergies', 'constraints'];
+
+    for (const col of requiredColumns) {
+        if (!columnNames.includes(col)) {
+            console.log(`Adding missing column ${col} to participants table...`);
+            await db.exec(`ALTER TABLE participants ADD COLUMN ${col} TEXT`);
+        }
+    }
 
     // Migration logic for participants
     const rows = await db.all('SELECT id, data FROM participants WHERE firstName IS NULL');
