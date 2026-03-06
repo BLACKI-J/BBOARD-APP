@@ -1,8 +1,4 @@
-<<<<<<< HEAD
 # 🏕️ BBOARD App
-=======
-# BBOARD App
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 > **La solution moderne de gestion de colonies de vacances et centres aérés.**
 > 
@@ -15,19 +11,11 @@
 
 ---
 
-<<<<<<< HEAD
 ## 📋 Présentation
 
 **BBOARD** est une application web progressive (PWA) conçue pour simplifier la vie des directeurs et animateurs de séjours de vacances. Elle remplace les fichiers Excel complexes et les papiers volants par une interface centralisée, fluide et pensée pour le terrain.
 
 ### ✨ Fonctionnalités Clés
-=======
-## Présentation
-
-**BBOARD** est une application web progressive (PWA) conçue pour simplifier la vie des directeurs et animateurs de séjours de vacances. Elle remplace les fichiers Excel complexes et les papiers volants par une interface centralisée, fluide et pensée pour le terrain.
-
-### Fonctionnalités Clés
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 *   **🚌 Plans de Transport (SeatMap)** : Créez visuellement vos plans de bus/minibus avec glisser-déposer. Gérez les places, les chauffeurs et imprimez les listes d'émargement.
 *   **📅 Planning Interactif** : Emploi du temps de la semaine avec gestion des activités, des lieux et des horaires.
@@ -38,11 +26,7 @@
 
 ---
 
-<<<<<<< HEAD
 ## 🛠️ Stack Technique
-=======
-## Stack Technique
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 Le projet est construit avec des technologies modernes pour assurer performance et maintenabilité :
 
@@ -54,15 +38,9 @@ Le projet est construit avec des technologies modernes pour assurer performance 
 
 ---
 
-<<<<<<< HEAD
 ## 🚀 Installation & Démarrage
 
 ### 1️⃣ En Local (Développement)
-=======
-## Installation & Démarrage
-
-### 1️ En Local (Développement)
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 Pré-requis : Node.js 18+ installé.
 
@@ -79,11 +57,7 @@ npm run dev
 ```
 > L'application sera accessible sur `http://localhost:5173`
 
-<<<<<<< HEAD
 ### 2️⃣ Déploiement avec Docker (Production)
-=======
-### 2️ Déploiement avec Docker (Production)
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 C'est la méthode recommandée pour un déploiement sur serveur (VPS, NAS, etc.).
 
@@ -95,14 +69,10 @@ docker-compose up -d --build
 
 **Structure de l'image Docker :**
 *   **Stage 1 (Build)** : Node.js compile l'application React.
-*   **Stage 2 (Run)** : Nginx (Alpine) sert les fichiers statiques.
+*   **Stage 2 (Run)** : Nginx (Alpine) servant les fichiers statiques.
 *   **Optimisation** : Configuration Nginx personnalisée pour le support SPA (Single Page Application).
 
-<<<<<<< HEAD
 ### 3️⃣ Déploiement Classique (Apache/Nginx)
-=======
-### 3️ Déploiement Classique (Apache/Nginx)
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 Si vous n'utilisez pas Docker :
 
@@ -115,11 +85,7 @@ Si vous n'utilisez pas Docker :
 
 ---
 
-<<<<<<< HEAD
 ## 💾 Gestion des Données
-=======
-## Gestion des Données
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 BBOARD fonctionne en "Offline-First". 
 
@@ -129,11 +95,7 @@ BBOARD fonctionne en "Offline-First".
 
 ---
 
-<<<<<<< HEAD
 ## 🤝 Contribuer
-=======
-## Contribuer
->>>>>>> ec78ea61474ee55776a8dc660c700dab85a191f1
 
 Les contributions sont les bienvenues ! 
 
