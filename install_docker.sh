@@ -18,6 +18,14 @@ echo "📦 Installation des pré-requis système..."
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
 
+# 2.1 Correctif spécifique pour Ubuntu 24.04 (Noble) - AppArmor userns restriction
+if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+    echo "🛡️ Application du correctif pour Ubuntu 24.04 (AppArmor userns restriction)..."
+    echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+    echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/60-apparmor-docker.conf
+    sudo sysctl -p /etc/sysctl.d/60-apparmor-docker.conf || true
+fi
+
 # 3. Configuration du dépôt officiel Docker
 echo "🔑 Configuration de la clé GPG et du dépôt Docker..."
 sudo install -m 0755 -d /etc/apt/keyrings
