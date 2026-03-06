@@ -30,6 +30,8 @@ echo "🧹 Nettoyage des anciennes versions et conflits..."
 if [[ "$OS_ID" == "ubuntu" || "$OS_ID" == "debian" || "$OS_ID" == "kali" ]]; then
     sudo rm -f /etc/apt/sources.list.d/docker.list || true
     sudo apt-get update -qq || true
+    # Installation des outils de base indispensables
+    sudo apt-get install -y curl ca-certificates >/dev/null 2>&1 || true
     # On supprime les paquets conflictuels rencontrés précédemment
     for pkg in docker.io docker-doc docker-compose docker-buildx docker-compose-v2 podman-docker containerd runc; do 
         sudo apt-get remove -y $pkg >/dev/null 2>&1 || true
