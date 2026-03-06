@@ -82,7 +82,20 @@ If you'd like to contribute or run the project outside of Docker:
 
 ---
 
-## 🛰️ Deployment & Production
+## � Dépannage (Troubleshooting)
+
+### ❌ Erreur "permission denied" (Ubuntu 24.04)
+Si vous voyez l'erreur `open sysctl net.ipv4.ip_unprivileged_port_start file: permission denied` lors du lancement :
+
+C'est une restriction de sécurité d'Ubuntu 24.04. Exécutez cette commande :
+```bash
+echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+```
+*Note: Le script `install_docker.sh` inclut déjà ce correctif.*
+
+---
+
+## �🛰️ Deployment & Production
 
 For production servers, use the `docker-compose.yml` file. It handles:
 - **Service Isolation**: Separate containers for logic and UI.
