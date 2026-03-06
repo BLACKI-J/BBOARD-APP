@@ -1,11 +1,39 @@
 #!/bin/bash
 
-# Script d'installation automatique de Docker et Docker Compose pour Ubuntu/Debian
+# Script d'installation automatique de Docker et Docker Compose
+# Supporte : Ubuntu, Debian, Kali Linux
 # Auteur: Antigravity (BBOARD-APP)
 
 set -e
 
 echo "🚀 Démarrage de l'installation de Docker..."
+
+# Détection de la distribution
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS=$ID
+    OS_LIKE=$ID_LIKE
+else
+    echo "❌ Impossible de détecter la distribution. /etc/os-release manquant."
+    exit 1
+fi
+
+echo "🔍 Distribution détectée : $OS ($OS_LIKE)"
+
+# Configuration des variables Docker selon la distribution
+DOCKER_DISTRO="ubuntu"
+DOCKER_CODENAME=$VERSION_CODENAME
+
+if [[ "$OS" == "debian" || "$OS_LIKE" == *"debian"* || "$OS" == "kali" ]]; then
+    DOCKER_DISTRO="debian"
+    # Pour Kali ou les versions instables de Debian, on utilise 'bookworm' (Debian 12) comme base stable
+    if [[ "$OS" == "kali" || "$VERSION_CODENAME" == "kali-rolling" || -z "$VERSION_CODENAME" ]]; then
+        echo "ℹ️  Kali détecté, utilisation du dépôt Debian Bookworm comme base stable."
+        DOCKER_CODENAME="bookworm"
+    fi
+fi
+
+echo "📦 Utilisation du dépôt Docker : $DOCKER_DISTRO / $DOCKER_CODENAME"
 
 # 1. Nettoyage des anciennes versions
 echo "🧹 Nettoyage des anciens paquets Docker..."
@@ -18,9 +46,9 @@ echo "📦 Installation des pré-requis système..."
 sudo apt-get update
 sudo apt-get install -y ca-certificates curl gnupg
 
-# 2.1 Correctif spécifique pour Ubuntu 24.04 (Noble) - AppArmor userns restriction
+# 2.1 Correctif spécifique pour Ubuntu 24.04+ - AppArmor userns restriction
 if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
-    echo "🛡️ Application du correctif pour Ubuntu 24.04 (AppArmor userns restriction)..."
+    echo "🛡️ Application du correctif AppArmor userns restriction..."
     echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
     echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/60-apparmor-docker.conf
     sudo sysctl -p /etc/sysctl.d/60-apparmor-docker.conf || true
@@ -29,12 +57,12 @@ fi
 # 3. Configuration du dépôt officiel Docker
 echo "🔑 Configuration de la clé GPG et du dépôt Docker..."
 sudo install -m 0755 -d /etc/apt/keyrings
-sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+sudo curl -fsSL https://download.docker.com/linux/$DOCKER_DISTRO/gpg -o /etc/apt/keyrings/docker.asc
 sudo chmod a+r /etc/apt/keyrings/docker.asc
 
-# Détection de la distribution et ajout du dépôt
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+# Ajout du dépôt Docker
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/$DOCKER_DISTRO \
+  $DOCKER_CODENAME stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 # 4. Installation de Docker et du plugin Compose V2
@@ -48,10 +76,10 @@ if ! getent group docker > /dev/null; then
     sudo groupadd docker
 fi
 
-echo "👤 Ajout de l'utilisateur $(whoami) au groupe docker..."
-sudo usermod -aG docker $(whoami)
+echo "👤 Ajout de l'utilisateur $USER au groupe docker..."
+sudo usermod -aG docker $USER
 
 echo ""
 echo "✅ Installation terminée avec succès !"
-echo "⚠️  IMPORTANT : Vous devez vous déconnecter et vous reconnecter pour pouvoir utiliser docker sans 'sudo'."
-echo "🚀 Pour lancer l'app : git clone https://github.com/BLACKI-J/BBOARD-APP.git && cd BBOARD-APP && docker compose up -d --build"
+echo "⚠️  IMPORTANT : Vous devez peut-être redémarrer votre session pour utiliser docker sans 'sudo'."
+echo "🚀 Pour lancer l'app : docker compose up -d --build"
