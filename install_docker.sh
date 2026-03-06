@@ -35,9 +35,10 @@ fi
 
 echo "📦 Utilisation du dépôt Docker : $DOCKER_DISTRO / $DOCKER_CODENAME"
 
-# 1. Nettoyage des anciennes versions
-echo "🧹 Nettoyage des anciens paquets Docker..."
-for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do 
+# 1. Nettoyage des anciennes versions et dépôts corrompus
+echo "🧹 Nettoyage des anciens paquets Docker et dépôts..."
+sudo rm -f /etc/apt/sources.list.d/docker.list || true
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do 
     sudo apt-get remove -y $pkg || true
 done
 
