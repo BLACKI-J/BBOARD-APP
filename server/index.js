@@ -13,16 +13,25 @@ const dbPath = process.env.DATABASE_PATH || join(__dirname, 'data', 'database.sq
 
 const app = express();
 const httpServer = createServer(app);
-const io = new Server(httpServer, {
-    cors: {
-        origin: ["http://localhost:5173", "https://camp.black-i.uk"],
-        methods: ["GET", "POST", "DELETE"]
-    }
-});
 
-app.use(cors({
-    origin: ["http://localhost:5173", "https://camp.black-i.uk"]
-}));
+// Flexible CORS for local network and production
+const allowedOrigins = ["http://localhost:5173", "https://camp.black-i.uk"];
+const corsOptions = {
+    origin: (origin, callback) => {
+        // Allow no-origin (like mobile apps or curl) or allowed list or any local IP
+        if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost') || /^http:\/\/127\./.test(origin) || /^http:\/\/192\.168\./.test(origin) || /^http:\/\/10\./.test(origin) || /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./.test(origin)) {
+            callback(null, true);
+        } else {
+            console.log('CORS Blocked for origin:', origin);
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    methods: ["GET", "POST", "DELETE"],
+    credentials: true
+};
+
+const io = new Server(httpServer, { cors: corsOptions });
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Logging Middleware
