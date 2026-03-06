@@ -38,9 +38,13 @@ echo "📦 Utilisation du dépôt Docker : $DOCKER_DISTRO / $DOCKER_CODENAME"
 # 1. Nettoyage des anciennes versions et dépôts corrompus
 echo "🧹 Nettoyage des anciens paquets Docker et dépôts..."
 sudo rm -f /etc/apt/sources.list.d/docker.list || true
-for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do 
+# Suppression des paquets Kali/Debian qui provoquent des conflits de fichiers (dpkg error)
+for pkg in docker.io docker-doc docker-compose docker-buildx docker-compose-v2 podman-docker containerd runc; do 
     sudo apt-get remove -y $pkg || true
 done
+
+# Réparation forcée au cas où le système est dans un état instable
+sudo apt-get install -f -y || true
 
 # 2. Mise à jour et installation des pré-requis
 echo "📦 Installation des pré-requis système..."
