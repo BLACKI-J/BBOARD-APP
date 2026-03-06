@@ -15,7 +15,7 @@ const app = express();
 const httpServer = createServer(app);
 
 // Flexible CORS for local network and production
-const allowedOrigins = ["http://localhost:5173", "https://camp.black-i.uk"];
+const allowedOrigins = ["http://localhost:5173"];
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow no-origin (like mobile apps or curl) or allowed list or any local IP

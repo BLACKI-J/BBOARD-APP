@@ -6,7 +6,6 @@ export default defineConfig({
     server: {
         host: true, // Needed for Docker
         port: 5173,
-        allowedHosts: ['camp.black-i.uk'],
         proxy: {
             '/api': {
                 target: 'http://localhost:3001',
