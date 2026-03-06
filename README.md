@@ -1,7 +1,6 @@
-# 🏕️ BBOARD App
+# 🏕️ BBOARD App (Colo-App)
 
 > **La solution moderne de gestion de colonies de vacances et centres aérés.**
-> 
 > *Planification, Transport, Fiches sanitaires, Emploi du temps - Tout en un.*
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
@@ -15,106 +14,120 @@
 
 ## 📋 Présentation
 
-**BBOARD** est une application web conçue pour simplifier la vie des directeurs et animateurs de séjours de vacances. Elle centralise la gestion des participants, des transports et du planning dans une interface fluide et réactive.
+**BBOARD** est une application web conçue pour simplifier la vie des directeurs et animateurs. Elle centralise la gestion des participants, des transports (Bus/Vans) et du planning avec une synchronisation en temps réel.
 
-### ✨ Fonctionnalités Clés
-
-*   **🚌 Plans de Transport (SeatMap)** : Créez visuellement vos plans de bus/minibus avec glisser-déposer. Gestion en temps réel via WebSockets.
-*   **📅 Planning Interactif** : Emploi du temps quotidien et hebdomadaire.
-*   **📄 Fiches de Sortie** : Génération automatique de fiches de sortie conformes (A4) avec infos médicales.
-*   **👥 Annuaire Centralisé** : Gestion complète des enfants et de l'équipe (Fiches sanitaires, Groupes, Photos).
-*   **🔄 Temps Réel** : Synchronisation instantanée entre tous les postes de travail.
-
----
-
-## 🛠️ Stack Technique
-
-*   **Frontend** : [React 18](https://reactjs.org/), [Vite](https://vitejs.dev/), TailwindCSS, Socket.io-client.
-*   **Backend** : [Node.js](https://nodejs.org/), Express, Socket.io.
-*   **Base de données** : [SQLite](https://sqlite.org/) (SGBD léger et performant).
-*   **Conteneurisation** : Docker & Docker-compose.
+### ✨ Fonctionnalités
+*   **🚌 Plans de Transport** : Drag & drop visuel pour les bus et minibus.
+*   **📅 Planning Interactif** : Gestion des activités et des horaires.
+*   **📄 Fiches de Sortie** : Génération PDF/A4 automatique avec infos médicales.
+*   **� Temps Réel** : Communication via WebSockets (Socket.io).
+*   **� Persistance SQL** : Base de données SQLite structurée.
 
 ---
 
-## 🚀 Installation & Démarrage
+## 🛠️ Guide d'Installation Complet
 
-### 1️⃣ En Local (Développement)
+### 1️⃣ Installation de Docker (Ubuntu/Debian)
 
-#### Pré-requis :
-- Node.js 18+
-- npm
-
-#### Étapes :
-1. **Cloner le projet** :
-   ```bash
-   git clone https://github.com/BLACKI-J/BBOARD-APP.git
-   cd BBOARD-APP
-   ```
-
-2. **Lancer le Backend** :
-   ```bash
-   cd server
-   npm install
-   node index.js
-   ```
-   *Le serveur écoute sur le port 3001.*
-
-3. **Lancer le Frontend** (dans un autre terminal) :
-   ```bash
-   # Retour à la racine
-   cd ..
-   npm install
-   npm run dev
-   ```
-   *L'application est accessible sur http://localhost:5173.*
-
----
-
-### 2️⃣ Déploiement avec Docker (Production)
-
-C'est la méthode recommandée pour un déploiement simple et rapide.
+Si Docker n'est pas encore installé sur votre machine, exécutez ces commandes :
 
 ```bash
-# Lancer toute la stack (Frontend + Backend)
-docker-compose up -d --build
+# Mise à jour des dépôts
+sudo apt-get update
+
+# Installation des certificats nécessaires
+sudo apt-get install ca-certificates curl gnupg
+
+# Ajout de la clé GPG officielle de Docker
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+# Ajout du dépôt Docker aux sources APT
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Installation de Docker Engine et Docker Compose (version moderne V2)
+sudo apt-get update
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
-- **Frontend** : Accessible sur [http://localhost](http://localhost) (Port 80 par défaut).
-- **Backend** : Géré automatiquement par le conteneur.
-- **Persistance** : La base de données est stockée dans un volume Docker pour ne pas perdre les données au redémarrage.
+**Vérifiez l'installation :**
+```bash
+docker --version
+docker compose version
+```
+
+---
+
+### 2️⃣ Déploiement de l'Application (Docker)
+
+C'est la méthode la plus simple pour la production.
+
+```bash
+# Se placer dans le dossier du projet
+cd BBOARD-APP
+
+# Lancer la stack complète
+sudo docker compose up -d --build
+```
+*   **Frontend** : [http://localhost](http://localhost) (Port 80)
+*   **Backend** : Géré en arrière-plan (Port 3001)
+
+---
+
+### 3️⃣ Développement Local (Sans Docker)
+
+Pour modifier le code et voir les changements en direct :
+
+1.  **Backend** :
+    ```bash
+    cd server
+    npm install
+    node index.js
+    ```
+2.  **Frontend** (dans un autre terminal) :
+    ```bash
+    npm install
+    npm run dev
+    ```
+    *Accès : http://localhost:5173*
 
 ---
 
 ## 🛰️ Guide Git & GitHub
 
-### Configurer votre identité (une seule fois)
+### Initialiser votre identité
 ```bash
-git config user.email "votre@email.com"
-git config user.name "VotreNom"
+git config user.email "login@votre-email.com"
+git config user.name "VOTRE_NOM"
 ```
 
-### Pousser vos modifications
-Si vous avez fait des changements et voulez les mettre à jour sur GitHub :
+### Mettre à jour GitHub
+```bash
+# 1. Ajouter les fichiers modifiés
+git add .
 
-1. **Ajouter les fichiers** :
-   ```bash
-   git add .
-   ```
+# 2. Créer un commit
+git commit -m "feat: ajout de nouvelles fonctionnalités"
 
-2. **Créer un commit** :
-   ```bash
-   git commit -m "Description de vos changements"
-   ```
-
-3. **Envoyer vers GitHub** :
-   ```bash
-   git push origin main
-   ```
+# 3. Envoyer vers GitHub
+git push origin main
+```
 
 > [!TIP]
-> Si GitHub demande vos identifiants à chaque fois, vous pouvez configurer votre URL avec un Token (PAT) :
+> Si vous utilisez un **Token (PAT)**, configurez-le ainsi :
 > `git remote set-url origin https://VOTRE_USERNAME:VOTRE_TOKEN@github.com/BLACKI-J/BBOARD-APP.git`
 
 ---
 
+## 🧪 Tests
+L'application inclut des tests unitaires (Vitest) pour garantir la qualité :
+```bash
+npm run test
+```
+
+---
 **Développé avec ❤️ pour les colos.**
