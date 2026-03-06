@@ -27,38 +27,17 @@
 
 ## 🛠️ Guide d'Installation Complet
 
-### 1️⃣ Installation de Docker (Ubuntu/Debian)
+### 1️⃣ Installation Automatique (Recommandé)
 
-Si Docker n'est pas encore installé sur votre machine, exécutez ces commandes :
+Si vous êtes sur **Ubuntu** ou **Debian**, vous pouvez installer Docker et Docker Compose en une seule commande :
 
 ```bash
-# Mise à jour des dépôts
-sudo apt-get update
-
-# Installation des certificats nécessaires
-sudo apt-get install ca-certificates curl gnupg
-
-# Ajout de la clé GPG officielle de Docker
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-
-# Ajout du dépôt Docker aux sources APT
-echo \
-  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-  sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-
-# Installation de Docker Engine et Docker Compose (version moderne V2)
-sudo apt-get update
-sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+# Se placer dans le dossier du projet
+cd BBOARD-APP
+# Lancer le script d'installation
+bash install_docker.sh
 ```
-
-**Vérifiez l'installation :**
-```bash
-docker --version
-docker compose version
-```
+*Le script s'occupe de tout : nettoyage des vieilles versions, configuration des dépôts officiels et installation de Docker Compose V2.*
 
 ---
 
