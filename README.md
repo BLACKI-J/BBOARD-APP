@@ -1,112 +1,114 @@
-# 🏕️ BBOARD App (Colo-App)
+# 🏕️ BBOARD - Summer Camp Management System
 
-> **La solution moderne de gestion de colonies de vacances et centres aérés.**
-> *Planification, Transport, Fiches sanitaires, Emploi du temps - Tout en un.*
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
+[![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
+[![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=flat&logo=sqlite&logoColor=white)](https://sqlite.org/)
+[![Socket.io](https://img.shields.io/badge/socket.io-black?style=flat&logo=socket.io&logoColor=white)](https://socket.io/)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)
-![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white)
-![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=flat&logo=sqlite&logoColor=white)
-![Socket.io](https://img.shields.io/badge/socket.io-black?style=flat&logo=socket.io&logoColor=white)
-![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)
-
----
-
-## 📋 Présentation
-
-**BBOARD** est une application web conçue pour simplifier la vie des directeurs et animateurs. Elle centralise la gestion des participants, des transports (Bus/Vans) et du planning avec une synchronisation en temps réel.
-
-### ✨ Fonctionnalités
-*   **🚌 Plans de Transport** : Drag & drop visuel pour les bus et minibus.
-*   **📅 Planning Interactif** : Gestion des activités et des horaires.
-*   **📄 Fiches de Sortie** : Génération PDF/A4 automatique avec infos médicales.
-*   **� Temps Réel** : Communication via WebSockets (Socket.io).
-*   **� Persistance SQL** : Base de données SQLite structurée.
+> **The modern all-in-one solution for Summer Camp & Youth Center organization.**  
+> *Manage participants, transport logistics, schedules, and medical sheets in one seamless interface.*
 
 ---
 
-## 🛠️ Guide d'Installation Complet
+## 🌟 Key Features
 
-### 1️⃣ Installation Automatique (Recommandé)
+| Feature | Description |
+| :--- | :--- |
+| **🚌 Visual Transport** | Interactive SeatMap for Bus and Van layouts with real-time drag-and-drop. |
+| **🔄 Real-time Sync** | Instant data synchronization across all devices via WebSockets. |
+| **📅 Dynamic Planning** | Easily manage weekly schedules, activities, and locations. |
+| **📄 Automated Forms** | Generate professional Exit Sheets (A4) with health data and signatures. |
+| **👥 Centralized Directory** | Comprehensive database for children, staff, and medical alerts. |
+| **📦 Docker Ready** | One-command deployment for production environments. |
 
-Si vous êtes sur **Ubuntu** ou **Debian**, vous pouvez installer Docker et Docker Compose en une seule commande :
+---
+
+## � Quick Start (Ubuntu / Debian)
+
+The fastest way to get your camp running is using our automatic installation script.
 
 ```bash
-# Se placer dans le dossier du projet
+# 1. Clone the repository
+git clone https://github.com/BLACKI-J/BBOARD-APP.git
 cd BBOARD-APP
-# Lancer le script d'installation
+
+# 2. Run the automatic installer (installs Docker & Docker Compose)
 bash install_docker.sh
+
+# 3. Launch the application
+docker compose up -d --build
 ```
-*Le script s'occupe de tout : nettoyage des vieilles versions, configuration des dépôts officiels et installation de Docker Compose V2.*
+*Your application will be live at `http://localhost`.*
 
 ---
 
-### 2️⃣ Déploiement de l'Application (Docker)
+## 🛠️ Tech Stack & Architecture
 
-C'est la méthode la plus simple pour la production.
+- **Frontend**: Built with **React 18** and **Vite**. UI styling via **TailwindCSS** and standard CSS Modules. Drag-and-drop powered by `@dnd-kit`.
+- **Backend**: **Node.js** & **Express** server handling REST APIs and real-time events.
+- **Communication**: **Socket.io** for bi-directional, event-based communication.
+- **Database**: **SQLite** (relational) with an automatic JSON-to-SQL migration engine.
+- **Containers**: Multi-stage **Docker** builds (Nginx for frontend, Node/Debian for backend).
 
+---
+
+## 💻 Developer Setup (Manual)
+
+If you'd like to contribute or run the project outside of Docker:
+
+### Prerequisites
+- Node.js (v20+ recommended)
+- npm
+
+### Installation
+1. **Initialize Backend**:
+   ```bash
+   cd server
+   npm install
+   node index.js
+   ```
+2. **Initialize Frontend**:
+   ```bash
+   cd ..
+   npm install
+   npm run dev
+   ```
+3. **Run Tests**:
+   ```bash
+   npm run test
+   ```
+
+---
+
+## 🛰️ Deployment & Production
+
+For production servers, use the `docker-compose.yml` file. It handles:
+- **Service Isolation**: Separate containers for logic and UI.
+- **Auto-restart**: Ensures the server comes back up after crashes.
+- **Volume Persistence**: Your SQLite database is safely stored in a Docker volume.
+
+To update an existing installation:
 ```bash
-# Se placer dans le dossier du projet
-cd BBOARD-APP
-
-# Lancer la stack complète
-sudo docker compose up -d --build
-```
-*   **Frontend** : [http://localhost](http://localhost) (Port 80)
-*   **Backend** : Géré en arrière-plan (Port 3001)
-
----
-
-### 3️⃣ Développement Local (Sans Docker)
-
-Pour modifier le code et voir les changements en direct :
-
-1.  **Backend** :
-    ```bash
-    cd server
-    npm install
-    node index.js
-    ```
-2.  **Frontend** (dans un autre terminal) :
-    ```bash
-    npm install
-    npm run dev
-    ```
-    *Accès : http://localhost:5173*
-
----
-
-## 🛰️ Guide Git & GitHub
-
-### Initialiser votre identité
-```bash
-git config user.email "login@votre-email.com"
-git config user.name "VOTRE_NOM"
-```
-
-### Mettre à jour GitHub
-```bash
-# 1. Ajouter les fichiers modifiés
-git add .
-
-# 2. Créer un commit
-git commit -m "feat: ajout de nouvelles fonctionnalités"
-
-# 3. Envoyer vers GitHub
-git push origin main
-```
-
-> [!TIP]
-> Si vous utilisez un **Token (PAT)**, configurez-le ainsi :
-> `git remote set-url origin https://VOTRE_USERNAME:VOTRE_TOKEN@github.com/BLACKI-J/BBOARD-APP.git`
-
----
-
-## 🧪 Tests
-L'application inclut des tests unitaires (Vitest) pour garantir la qualité :
-```bash
-npm run test
+git pull origin main
+docker compose up -d --build
 ```
 
 ---
-**Développé avec ❤️ pour les colos.**
+
+## 🤝 Contributing
+
+We welcome contributions of all kinds!
+1. **Fork** the project.
+2. Create your **Feature Branch** (`git checkout -b feature/AmazingFeature`).
+3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`).
+4. **Push** to the branch (`git push origin feature/AmazingFeature`).
+5. Open a **Pull Request**.
+
+---
+
+## 📄 License
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+Developed with ❤️ by **BLACKI-J** for the camp management community.
