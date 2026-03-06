@@ -8,7 +8,8 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const dbPath = join(__dirname, 'database.sqlite');
+// Database path — prioritized by environment variable for Docker flexibility
+const dbPath = process.env.DATABASE_PATH || join(__dirname, 'data', 'database.sqlite');
 
 const app = express();
 const httpServer = createServer(app);

@@ -12,5 +12,7 @@ services:
     container_name: bboard-backend
     network_mode: host
     volumes:
-      - ./server/database.sqlite:/app/database.sqlite
+      - ./server/data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/database.sqlite
     restart: always
