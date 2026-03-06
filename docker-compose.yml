@@ -5,9 +5,7 @@ services:
     build: .
     container_name: bboard-frontend
     ports:
-      - "80:80"
-    sysctls:
-      - net.ipv4.ip_unprivileged_port_start=0
+      - "80:8080"
     restart: always
     depends_on:
       - server
@@ -17,8 +15,6 @@ services:
     container_name: bboard-backend
     ports:
       - "3001:3001"
-    sysctls:
-      - net.ipv4.ip_unprivileged_port_start=0
     volumes:
       - ./server/database.sqlite:/app/database.sqlite
     restart: always
