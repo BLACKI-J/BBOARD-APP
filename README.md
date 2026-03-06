@@ -25,7 +25,7 @@
 
 ---
 
-## � Quick Start (Ubuntu / Debian)
+## ⚡ Quick Start (Ubuntu / Debian)
 
 The fastest way to get your camp running is using our automatic installation script.
 
@@ -82,7 +82,7 @@ If you'd like to contribute or run the project outside of Docker:
 
 ---
 
-## � Dépannage (Troubleshooting)
+## 🔍 Dépannage (Troubleshooting)
 
 ### ❌ Erreur "permission denied" (Ubuntu 24.04)
 Si vous voyez l'erreur `open sysctl net.ipv4.ip_unprivileged_port_start file: permission denied` lors du lancement :
@@ -93,9 +93,22 @@ echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 ```
 *Note: Le script `install_docker.sh` inclut déjà ce correctif.*
 
+### 🛠️ Cas spécial : Proxmox LXC
+Si vous installez BBOARD dans un conteneur **LXC sur Proxmox** (ex: CT Ubuntu 24.04), le système de fichiers `/proc` est souvent en lecture seule (Read-only).
+
+Pour régler cela :
+1. **Sur l'Hôte Proxmox (pas dans le CT)** : Lancez la commande suivante :
+   ```bash
+   echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+   ```
+2. **Dans l'interface Proxmox (Web GUI)** :
+   - Allez sur votre Conteneur > **Options** > **Features**.
+   - Cochez la case **Nesting** (indispensable pour Docker dans LXC).
+3. **Redémarrez le conteneur**.
+
 ---
 
-## �🛰️ Deployment & Production
+## � Deployment & Production
 
 For production servers, use the `docker-compose.yml` file. It handles:
 - **Service Isolation**: Separate containers for logic and UI.
