@@ -104,13 +104,32 @@ async function initDb() {
     return db;
 }
 
-let db;
-initDb().then(database => {
-    db = database;
-    console.log('Database initialized');
+// Global Error Handlers
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+    process.exit(1);
 });
 
-// Participants API
+let db;
+async function startServer() {
+    try {
+        db = await initDb();
+        console.log('✅ Database initialized and synchronized');
+
+        const PORT = 3001;
+        httpServer.listen(PORT, '0.0.0.0', () => {
+            console.log(`🚀 Backend server running on http://0.0.0.0:${PORT}`);
+        });
+    } catch (err) {
+        console.error('❌ Failed to start server:', err);
+        process.exit(1);
+    }
+}
+
+startServer();
 app.get('/api/participants', async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM participants');
@@ -270,8 +289,4 @@ app.delete('/api/exit-sheets/:id', async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
-
-const PORT = 3001;
-httpServer.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+// Fin du fichier
