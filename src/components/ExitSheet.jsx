@@ -194,7 +194,7 @@ export default function ExitSheet({ participants, groups }) {
         if (filterGroup !== 'all') {
             list = list.filter(p => p.group === filterGroup);
         }
-        return list.sort((a, b) => a.lastName.localeCompare(b.lastName));
+        return list.sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
     };
 
     const saveExitSheet = async () => {
@@ -273,7 +273,9 @@ export default function ExitSheet({ participants, groups }) {
     const animators = participants.filter(p => p.role === 'animator' || p.role === 'direction');
 
     // Stats for Print
-    const selectedChildren = participants.filter(p => selectedIds.includes(p.id)).sort((a, b) => a.lastName.localeCompare(b.lastName));
+    const selectedChildren = participants
+        .filter(p => selectedIds.includes(p.id))
+        .sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
     const selectedAnimatorList = participants.filter(p => selectedAnimators.includes(p.id));
 
     return (
@@ -563,7 +565,7 @@ export default function ExitSheet({ participants, groups }) {
             )}
 
             {/* --- Print View (Exact Layout Replica) --- */}
-            <div className="print-only" style={{ display: 'none' }}>
+            <div className="print-view">
                 <PrintContent
                     date={date}
                     destination={destination}
@@ -577,13 +579,33 @@ export default function ExitSheet({ participants, groups }) {
             </div>
 
             <style>{`
+                /* Standard Screen View */
+                .print-view { display: none; }
+
                 @media print {
+                    /* Break through ALL container fixed heights & overflows */
+                    html, body, #root, .app-container, .main-content, .workspace-area, .exit-sheet-container { 
+                        height: auto !important; 
+                        overflow: visible !important; 
+                        position: static !important;
+                        display: block !important;
+                    }
+                    
+                    /* Hide everything else */
+                    .no-print, .content-header, .sidebar, .sidebar-overlay, .nav-drawer { 
+                        display: none !important; 
+                    }
+                    
+                    /* Show exactly what we want */
+                    .print-view { 
+                        display: block !important; 
+                        width: 100% !important; 
+                        margin: 0 !important;
+                        padding: 0 !important;
+                    }
+
                     @page { size: A4 portrait; margin: 1cm; }
-                    .no-print, .content-header, .sidebar, .sidebar-overlay { display: none !important; }
-                    .print-only { display: block !important; position: static !important; width: 100% !important; background: white !important; }
                     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    body { background: white !important; font-family: Arial, sans-serif !important; }
-                    .exit-sheet-container { background: white !important; height: auto !important; width: 100% !important; display: block !important; color: black !important; }
                 }
             `}</style>
         </div>
