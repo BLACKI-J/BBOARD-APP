@@ -304,19 +304,18 @@ export default function Directory({ participants = [], setParticipants, groups =
                                 groups={safeGroups}
                             />
                         ) : (
-                            <div style={{ padding: '2rem', display: 'flex', flexWrap: 'wrap', gap: '1.5rem', alignContent: 'start' }}>
+                            <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', alignContent: 'start' }}>
                                 {sortedParticipants.map(p => (
-                                    <div key={p.id} style={{ flex: '0 0 300px' }}>
-                                        <ParticipantCard
-                                            participant={p}
-                                            isSelected={selectedParticipants.includes(p.id)}
-                                            toggleSelection={toggleSelection}
-                                            handleViewDetails={handleViewDetails}
-                                            handleEdit={handleEdit}
-                                            handleDelete={handleDelete}
-                                            groups={safeGroups}
-                                        />
-                                    </div>
+                                    <ParticipantCard
+                                        key={p.id}
+                                        participant={p}
+                                        isSelected={selectedParticipants.includes(p.id)}
+                                        toggleSelection={toggleSelection}
+                                        handleViewDetails={handleViewDetails}
+                                        handleEdit={handleEdit}
+                                        handleDelete={handleDelete}
+                                        groups={safeGroups}
+                                    />
                                 ))}
                             </div>
                         )}
@@ -385,12 +384,17 @@ export default function Directory({ participants = [], setParticipants, groups =
                 }
                 .view-toggle.active { background: #f1f5f9; color: var(--primary-color); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
 
-                /* Data Table */
-                .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+                /* Data Table — scrollable on mobile */
+                .data-table-wrapper {
+                    width: 100%;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                }
+                .data-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 600px; }
                 .data-table thead th {
-                    text-align: left; padding: 1rem; color: #64748b; font-weight: 600;
+                    text-align: left; padding: 0.875rem 1rem; color: #64748b; font-weight: 600;
                     border-bottom: 1px solid var(--border-color); cursor: pointer; user-select: none;
-                    position: sticky; top: 0; background: white; z-index: 10;
+                    position: sticky; top: 0; background: white; z-index: 10; white-space: nowrap;
                 }
                 .data-table thead th:hover { color: var(--primary-color); background: #f8fafc; }
                 .data-table tbody tr { transition: background 0.1s; }
@@ -571,6 +575,34 @@ export default function Directory({ participants = [], setParticipants, groups =
                     border: 6px solid white; border-radius: 50%;
                     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
                     margin-bottom: 1rem; background: white;
+                }
+
+                /* ── MOBILE RESPONSIVE ── */
+                @media (max-width: 640px) {
+                    .directory-header, .directory-filters { padding-left: 1rem !important; padding-right: 1rem !important; }
+                    .modal-content { width: 95vw !important; }
+                    .modal-body { padding: 1rem !important; }
+                    .modal-footer { padding: 1rem !important; }
+                    .form-row-aligned {
+                        grid-template-columns: 1fr !important;
+                        gap: 0.5rem !important;
+                    }
+                    .form-row-aligned label { text-align: left !important; }
+                    /* Hide less important columns in table on mobile */
+                    .col-hide-mobile { display: none !important; }
+                }
+
+                /* Drawer full-screen on mobile */
+                @media (max-width: 768px) {
+                    .details-drawer {
+                        width: 100% !important;
+                        border-radius: 20px 20px 0 0 !important;
+                        top: auto !important;
+                        bottom: 0 !important;
+                        right: 0 !important;
+                        height: 85vh !important;
+                        max-height: 85vh !important;
+                    }
                 }
             `}</style>
         </div>

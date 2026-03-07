@@ -213,7 +213,12 @@ export default function Sidebar({ participants, setParticipants, groups }) {
 
     return (
         <aside className="sidebar glass-surface animate-slide-in">
-            <div className="p-4" style={{ padding: '1.5rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Mobile handle */}
+            <div className="sidebar-handle no-print" style={{
+                width: '40px', height: '4px', background: '#cbd5e1',
+                borderRadius: '2px', margin: '10px auto 4px', flexShrink: 0
+            }} />
+            <div className="p-4" style={{ padding: '1.25rem 1.5rem 1rem', borderBottom: '1px solid var(--border-color)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                     <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem' }}>
                         <Users className="text-primary" style={{ color: 'var(--primary-color)' }} size={24} />

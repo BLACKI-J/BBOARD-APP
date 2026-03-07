@@ -221,7 +221,7 @@ export default function App() {
             />
 
             {/* Sidebar for Participants List - only visible in seatmap */}
-            <div className={`sidebar ${isSidebarOpen ? 'open' : ''} ${activeTab !== 'seatmap' ? 'hidden-desktop' : ''}`}>
+            <div className={`sidebar-wrapper ${isSidebarOpen ? 'open' : ''} ${activeTab !== 'seatmap' ? 'hidden-desktop' : ''}`}>
                 {activeTab === 'seatmap' && <Sidebar participants={participants} setParticipants={setParticipants} groups={groups} />}
             </div>
 
