@@ -21,7 +21,7 @@ const PrintContent = ({ date, destination, startTime, endTime, selectedChildren,
             {/* Row 1 */}
             <div style={{ display: 'flex', borderBottom: '1px solid #000' }}>
                 <div style={{ flex: 1, padding: '8px', borderRight: '1px solid #000' }}>
-                    <strong>Date de la sortie :</strong> {new Date(date).toLocaleDateString('fr-FR')}
+                    <strong>Date de la sortie :</strong> {date ? new Date(date).toLocaleDateString('fr-FR') : 'Non précisée'}
                 </div>
                 <div style={{ flex: 1, padding: '8px' }}>
                     <strong>Destination (adresse) :</strong> {destination}
@@ -223,11 +223,10 @@ export default function ExitSheet({ participants, groups }) {
             });
             if (res.ok) {
                 await fetchHistory();
-                if (!silent) alert('Fiche de sortie enregistrée avec succès !');
+                console.log('Fiche enregistrée');
             }
         } catch (err) {
             console.error('Error saving sheet:', err);
-            if (!silent) alert('Erreur lors de l\'enregistrement de la fiche.');
         }
     };
 
@@ -587,34 +586,38 @@ export default function ExitSheet({ participants, groups }) {
                 .print-view { display: none; }
 
                 @media print {
-                    /* Break through ALL possible container fixed heights & overflows */
+                    /* Hide everything by default */
+                    body * { 
+                        visibility: hidden !important; 
+                        overflow: visible !important;
+                    }
+                    
+                    /* Show only the print view and its children */
+                    .print-view, .print-view * { 
+                        visibility: visible !important; 
+                    }
+
+                    .print-view {
+                        position: absolute !important;
+                        left: 0 !important;
+                        top: 0 !important;
+                        width: 100% !important;
+                        display: block !important;
+                        background: white !important;
+                        padding: 1cm !important;
+                    }
+
+                    /* Reset containers for print flow */
                     html, body, #root, .app-container, .main-content, .workspace-area, .exit-sheet-container, .animate-fade-in { 
                         height: auto !important; 
                         min-height: auto !important;
                         max-height: none !important;
                         overflow: visible !important; 
-                        overflow-y: visible !important;
-                        position: static !important;
                         display: block !important;
                         background: white !important;
                         padding: 0 !important;
                         margin: 0 !important;
-                        transform: none !important; /* Killer for print layouts */
-                    }
-                    
-                    /* Hide UI elements */
-                    .no-print, .content-header, .sidebar, .sidebar-overlay, .nav-drawer, .sidebar { 
-                        display: none !important; 
-                    }
-                    
-                    /* Show exactly what we want */
-                    .print-view { 
-                        display: block !important; 
-                        visibility: visible !important;
-                        width: 100% !important; 
-                        margin: 0 !important;
-                        padding: 1cm !important;
-                        background: white !important;
+                        transform: none !important; 
                     }
 
                     @page { size: A4 portrait; margin: 0; }
