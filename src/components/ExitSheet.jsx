@@ -197,7 +197,7 @@ export default function ExitSheet({ participants, groups }) {
         return list.sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
     };
 
-    const saveExitSheet = async () => {
+    const saveExitSheet = async (silent = false) => {
         const sheetId = (typeof crypto !== 'undefined' && crypto.randomUUID)
             ? crypto.randomUUID()
             : `sheet_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -223,22 +223,26 @@ export default function ExitSheet({ participants, groups }) {
             });
             if (res.ok) {
                 await fetchHistory();
-                alert('Fiche de sortie enregistrée avec succès !');
+                if (!silent) alert('Fiche de sortie enregistrée avec succès !');
             }
         } catch (err) {
             console.error('Error saving sheet:', err);
-            alert('Erreur lors de l\'enregistrement de la fiche.');
+            if (!silent) alert('Erreur lors de l\'enregistrement de la fiche.');
         }
     };
 
     const handlePrint = async () => {
-        // Save first to ensure it's recorded even if print fails/blocks
-        await saveExitSheet();
+        // Save silently in background
+        await saveExitSheet(true);
 
         const originalTitle = document.title;
-        document.title = fileName || 'Fiche_Sortie';
-        window.print();
-        document.title = originalTitle;
+        document.title = (fileName || 'Fiche_Sortie').replace(/ /g, '_');
+
+        // Give React/Browser a tiny moment to stabilize
+        setTimeout(() => {
+            window.print();
+            document.title = originalTitle;
+        }, 500);
     };
 
     const deleteSheet = async (e, id) => {
@@ -583,28 +587,37 @@ export default function ExitSheet({ participants, groups }) {
                 .print-view { display: none; }
 
                 @media print {
-                    /* Break through ALL container fixed heights & overflows */
-                    html, body, #root, .app-container, .main-content, .workspace-area, .exit-sheet-container { 
+                    /* Break through ALL possible container fixed heights & overflows */
+                    html, body, #root, .app-container, .main-content, .workspace-area, .exit-sheet-container, .animate-fade-in { 
                         height: auto !important; 
+                        min-height: auto !important;
+                        max-height: none !important;
                         overflow: visible !important; 
+                        overflow-y: visible !important;
                         position: static !important;
                         display: block !important;
+                        background: white !important;
+                        padding: 0 !important;
+                        margin: 0 !important;
+                        transform: none !important; /* Killer for print layouts */
                     }
                     
-                    /* Hide everything else */
-                    .no-print, .content-header, .sidebar, .sidebar-overlay, .nav-drawer { 
+                    /* Hide UI elements */
+                    .no-print, .content-header, .sidebar, .sidebar-overlay, .nav-drawer, .sidebar { 
                         display: none !important; 
                     }
                     
                     /* Show exactly what we want */
                     .print-view { 
                         display: block !important; 
+                        visibility: visible !important;
                         width: 100% !important; 
                         margin: 0 !important;
-                        padding: 0 !important;
+                        padding: 1cm !important;
+                        background: white !important;
                     }
 
-                    @page { size: A4 portrait; margin: 1cm; }
+                    @page { size: A4 portrait; margin: 0; }
                     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
             `}</style>
