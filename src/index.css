@@ -170,14 +170,24 @@ button {
 }
 
 /* Layout Parts */
-.sidebar {
+/* sidebar-wrapper: positioning shell (visible on desktop, bottom-drawer on mobile) */
+.sidebar-wrapper {
   width: 320px;
+  height: 100%;
+  flex-shrink: 0;
+  z-index: 10;
+  overflow: hidden;
+}
+
+/* sidebar (aside): inner layout */
+.sidebar {
+  width: 100%;
   height: 100%;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border-color);
   background: var(--surface-color);
-  z-index: 10;
+  overflow: hidden;
 }
 
 .main-content {
@@ -282,22 +292,33 @@ button {
     flex-direction: column;
   }
 
-  .sidebar {
+  /* ── Sidebar wrapper as bottom drawer on mobile ── */
+  .sidebar-wrapper {
     position: fixed;
-    top: 0;
+    bottom: 0;
     left: 0;
-    height: 100%;
-    width: 80%;
-    max-width: 320px;
-    transform: translateX(-100%);
-    transition: transform var(--transition-normal);
+    right: 0;
+    width: 100% !important;
+    height: 78vh;
+    transform: translateY(100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 50;
-    background: var(--surface-color);
-    box-shadow: var(--shadow-lg);
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
   }
 
-  .sidebar.open {
-    transform: translateX(0);
+  .sidebar-wrapper.open {
+    transform: translateY(0);
+  }
+
+  /* The aside fills the wrapper completely */
+  .sidebar-wrapper .sidebar {
+    width: 100%;
+    height: 100%;
+    border-right: none;
+    border-radius: 20px 20px 0 0;
+    overflow: hidden;
   }
 
   .sidebar-overlay {
@@ -307,11 +328,12 @@ button {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(2px);
     z-index: 40;
     opacity: 0;
     pointer-events: none;
-    transition: opacity var(--transition-normal);
+    transition: opacity 0.3s;
   }
 
   .sidebar-overlay.open {
@@ -468,113 +490,149 @@ button {
 
 /* Seat Styles */
 .seat {
-  width: 60px;
-  height: 60px;
-  border-radius: 0.75rem;
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   position: relative;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  border: 2px solid transparent;
+  gap: 2px;
 }
 
 .seat.empty {
-  background-color: #f1f5f9;
-  border-color: #e2e8f0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  border: 2px dashed #cbd5e1;
   color: #94a3b8;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.seat.empty:hover {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+  transform: scale(1.05);
 }
 
 .seat.occupied {
   color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 12px -3px rgba(0, 0, 0, 0.15);
+  transform: translateY(-3px);
+  cursor: pointer;
+}
+
+.seat.occupied:hover {
+  transform: translateY(-5px) scale(1.05);
+  filter: brightness(1.08);
 }
 
 .seat.driver {
   border-radius: 50%;
-  background-color: #e2e8f0;
-  color: #64748b;
-  width: 50px;
-  height: 50px;
-  font-size: 0.7rem;
-  font-weight: bold;
+  background: radial-gradient(circle at 35% 35%, #64748b, #334155);
+  border: 2.5px solid #475569;
+  color: white;
+  width: 56px;
+  height: 56px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(51, 65, 85, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
 .seat.drag-over {
-  transform: scale(1.1);
-  border-color: var(--primary-color);
-  background-color: var(--primary-light);
+  transform: scale(1.12) translateY(-3px);
+  border-color: #6366f1 !important;
+  border-style: solid !important;
+  background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
+  box-shadow: 0 0 0 3px #6366f140 !important;
 }
 
 .seat-label {
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
   text-align: center;
   z-index: 2;
   line-height: 1.2;
-  padding: 0 4px;
+  padding: 0 2px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 100%;
+  max-width: 56px;
 }
 
 .seat-sublabel {
-  font-size: 0.65rem;
-  opacity: 0.7;
+  font-size: 0.6rem;
+  opacity: 0.75;
+  z-index: 2;
 }
 
 .seat-back {
   position: absolute;
   top: 0;
   width: 100%;
-  height: 12px;
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 0.75rem 0.75rem 0 0;
+  height: 14px;
+  background: rgba(0, 0, 0, 0.18);
+  border-radius: 12px 12px 0 0;
 }
 
-.trunk-area {
-  margin-top: 2rem;
-  height: 60px;
-  background: #f8fafc;
-  border-radius: 0.75rem;
-  border: 2px dashed #cbd5e1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #94a3b8;
-  font-size: 0.85rem;
-  font-weight: 500;
-}
 
-/* Responsive Scaling for Vehicles */
+/* ── SeatMap Responsive ─────────────────────────────────────── */
+
+
 @media (max-width: 768px) {
+
+  /* Swipe hint hidden when tabs are shown */
+  .swipe-hint {
+    display: none !important;
+  }
+
+  /* Van tabs bar — shown only on mobile */
+  .van-tabs {
+    display: flex !important;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem 0.5rem;
+    background: white;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  /* Vehicle area: vertical stack, no horizontal scroll */
   .vehicle-area {
-    padding: 1rem;
-    gap: 1.5rem;
-    justify-content: flex-start;
-    overflow-x: auto;
-    flex-wrap: nowrap;
-    -webkit-overflow-scrolling: touch;
-    scroll-snap-type: x mandatory;
-    margin: 0 -0.5rem;
-    border-radius: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-x: hidden !important;
+    overflow-y: visible !important;
+    padding: 1rem !important;
+    gap: 0 !important;
+    scroll-snap-type: none !important;
+    align-items: center !important;
+    flex-wrap: nowrap !important;
   }
 
-  .vehicle-wrapper {
-    flex: 0 0 auto;
-    scroll-snap-align: center;
-    transform: scale(0.9);
-    transform-origin: center top;
+  /* Hide inactive van */
+  .van-tab-hidden {
+    display: none !important;
   }
 
+  /* Active van card: fill width, no scale */
+  .van-tab-item {
+    width: 100% !important;
+    max-width: 360px !important;
+    flex: none !important;
+    transform: none !important;
+    margin-bottom: 0 !important;
+    scroll-snap-align: none !important;
+  }
+
+  /* Controls */
   .seat-map-controls {
     flex-direction: column;
     align-items: stretch;
     padding: 0.75rem;
+    gap: 0.625rem;
+  }
+
+  .seat-map-controls>div {
+    width: 100%;
+    flex-wrap: wrap;
   }
 
   .mode-switcher {
@@ -587,15 +645,37 @@ button {
     font-size: 0.85rem;
     padding: 0.5rem;
   }
+
+  .seat-map-controls>div:last-child {
+    justify-content: center !important;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
 }
 
 @media (max-width: 480px) {
+
+  .van-tab-item,
   .vehicle-wrapper {
-    transform: scale(0.8);
+    width: 100% !important;
+    transform: none !important;
+    margin-bottom: 0 !important;
   }
 
   .van-layout,
   .bus-layout {
-    width: 310px !important;
+    width: 100% !important;
+    max-width: 320px !important;
+  }
+
+  .seat {
+    width: 56px !important;
+    height: 56px !important;
+  }
+
+  .seat-label {
+    font-size: 0.65rem !important;
   }
 }

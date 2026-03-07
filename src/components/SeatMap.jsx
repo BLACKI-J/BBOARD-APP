@@ -19,9 +19,10 @@ export default function SeatMap({ participants, placements, setPlacements, saved
         van3: 'Minibus 3',
         van4: 'Minibus 4'
     });
-    const [editingVanName, setEditingVanName] = useState(null); // 'van1' or 'van2' or null
+    const [editingVanName, setEditingVanName] = useState(null);
     const [tempVanName, setTempVanName] = useState('');
     const [vanNotes, setVanNotes] = useState({});
+    const [activeVan, setActiveVan] = useState(1); // Mobile van tab (1-based)
 
     // View management for travel mode
     const [isEditingViewName, setIsEditingViewName] = useState(false);
@@ -474,6 +475,42 @@ export default function SeatMap({ participants, placements, setPlacements, saved
                 }
             `}</style>
 
+            {/* Swipe hint — mobile only */}
+            <div className="swipe-hint">
+                ← Glisser pour voir les véhicules →
+            </div>
+
+            {/* ── Mobile Van Tabs (only in daily mode) ── */}
+            {mode === 'daily' && (
+                <div className="van-tabs no-print">
+                    {Array.from({ length: vanCount }).map((_, i) => {
+                        const vanKey = `van${i + 1}`;
+                        const occ = Object.keys(placements).filter(k => k.startsWith(`${vanKey}-`)).length;
+                        const isActive = activeVan === i + 1;
+                        return (
+                            <button
+                                key={vanKey}
+                                onClick={() => setActiveVan(i + 1)}
+                                style={{
+                                    flex: 1, padding: '0.625rem 0.5rem',
+                                    background: isActive ? '#6366f1' : 'white',
+                                    color: isActive ? 'white' : '#64748b',
+                                    border: 'none', borderRadius: '10px',
+                                    fontWeight: isActive ? '700' : '500',
+                                    fontSize: '0.82rem', cursor: 'pointer',
+                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                                    transition: 'all 0.2s',
+                                    boxShadow: isActive ? '0 2px 8px rgba(99,102,241,0.3)' : 'none'
+                                }}
+                            >
+                                <span>{vanNames[vanKey]}</span>
+                                <span style={{ fontSize: '0.7rem', opacity: 0.8 }}>{occ}/8</span>
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+
             {/* Vehicle Area Container */}
             <div className="vehicle-area">
                 {mode === 'travel' ? (
@@ -493,7 +530,7 @@ export default function SeatMap({ participants, placements, setPlacements, saved
                         {Array.from({ length: vanCount }).map((_, i) => {
                             const vanKey = `van${i + 1}`;
                             return (
-                                <div key={vanKey} className="vehicle-wrapper">
+                                <div key={vanKey} className={`vehicle-wrapper van-tab-item van-tab-${i + 1} ${activeVan !== i + 1 ? 'van-tab-hidden' : ''}`}>
                                     <VanLayout
                                         vanId={i + 1}
                                         title={vanNames[vanKey]}
@@ -522,3 +559,4 @@ export default function SeatMap({ participants, placements, setPlacements, saved
         </div>
     );
 }
+
