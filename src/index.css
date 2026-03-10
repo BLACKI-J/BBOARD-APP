@@ -575,6 +575,11 @@ button {
 }
 
 
+/* Hide mobile van tabs on desktop */
+.van-tabs {
+  display: none;
+}
+
 /* ── SeatMap Responsive ─────────────────────────────────────── */
 
 
@@ -626,11 +631,46 @@ button {
   .seat-map-controls {
     flex-direction: column;
     align-items: stretch;
-    padding: 0.75rem;
-    gap: 0.625rem;
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
   }
 
-  .seat-map-controls>div {
+  .mobile-controls-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: var(--bg-secondary);
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    width: 100%;
+    color: var(--text-main);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .controls-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.625rem;
+    padding: 0.75rem;
+    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
+    max-height: 500px;
+    opacity: 1;
+  }
+
+  .controls-collapsed .controls-content {
+    max-height: 0;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    pointer-events: none;
+  }
+
+  .seat-map-controls>div.controls-content {
     width: 100%;
     flex-wrap: wrap;
   }
@@ -677,5 +717,45 @@ button {
 
   .seat-label {
     font-size: 0.65rem !important;
+  }
+}
+
+/* --- PRINT / EXPORT PDF STYLES --- */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Masquer tous les éléments UI inutiles à l'impression */
+  .content-header,
+  .sidebar-wrapper,
+  .nav-drawer,
+  .mobile-only,
+  .dh-actions,
+  button,
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Étendre la zone de contenu */
+  .main-content,
+  .workspace-area,
+  .sc-inner,
+  .directory-container {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    background: white !important;
+  }
+
+  /* Éviter les sauts de page cassés dans les listes et tableaux */
+  .sc-activity-card,
+  .directory-card,
+  tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
   }
 }

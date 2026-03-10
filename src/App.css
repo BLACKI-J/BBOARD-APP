@@ -33,6 +33,10 @@
     }
 }
 
+.mobile-only {
+    display: none !important;
+}
+
 @media (max-width: 768px) {
     .desktop-only {
         display: none !important;

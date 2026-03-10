@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Check, X, AlertCircle, Calendar, Bus, Truck, Printer, Clock, Sun, Moon, Minus } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, AlertCircle, Calendar, Bus, Truck, Printer, Clock, Sun, Moon, Minus, Settings2 } from 'lucide-react';
 import BusLayout from './seatmap/BusLayout';
 import VanLayout from './seatmap/VanLayout';
 
@@ -196,6 +196,7 @@ export default function SeatMap({ participants, placements, setPlacements, saved
         setNewViewName(currentViewName);
         setIsEditingViewName(true);
     };
+    const [isControlsOpen, setIsControlsOpen] = useState(false);
 
     const saveRenaming = () => {
         if (newViewName && newViewName !== currentViewName) {
@@ -215,152 +216,164 @@ export default function SeatMap({ participants, placements, setPlacements, saved
     return (
         <div className="seat-map-container">
             {/* Top Bar: Mode Switcher & Controls */}
-            <div className="seat-map-controls no-print">
+            <div className={`seat-map-controls no-print ${!isControlsOpen ? 'controls-collapsed' : ''}`}>
 
-                {/* Mode Selector */}
-                <div className="mode-switcher" style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '4px', borderRadius: '12px' }}>
-                    <button
-                        className={`mode-btn ${mode === 'daily' ? 'active' : ''}`}
-                        onClick={() => setMode('daily')}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px' }}
-                    >
-                        <Truck size={18} />
-                        <span>Activités</span>
-                    </button>
-                    <button
-                        className={`mode-btn ${mode === 'travel' ? 'active' : ''}`}
-                        onClick={() => setMode('travel')}
-                        style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px' }}
-                    >
-                        <Bus size={18} />
-                        <span>Voyage</span>
-                    </button>
-                </div>
+                {/* Mobile Toggle Button (Langette) */}
+                <button
+                    className="mobile-controls-toggle mobile-only"
+                    onClick={() => setIsControlsOpen(!isControlsOpen)}
+                >
+                    <Settings2 size={16} />
+                    <span>{isControlsOpen ? 'Masquer les options' : 'Afficher les options'}</span>
+                </button>
 
-                {/* Contextual Controls */}
-                {mode === 'daily' ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                        {/* Date Picker */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
-                            <Calendar size={18} color="var(--primary-color)" />
-                            <input
-                                type="date"
-                                className="input-field"
-                                value={selectedDate}
-                                onChange={(e) => setSelectedDate(e.target.value)}
-                                style={{ padding: '0', border: 'none', background: 'transparent', width: 'auto', fontWeight: 'bold' }}
-                            />
-                        </div>
+                <div className="controls-content">
 
-                        {/* Morning / Afternoon Toggle */}
-                        <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '8px', padding: '4px' }}>
-                            <button
-                                onClick={() => setTimeOfDay('morning')}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                    padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                                    background: timeOfDay === 'morning' ? 'white' : 'transparent',
-                                    color: timeOfDay === 'morning' ? 'var(--primary-color)' : '#64748b',
-                                    fontWeight: timeOfDay === 'morning' ? 'bold' : 'normal',
-                                    boxShadow: timeOfDay === 'morning' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                <Sun size={16} /> Matin
-                            </button>
-                            <button
-                                onClick={() => setTimeOfDay('afternoon')}
-                                style={{
-                                    display: 'flex', alignItems: 'center', gap: '6px',
-                                    padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
-                                    background: timeOfDay === 'afternoon' ? 'white' : 'transparent',
-                                    color: timeOfDay === 'afternoon' ? '#f97316' : '#64748b',
-                                    fontWeight: timeOfDay === 'afternoon' ? 'bold' : 'normal',
-                                    boxShadow: timeOfDay === 'afternoon' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                                    transition: 'all 0.2s'
-                                }}
-                            >
-                                <Moon size={16} /> Après-midi
-                            </button>
-                        </div>
-
-                        {/* Van Count Controls */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '8px' }}>
-                            <button
-                                onClick={removeVan}
-                                disabled={vanCount <= 1}
-                                className="btn-icon"
-                                style={{ opacity: vanCount <= 1 ? 0.3 : 1 }}
-                            >
-                                <Minus size={16} />
-                            </button>
-                            <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>{vanCount} Vans</span>
-                            <button
-                                onClick={addVan}
-                                disabled={vanCount >= 4}
-                                className="btn-icon"
-                                style={{ opacity: vanCount >= 4 ? 0.3 : 1 }}
-                            >
-                                <Plus size={16} />
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    /* Travel View Management */
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>Vue :</span>
-
-                        {isEditingViewName ? (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <input
-                                    type="text"
-                                    className="input-field"
-                                    value={newViewName}
-                                    onChange={(e) => setNewViewName(e.target.value)}
-                                    style={{ padding: '0.25rem 0.5rem', width: '150px' }}
-                                    autoFocus
-                                />
-                                <button className="btn-icon" onClick={saveRenaming} style={{ color: 'var(--primary-color)' }}><Check size={18} /></button>
-                                <button className="btn-icon" onClick={() => setIsEditingViewName(false)}><X size={18} /></button>
-                            </div>
-                        ) : (
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <select
-                                    className="input-field"
-                                    value={currentViewName}
-                                    onChange={(e) => setCurrentViewName(e.target.value)}
-                                    style={{ padding: '0.5rem', width: 'auto', minWidth: '150px', fontWeight: '600', background: 'var(--bg-secondary)', border: 'none' }}
-                                >
-                                    {Object.keys(savedViews).filter(k => !k.startsWith('Date:')).map(name => (
-                                        <option key={name} value={name}>{name}</option>
-                                    ))}
-                                    {!Object.keys(savedViews).filter(k => !k.startsWith('Date:')).includes(currentViewName) && currentViewName.startsWith('Date:') === false && (
-                                        <option value={currentViewName}>{currentViewName}</option>
-                                    )}
-                                </select>
-                                <button className="btn-icon" onClick={startRenaming} title="Renommer"><Edit2 size={16} /></button>
-                                <button className="btn-icon" onClick={deleteView} title="Supprimer" style={{ color: 'var(--danger-color)' }}><Trash2 size={16} /></button>
-                            </div>
-                        )}
-
-                        <button className="btn btn-primary" onClick={createNewView} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
-                            <Plus size={16} /> Nouvelle Vue
+                    {/* Mode Selector */}
+                    <div className="mode-switcher" style={{ background: 'var(--bg-main)', border: '1px solid var(--border-color)', padding: '4px', borderRadius: '12px' }}>
+                        <button
+                            className={`mode-btn ${mode === 'daily' ? 'active' : ''}`}
+                            onClick={() => setMode('daily')}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px' }}
+                        >
+                            <Truck size={18} />
+                            <span>Activités</span>
+                        </button>
+                        <button
+                            className={`mode-btn ${mode === 'travel' ? 'active' : ''}`}
+                            onClick={() => setMode('travel')}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 16px', borderRadius: '8px' }}
+                        >
+                            <Bus size={18} />
+                            <span>Voyage</span>
                         </button>
                     </div>
-                )}
 
-                {/* Print Button */}
-                <div style={{ marginLeft: 'auto' }}>
-                    <button
-                        className="btn btn-outline"
-                        onClick={handlePrint}
-                        title="Imprimer le plan"
-                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
-                    >
-                        <Printer size={18} /> <span className="hide-mobile">Imprimer</span>
-                    </button>
-                </div>
-            </div>
+                    {/* Contextual Controls */}
+                    {mode === 'daily' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            {/* Date Picker */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'white', padding: '0.5rem 1rem', borderRadius: '12px', border: '1px solid var(--border-color)', boxShadow: 'var(--shadow-sm)' }}>
+                                <Calendar size={18} color="var(--primary-color)" />
+                                <input
+                                    type="date"
+                                    className="input-field"
+                                    value={selectedDate}
+                                    onChange={(e) => setSelectedDate(e.target.value)}
+                                    style={{ padding: '0', border: 'none', background: 'transparent', width: 'auto', fontWeight: 'bold' }}
+                                />
+                            </div>
+
+                            {/* Morning / Afternoon Toggle */}
+                            <div style={{ display: 'flex', background: '#e2e8f0', borderRadius: '8px', padding: '4px' }}>
+                                <button
+                                    onClick={() => setTimeOfDay('morning')}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                                        background: timeOfDay === 'morning' ? 'white' : 'transparent',
+                                        color: timeOfDay === 'morning' ? 'var(--primary-color)' : '#64748b',
+                                        fontWeight: timeOfDay === 'morning' ? 'bold' : 'normal',
+                                        boxShadow: timeOfDay === 'morning' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Sun size={16} /> Matin
+                                </button>
+                                <button
+                                    onClick={() => setTimeOfDay('afternoon')}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', gap: '6px',
+                                        padding: '6px 12px', borderRadius: '6px', border: 'none', cursor: 'pointer',
+                                        background: timeOfDay === 'afternoon' ? 'white' : 'transparent',
+                                        color: timeOfDay === 'afternoon' ? '#f97316' : '#64748b',
+                                        fontWeight: timeOfDay === 'afternoon' ? 'bold' : 'normal',
+                                        boxShadow: timeOfDay === 'afternoon' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                                        transition: 'all 0.2s'
+                                    }}
+                                >
+                                    <Moon size={16} /> Après-midi
+                                </button>
+                            </div>
+
+                            {/* Van Count Controls */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: '#f1f5f9', padding: '0.25rem 0.5rem', borderRadius: '8px' }}>
+                                <button
+                                    onClick={removeVan}
+                                    disabled={vanCount <= 1}
+                                    className="btn-icon"
+                                    style={{ opacity: vanCount <= 1 ? 0.3 : 1 }}
+                                >
+                                    <Minus size={16} />
+                                </button>
+                                <span style={{ fontWeight: 'bold', fontSize: '0.9rem', color: '#475569' }}>{vanCount} Vans</span>
+                                <button
+                                    onClick={addVan}
+                                    disabled={vanCount >= 4}
+                                    className="btn-icon"
+                                    style={{ opacity: vanCount >= 4 ? 0.3 : 1 }}
+                                >
+                                    <Plus size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Travel View Management */
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                            <span style={{ fontWeight: '500', color: 'var(--text-muted)' }}>Vue :</span>
+
+                            {isEditingViewName ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <input
+                                        type="text"
+                                        className="input-field"
+                                        value={newViewName}
+                                        onChange={(e) => setNewViewName(e.target.value)}
+                                        style={{ padding: '0.25rem 0.5rem', width: '150px' }}
+                                        autoFocus
+                                    />
+                                    <button className="btn-icon" onClick={saveRenaming} style={{ color: 'var(--primary-color)' }}><Check size={18} /></button>
+                                    <button className="btn-icon" onClick={() => setIsEditingViewName(false)}><X size={18} /></button>
+                                </div>
+                            ) : (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <select
+                                        className="input-field"
+                                        value={currentViewName}
+                                        onChange={(e) => setCurrentViewName(e.target.value)}
+                                        style={{ padding: '0.5rem', width: 'auto', minWidth: '150px', fontWeight: '600', background: 'var(--bg-secondary)', border: 'none' }}
+                                    >
+                                        {Object.keys(savedViews).filter(k => !k.startsWith('Date:')).map(name => (
+                                            <option key={name} value={name}>{name}</option>
+                                        ))}
+                                        {!Object.keys(savedViews).filter(k => !k.startsWith('Date:')).includes(currentViewName) && currentViewName.startsWith('Date:') === false && (
+                                            <option value={currentViewName}>{currentViewName}</option>
+                                        )}
+                                    </select>
+                                    <button className="btn-icon" onClick={startRenaming} title="Renommer"><Edit2 size={16} /></button>
+                                    <button className="btn-icon" onClick={deleteView} title="Supprimer" style={{ color: 'var(--danger-color)' }}><Trash2 size={16} /></button>
+                                </div>
+                            )}
+
+                            <button className="btn btn-primary" onClick={createNewView} style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+                                <Plus size={16} /> Nouvelle Vue
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Print Button */}
+                    <div style={{ marginLeft: 'auto' }}>
+                        <button
+                            className="btn btn-outline"
+                            onClick={handlePrint}
+                            title="Imprimer le plan"
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                            <Printer size={18} /> <span className="hide-mobile">Imprimer</span>
+                        </button>
+                    </div>
+                </div> {/* End of controls-content */}
+            </div> {/* End of seat-map-controls */}
 
             {/* Print Header (Visible only when printing) */}
             <div className="print-header" style={{ display: 'none', marginBottom: '2rem', textAlign: 'center' }}>
@@ -475,10 +488,6 @@ export default function SeatMap({ participants, placements, setPlacements, saved
                 }
             `}</style>
 
-            {/* Swipe hint — mobile only */}
-            <div className="swipe-hint">
-                ← Glisser pour voir les véhicules →
-            </div>
 
             {/* ── Mobile Van Tabs (only in daily mode) ── */}
             {mode === 'daily' && (

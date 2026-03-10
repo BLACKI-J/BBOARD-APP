@@ -2,9 +2,12 @@ import React, { useState, useMemo } from 'react';
 import {
     ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin,
     Users, X, Trash2, Edit2, Repeat, ArrowRight, Zap, Coffee, Moon, Sun,
-    Star, Tag, CheckCircle2, Circle
+    Star, Tag, CheckCircle2, Circle, Printer, Utensils
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import Menus from './Menus';
+
+// ... (Constants) ...
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -62,13 +65,23 @@ const ActivityCard = ({ activity, onEdit, onDelete, onToggleDone }) => {
     const isDone = activity.done;
 
     return (
-        <div className="sc-activity-card" style={{
-            background: 'white', borderRadius: '14px', marginBottom: '0.875rem',
-            border: `1px solid ${isDone ? '#e2e8f0' : color + '40'}`,
-            boxShadow: isDone ? 'none' : `0 2px 12px ${color}18`,
-            display: 'flex', overflow: 'hidden', transition: 'all 0.2s',
-            opacity: isDone ? 0.6 : 1
-        }}>
+        <div className="sc-activity-card"
+            draggable="true"
+            onDragStart={(e) => {
+                e.dataTransfer.setData('text/plain', activity.id);
+                e.dataTransfer.effectAllowed = 'move';
+                e.currentTarget.style.opacity = '0.4';
+            }}
+            onDragEnd={(e) => {
+                e.currentTarget.style.opacity = isDone ? '0.6' : '1';
+            }}
+            style={{
+                background: 'white', borderRadius: '14px', marginBottom: '0.875rem',
+                border: `1px solid ${isDone ? '#e2e8f0' : color + '40'}`,
+                boxShadow: isDone ? 'none' : `0 2px 12px ${color}18`,
+                display: 'flex', overflow: 'hidden', transition: 'all 0.2s',
+                opacity: isDone ? 0.6 : 1, cursor: 'grab'
+            }}>
             {/* Color bar */}
             <div style={{ width: '5px', background: isDone ? '#cbd5e1' : color, flexShrink: 0 }} />
 
@@ -159,6 +172,7 @@ const ActivityCard = ({ activity, onEdit, onDelete, onToggleDone }) => {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export default function Schedule({ activities, setActivities, participants, groups }) {
+    const [viewMode, setViewMode] = useState('activities');
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -256,7 +270,11 @@ export default function Schedule({ activities, setActivities, participants, grou
         setIsFormOpen(false);
     };
 
-    // Autocomplete
+    const handleMoveActivity = (activityId, newDateStr) => {
+        setActivities(activities.map(a => a.id === activityId ? { ...a, date: newDateStr } : a));
+    };
+
+    // Autocomplete & Auto Color
     const handleTitleChange = (e) => {
         const value = e.target.value;
         setFormData({ ...formData, title: value });
@@ -266,6 +284,17 @@ export default function Schedule({ activities, setActivities, participants, grou
             setSuggestions(all.filter(s => s.toLowerCase().includes(value.toLowerCase())));
             setShowSuggestions(true);
         } else setShowSuggestions(false);
+
+        // Auto color mapping
+        const lower = value.toLowerCase();
+        let autoColor = formData.color;
+        if (lower.includes('sport') || lower.includes('foot') || lower.includes('basket') || lower.includes('jeu') || lower.includes('olympiade')) autoColor = '#ef4444'; // Red
+        else if (lower.includes('repas') || lower.includes('déjeuner') || lower.includes('dîner') || lower.includes('goûter') || lower.includes('petit déj')) autoColor = '#f59e0b'; // Orange
+        else if (lower.includes('veillée') || lower.includes('réveil') || lower.includes('coucher') || lower.includes('nuit') || lower.includes('calme') || lower.includes('film')) autoColor = '#6366f1'; // Indigo
+        else if (lower.includes('baignade') || lower.includes('piscine') || lower.includes('mer') || lower.includes('douche') || lower.includes('eau')) autoColor = '#3b82f6'; // Blue
+        else if (lower.includes('randonnée') || lower.includes('nature') || lower.includes('forêt') || lower.includes('balade') || lower.includes('marche')) autoColor = '#10b981'; // Green
+
+        if (autoColor !== formData.color) setFormData(prev => ({ ...prev, color: autoColor }));
     };
 
     // Calendar
@@ -286,6 +315,16 @@ export default function Schedule({ activities, setActivities, participants, grou
             const count = activities.filter(a => a.date === dateStr).length;
             cells.push(
                 <button key={d} onClick={() => setCurrentDate(new Date(dateStr))}
+                    onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.transform = 'scale(1.15)'; e.currentTarget.style.zIndex = '10'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(99,102,241,0.3)'; }}
+                    onDragLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.zIndex = '1'; e.currentTarget.style.boxShadow = 'none'; }}
+                    onDrop={(e) => {
+                        e.preventDefault();
+                        e.currentTarget.style.transform = 'none';
+                        e.currentTarget.style.zIndex = '1';
+                        e.currentTarget.style.boxShadow = 'none';
+                        const activityId = e.dataTransfer.getData('text/plain');
+                        if (activityId) handleMoveActivity(activityId, dateStr);
+                    }}
                     style={{
                         aspectRatio: '1', border: 'none', cursor: 'pointer', borderRadius: '50%',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
@@ -321,38 +360,53 @@ export default function Schedule({ activities, setActivities, participants, grou
     const currentDateLabel = currentDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
-        <div className="schedule-container" style={{ height: '100%', overflow: 'hidden', background: 'linear-gradient(160deg, #f8faff 0%, #f0f4ff 100%)' }}>
-            <div className="sc-inner" style={{ height: '100%', display: 'flex', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '1.5rem', boxSizing: 'border-box', overflow: 'hidden' }}>
+        <div className="schedule-container" style={{ height: '100%', overflow: 'hidden', background: 'linear-gradient(160deg, #f8faff 0%, #f0f4ff 100%)', display: 'flex', flexDirection: 'column' }}>
 
-                {/* ─── LEFT: Schedule ────────────────────────────────────────── */}
-                <div className="sc-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+            {/* Tabs for Planning / Menus */}
+            <div style={{ padding: '0.75rem 1.5rem', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', gap: '0.5rem', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', zIndex: 10 }}>
+                <button
+                    onClick={() => setViewMode('activities')}
+                    style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: viewMode === 'activities' ? '#4f46e5' : 'transparent', color: viewMode === 'activities' ? 'white' : '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <CalendarIcon size={18} /> Activités Quotidiens
+                </button>
+                <button
+                    onClick={() => setViewMode('menus')}
+                    style={{ padding: '0.5rem 1rem', borderRadius: '8px', border: 'none', background: viewMode === 'menus' ? '#f59e0b' : 'transparent', color: viewMode === 'menus' ? 'white' : '#64748b', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <Utensils size={18} /> Menus de la Semaine
+                </button>
+            </div>
 
-                    {/* Header */}
-                    <div className="sc-header" style={{
-                        background: 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)',
-                        borderRadius: '16px', padding: '1.25rem 1.5rem', marginBottom: '1.25rem',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        boxShadow: '0 6px 20px rgba(99,102,241,0.3)', flexWrap: 'wrap', gap: '0.75rem'
-                    }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                            <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '10px', padding: '0.625rem', display: 'flex' }}>
-                                <CalendarIcon size={22} color="white" />
-                            </div>
-                            <div>
-                                <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: 'white', lineHeight: 1 }}>Planning</h1>
-                                <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', textTransform: 'capitalize' }}>{currentDateLabel}</p>
-                            </div>
+            {/* Shared Header */}
+            <div style={{ padding: '1.5rem 1.5rem 0 1.5rem', maxWidth: '1200px', margin: '0 auto', width: '100%', boxSizing: 'border-box', flexShrink: 0, zIndex: 1 }}>
+                <div className="sc-header" style={{
+                    background: viewMode === 'activities' ? 'linear-gradient(135deg, #6366f1 0%, #4338ca 100%)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    borderRadius: '16px', padding: '1.25rem 1.5rem',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    boxShadow: viewMode === 'activities' ? '0 6px 20px rgba(99,102,241,0.3)' : '0 6px 20px rgba(245,158,11,0.3)', flexWrap: 'wrap', gap: '0.75rem'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: '10px', padding: '0.625rem', display: 'flex' }}>
+                            {viewMode === 'activities' ? <CalendarIcon size={22} color="white" /> : <Utensils size={22} color="white" />}
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <button onClick={() => navigateDay(-1)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: 'white', display: 'flex' }}>
-                                <ChevronLeft size={18} />
-                            </button>
-                            <button onClick={goToToday} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '0.5rem 1rem', cursor: 'pointer', color: 'white', fontWeight: '600', fontSize: '0.8rem' }}>
-                                Aujourd'hui
-                            </button>
-                            <button onClick={() => navigateDay(1)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: 'white', display: 'flex' }}>
-                                <ChevronRight size={18} />
-                            </button>
+                        <div>
+                            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: 'white', lineHeight: 1 }}>{viewMode === 'activities' ? 'Planning' : 'Menus'}</h1>
+                            <p style={{ margin: '3px 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.75)', textTransform: 'capitalize' }}>{currentDateLabel}</p>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <button onClick={() => window.print()} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '0.5rem 1rem', cursor: 'pointer', color: 'white', fontWeight: '600', fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            <Printer size={16} /> Imprimer
+                        </button>
+                        <button onClick={() => navigateDay(-1)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: 'white', display: 'flex' }}>
+                            <ChevronLeft size={18} />
+                        </button>
+                        <button onClick={goToToday} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '0.5rem 1rem', cursor: 'pointer', color: 'white', fontWeight: '600', fontSize: '0.8rem' }}>
+                            Aujourd'hui
+                        </button>
+                        <button onClick={() => navigateDay(1)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '0.5rem', cursor: 'pointer', color: 'white', display: 'flex' }}>
+                            <ChevronRight size={18} />
+                        </button>
+                        {viewMode === 'activities' && (
                             <button onClick={openNewForm} style={{
                                 background: 'white', border: 'none', borderRadius: '8px', padding: '0.5rem 1rem',
                                 cursor: 'pointer', color: '#6366f1', fontWeight: '700', fontSize: '0.85rem',
@@ -360,95 +414,108 @@ export default function Schedule({ activities, setActivities, participants, grou
                             }}>
                                 <Plus size={16} /> Activité
                             </button>
-                        </div>
-                    </div>
-
-                    {/* Progress bar + stats */}
-                    {dayActivities.length > 0 && (
-                        <div style={{
-                            background: 'white', borderRadius: '12px', padding: '0.875rem 1.25rem',
-                            marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem',
-                            border: '1px solid #e2e8f0', flexWrap: 'wrap', rowGap: '0.5rem'
-                        }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b', flexShrink: 0 }}>
-                                {doneCount}/{dayActivities.length} fait{doneCount !== 1 && 's'}
-                            </span>
-                            <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden', minWidth: '60px' }}>
-                                <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', borderRadius: '3px', transition: 'width 0.4s ease' }} />
-                            </div>
-                            <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#6366f1', flexShrink: 0 }}>{Math.round(progress)}%</span>
-                        </div>
-                    )}
-
-                    {/* Activity List */}
-                    <div style={{ flex: 1, overflowY: 'auto', paddingRight: '2px' }}>
-                        {dayActivities.length === 0 ? (
-                            <div style={{ textAlign: 'center', padding: '3rem 2rem', background: 'white', borderRadius: '16px', border: '2px dashed #e2e8f0' }}>
-                                <div style={{ background: '#eef2ff', padding: '1rem', borderRadius: '50%', width: 'fit-content', margin: '0 auto 1rem', display: 'flex' }}>
-                                    <CalendarIcon size={32} color="#6366f1" />
-                                </div>
-                                <h3 style={{ color: '#475569', marginBottom: '0.5rem', fontWeight: '700' }}>Journée libre !</h3>
-                                <p style={{ color: '#94a3b8', maxWidth: '300px', margin: '0 auto 1.25rem', fontSize: '0.9rem' }}>
-                                    Aucune activité prévue. Ajoutez des activités avec le bouton ci-dessus.
-                                </p>
-                                <button onClick={openNewForm} style={{
-                                    background: '#6366f1', color: 'white', border: 'none', borderRadius: '10px',
-                                    padding: '0.625rem 1.25rem', cursor: 'pointer', fontWeight: '700', fontSize: '0.9rem',
-                                    display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
-                                }}>
-                                    <Plus size={16} /> Ajouter une activité
-                                </button>
-                            </div>
-                        ) : (
-                            dayActivities.map(activity => (
-                                <ActivityCard key={activity.id} activity={activity}
-                                    onEdit={handleEdit} onDelete={handleDelete} onToggleDone={handleToggleDone} />
-                            ))
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* ─── RIGHT: Calendar Sidebar ─────────────────────────────── */}
-                <div className="sc-sidebar" style={{ width: '290px', display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', flexShrink: 0 }}>
+            {viewMode === 'activities' ? (
+                <div className="sc-inner" style={{ flex: 1, display: 'flex', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '1.5rem', boxSizing: 'border-box', overflow: 'hidden' }}>
 
-                    {/* Calendar */}
-                    <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                            <span style={{ fontWeight: '700', color: '#1e293b', textTransform: 'capitalize', fontSize: '0.95rem' }}>
-                                {calendarMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
-                            </span>
-                            <div style={{ display: 'flex', gap: '0.25rem' }}>
-                                <button onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() - 1); setCalendarMonth(d); }}
-                                    style={{ background: '#f1f5f9', border: 'none', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', display: 'flex' }}>
-                                    <ChevronLeft size={15} color="#64748b" />
-                                </button>
-                                <button onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() + 1); setCalendarMonth(d); }}
-                                    style={{ background: '#f1f5f9', border: 'none', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', display: 'flex' }}>
-                                    <ChevronRight size={15} color="#64748b" />
-                                </button>
+                    {/* ─── LEFT: Schedule ────────────────────────────────────────── */}
+                    <div className="sc-main" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, overflow: 'hidden' }}>
+
+                        {/* Progress bar + stats */}
+                        {dayActivities.length > 0 && (
+                            <div style={{
+                                background: 'white', borderRadius: '12px', padding: '0.875rem 1.25rem',
+                                marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem',
+                                border: '1px solid #e2e8f0', flexWrap: 'wrap', rowGap: '0.5rem'
+                            }}>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '600', color: '#64748b', flexShrink: 0 }}>
+                                    {doneCount}/{dayActivities.length} fait{doneCount !== 1 && 's'}
+                                </span>
+                                <div style={{ flex: 1, height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden', minWidth: '60px' }}>
+                                    <div style={{ width: `${progress}%`, height: '100%', background: '#6366f1', borderRadius: '3px', transition: 'width 0.4s ease' }} />
+                                </div>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#6366f1', flexShrink: 0 }}>{Math.round(progress)}%</span>
                             </div>
-                        </div>
+                        )}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', textAlign: 'center', marginBottom: '0.5rem' }}>
-                            {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
-                                <div key={i} style={{ color: '#94a3b8', fontWeight: '600', fontSize: '0.72rem', paddingBottom: '0.35rem' }}>{d}</div>
-                            ))}
+                        {/* Activity List */}
+                        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '2px' }}>
+                            {dayActivities.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '3rem 2rem', background: 'white', borderRadius: '16px', border: '2px dashed #e2e8f0' }}>
+                                    <div style={{ background: '#eef2ff', padding: '1rem', borderRadius: '50%', width: 'fit-content', margin: '0 auto 1rem', display: 'flex' }}>
+                                        <CalendarIcon size={32} color="#6366f1" />
+                                    </div>
+                                    <h3 style={{ color: '#475569', marginBottom: '0.5rem', fontWeight: '700' }}>Journée libre !</h3>
+                                    <p style={{ color: '#94a3b8', maxWidth: '300px', margin: '0 auto 1.25rem', fontSize: '0.9rem' }}>
+                                        Aucune activité prévue. Ajoutez des activités avec le bouton ci-dessus.
+                                    </p>
+                                    <button onClick={openNewForm} style={{
+                                        background: '#6366f1', color: 'white', border: 'none', borderRadius: '10px',
+                                        padding: '0.625rem 1.25rem', cursor: 'pointer', fontWeight: '700', fontSize: '0.9rem',
+                                        display: 'inline-flex', alignItems: 'center', gap: '0.5rem'
+                                    }}>
+                                        <Plus size={16} /> Ajouter une activité
+                                    </button>
+                                </div>
+                            ) : (
+                                dayActivities.map(activity => (
+                                    <ActivityCard key={activity.id} activity={activity}
+                                        onEdit={handleEdit} onDelete={handleDelete} onToggleDone={handleToggleDone} />
+                                ))
+                            )}
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
-                            {renderCalendar()}
-                        </div>
-
-                        <button onClick={goToToday} style={{
-                            width: '100%', marginTop: '1rem', padding: '0.6rem', background: '#eef2ff', color: '#6366f1',
-                            border: 'none', borderRadius: '9px', fontWeight: '700', cursor: 'pointer', fontSize: '0.85rem'
-                        }}>
-                            Aujourd'hui
-                        </button>
                     </div>
 
+                    {/* ─── RIGHT: Calendar Sidebar ─────────────────────────────── */}
+                    <div className="sc-sidebar" style={{ width: '290px', display: 'flex', flexDirection: 'column', gap: '1rem', overflowY: 'auto', flexShrink: 0 }}>
 
+                        {/* Calendar */}
+                        <div style={{ background: 'white', borderRadius: '16px', border: '1px solid #e2e8f0', padding: '1.25rem', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                <span style={{ fontWeight: '700', color: '#1e293b', textTransform: 'capitalize', fontSize: '0.95rem' }}>
+                                    {calendarMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
+                                </span>
+                                <div style={{ display: 'flex', gap: '0.25rem' }}>
+                                    <button onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() - 1); setCalendarMonth(d); }}
+                                        style={{ background: '#f1f5f9', border: 'none', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', display: 'flex' }}>
+                                        <ChevronLeft size={15} color="#64748b" />
+                                    </button>
+                                    <button onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() + 1); setCalendarMonth(d); }}
+                                        style={{ background: '#f1f5f9', border: 'none', borderRadius: '7px', padding: '5px 8px', cursor: 'pointer', display: 'flex' }}>
+                                        <ChevronRight size={15} color="#64748b" />
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', textAlign: 'center', marginBottom: '0.5rem' }}>
+                                {['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((d, i) => (
+                                    <div key={i} style={{ color: '#94a3b8', fontWeight: '600', fontSize: '0.72rem', paddingBottom: '0.35rem' }}>{d}</div>
+                                ))}
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px' }}>
+                                {renderCalendar()}
+                            </div>
+
+                            <button onClick={goToToday} style={{
+                                width: '100%', marginTop: '1rem', padding: '0.6rem', background: '#eef2ff', color: '#6366f1',
+                                border: 'none', borderRadius: '9px', fontWeight: '700', cursor: 'pointer', fontSize: '0.85rem'
+                            }}>
+                                Aujourd'hui
+                            </button>
+                        </div>
+
+
+                    </div>
                 </div>
-            </div>
+            ) : (
+                <div className="sc-inner" style={{ flex: 1, display: 'flex', gap: '1.5rem', maxWidth: '1200px', margin: '0 auto', width: '100%', padding: '1.5rem', boxSizing: 'border-box', overflow: 'hidden' }}>
+                    <Menus participants={participants} currentDate={currentDate} />
+                </div>
+            )}
 
             {/* ─── Modal Form ──────────────────────────────────────────────── */}
             {isFormOpen && (

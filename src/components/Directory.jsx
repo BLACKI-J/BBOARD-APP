@@ -20,7 +20,7 @@ export default function Directory({ participants = [], setParticipants, groups =
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'firstName', direction: 'ascending' });
-    const [viewMode, setViewMode] = useState('table');
+    const [viewMode, setViewMode] = useState('grid');
     const [filterRole, setFilterRole] = useState('all');
     const [filterGroup, setFilterGroup] = useState('all');
 
@@ -42,6 +42,7 @@ export default function Directory({ participants = [], setParticipants, groups =
         photo: '',
         role: 'child',
         group: '',
+        healthDocProvided: false,
         // Animator specific fields
         training: '',
         phone: '',
@@ -129,7 +130,7 @@ export default function Directory({ participants = [], setParticipants, groups =
 
     const resetForm = () => {
         setFormData({
-            firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '',
+            firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '', healthDocProvided: false,
             training: '', phone: '', address: '', emergencyContact: ''
         });
         setEditingId(null);
@@ -148,6 +149,7 @@ export default function Directory({ participants = [], setParticipants, groups =
             constraints: participant.constraints || '',
             photo: participant.photo || '',
             group: participant.group || '',
+            healthDocProvided: !!participant.healthDocProvided,
             training: participant.training || '',
             phone: participant.phone || '',
             address: participant.address || '',
@@ -262,6 +264,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 handleBulkDelete={handleBulkDelete}
                 openGroupManager={() => setIsGroupManagerOpen(true)}
                 openNewForm={() => { resetForm(); setIsFormOpen(true); }}
+                openAttendance={() => setIsAttendanceOpen(true)}
                 handleExport={handleExport}
                 handleImport={handleImport}
             />

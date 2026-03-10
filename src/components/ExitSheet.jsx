@@ -120,24 +120,6 @@ const PrintContent = ({ date, destination, startTime, endTime, selectedChildren,
     </div>
 );
 
-/* ─────────────────────────────────────────────
-   STAT CARD — petite carte de résumé
-───────────────────────────────────────────── */
-const StatCard = ({ icon, label, value, color }) => (
-    <div style={{
-        background: 'white', borderRadius: '12px', padding: '1rem 1.25rem',
-        border: `1px solid ${color}22`, display: 'flex', alignItems: 'center',
-        gap: '0.75rem', boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-    }}>
-        <div style={{ background: `${color}15`, borderRadius: '10px', padding: '0.6rem', color, display: 'flex' }}>
-            {icon}
-        </div>
-        <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1e293b', lineHeight: 1 }}>{value}</div>
-            <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>{label}</div>
-        </div>
-    </div>
-);
 
 /* ─────────────────────────────────────────────
    COMPOSANT PRINCIPAL
@@ -323,13 +305,6 @@ export default function ExitSheet({ participants, groups }) {
                             </div>
                         </div>
 
-                        {/* Stats Row */}
-                        <div className="es-stats-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem', marginBottom: '2rem' }}>
-                            <StatCard icon={<Users size={20} />} label="Vacanciers sélectionnés" value={selectedChildren.length} color="#6366f1" />
-                            <StatCard icon={<UserCheck size={20} />} label="Animateurs" value={selectedAnimatorList.length} color="#10b981" />
-                            <StatCard icon={<Clock size={20} />} label="Durée de sortie" value={startTime && endTime ? `${startTime} – ${endTime}` : '—'} color="#f59e0b" />
-                            <StatCard icon={<FileText size={20} />} label="Sorties enregistrées" value={history.length} color="#8b5cf6" />
-                        </div>
 
                         {/* Main Grid */}
                         <div className="es-main-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: '1.5rem', alignItems: 'start' }}>
