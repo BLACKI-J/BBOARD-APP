@@ -25,7 +25,7 @@ const PRIORITY_CONFIG = {
     urgent: { label: 'Urgent', color: '#ef4444', bg: '#fef2f2', icon: <Zap size={13} /> },
 };
 
-export default function MeetingRecap() {
+export default function MeetingRecap({ participants }) {
     const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
     const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -35,6 +35,7 @@ export default function MeetingRecap() {
     });
     const [newTodo, setNewTodo] = useState('');
     const [newPriority, setNewPriority] = useState('normal');
+    const [newAssignee, setNewAssignee] = useState('');
     const [showPriorityPicker, setShowPriorityPicker] = useState(false);
 
     const [notes, setNotes] = useState(() => {
@@ -44,6 +45,9 @@ export default function MeetingRecap() {
 
     const [noteSaved, setNoteSaved] = useState(false);
 
+    // List of animators/direction for task assignment
+    const animators = participants ? participants.filter(p => p.role === 'animator' || p.role === 'direction') : [];
+
     useEffect(() => { localStorage.setItem('colo-recap-todos', JSON.stringify(todos)); }, [todos]);
     useEffect(() => { localStorage.setItem('colo-recap-notes', JSON.stringify(notes)); }, [notes]);
 
@@ -51,9 +55,10 @@ export default function MeetingRecap() {
     const handleAddTodo = (e) => {
         e.preventDefault();
         if (newTodo.trim()) {
-            setTodos([...todos, { id: uuidv4(), text: newTodo, completed: false, date: selectedDate, priority: newPriority }]);
+            setTodos([...todos, { id: uuidv4(), text: newTodo, completed: false, date: selectedDate, priority: newPriority, assignee: newAssignee }]);
             setNewTodo('');
             setNewPriority('normal');
+            setNewAssignee('');
         }
     };
 
@@ -219,7 +224,7 @@ export default function MeetingRecap() {
                             {/* Add form */}
                             <div style={{ padding: '0.875rem 1.25rem', background: 'white', borderBottom: '1px solid #f8fafc' }}>
                                 <form onSubmit={handleAddTodo}>
-                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                         {/* Priority picker */}
                                         <div style={{ position: 'relative', flexShrink: 0 }}>
                                             <button
@@ -259,12 +264,24 @@ export default function MeetingRecap() {
                                             )}
                                         </div>
 
+                                        <select
+                                            value={newAssignee}
+                                            onChange={e => setNewAssignee(e.target.value)}
+                                            style={{
+                                                padding: '0.55rem', borderRadius: '8px', border: '1px solid #e2e8f0',
+                                                fontSize: '0.85rem', outline: 'none', background: 'white', color: '#475569', minWidth: '130px'
+                                            }}
+                                        >
+                                            <option value="">À faire par...</option>
+                                            {animators.map(a => <option key={a.id} value={a.id}>{a.firstName} {a.lastName}</option>)}
+                                        </select>
+
                                         <input
                                             type="text" className="input-field"
                                             placeholder="Ajouter une tâche..."
                                             value={newTodo}
                                             onChange={e => setNewTodo(e.target.value)}
-                                            style={{ flex: 1, padding: '0.55rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none' }}
+                                            style={{ flex: 1, minWidth: '150px', padding: '0.55rem 1rem', borderRadius: '8px', border: '1px solid #e2e8f0', fontSize: '0.9rem', outline: 'none' }}
                                             onFocus={e => e.target.style.borderColor = accentColor}
                                             onBlur={e => e.target.style.borderColor = '#e2e8f0'}
                                         />
@@ -316,9 +333,20 @@ export default function MeetingRecap() {
                                                         }}>
                                                             {todo.text}
                                                         </span>
-                                                        <span style={{ fontSize: '0.72rem', color: pCfg.color, fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '2px' }}>
-                                                            {pCfg.icon} {pCfg.label}
-                                                        </span>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '4px', flexWrap: 'wrap' }}>
+                                                            <span style={{ fontSize: '0.72rem', color: pCfg.color, fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                                                {pCfg.icon} {pCfg.label}
+                                                            </span>
+                                                            {todo.assignee && (() => {
+                                                                const assignedAnim = animators.find(a => a.id === todo.assignee);
+                                                                if (!assignedAnim) return null;
+                                                                return (
+                                                                    <span style={{ fontSize: '0.72rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '0.25rem', background: '#f1f5f9', padding: '2px 6px', borderRadius: '4px' }}>
+                                                                        👤 {assignedAnim.firstName} {assignedAnim.lastName.charAt(0)}.
+                                                                    </span>
+                                                                );
+                                                            })()}
+                                                        </div>
                                                     </div>
 
                                                     <button onClick={() => deleteTodo(todo.id)} className="delete-btn"

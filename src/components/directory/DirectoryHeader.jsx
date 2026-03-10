@@ -1,5 +1,5 @@
 import React from 'react';
-import { Users, User, Shield, Trash2, Plus, Download, Upload } from 'lucide-react';
+import { Users, User, Shield, Trash2, Plus, Download, Upload, Printer, ClipboardCheck } from 'lucide-react';
 import { StatBadge } from '../common/Badges';
 
 const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleImport }) => {
@@ -35,6 +35,9 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                     </>
                 )}
                 <div style={{ width: '1px', background: 'var(--border-color)', height: '28px', margin: '0 0.1rem' }}></div>
+                <button className="btn btn-icon-only" onClick={() => window.print()} title="Imprimer / PDF" style={{ padding: '0.5rem' }}>
+                    <Printer size={18} />
+                </button>
                 <button className="btn btn-icon-only" onClick={handleExport} title="Exporter JSON" style={{ padding: '0.5rem' }}>
                     <Download size={18} />
                 </button>
