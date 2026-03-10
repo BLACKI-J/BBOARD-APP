@@ -16,3 +16,17 @@ services:
     environment:
       - DATABASE_PATH=/app/data/database.sqlite
     restart: always
+
+  # Optionnel: Tunnel Cloudflare Zero Trust
+  # Remplissez la variable TUNNEL_TOKEN dans un fichier .env à la racine
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: bboard-tunnel
+    restart: unless-stopped
+    network_mode: host
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN}
+    profiles:
+      - cloudflare
+

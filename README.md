@@ -108,7 +108,7 @@ Pour régler cela :
 
 ---
 
-## � Deployment & Production
+## 🚀 Deployment & Production
 
 For production servers, use the `docker-compose.yml` file. It handles:
 - **Service Isolation**: Separate containers for logic and UI.
@@ -120,6 +120,43 @@ To update an existing installation:
 git pull origin main
 docker compose up -d --build
 ```
+
+---
+
+## 🌐 Exposer l'Application sur Internet avec Cloudflare Zero Trust
+
+Il est fortement recommandé de ne **pas** ouvrir de ports sur votre box ou pare-feu. BBOARD intègre une configuration prête à l'emploi pour **Cloudflare Tunnel (Zero Trust)**, ce qui permet à n'importe qui d'y accéder depuis un nom de domaine sécurisé (ex: `camp.votresite.com`), de façon 100% sécurisée.
+
+### Étape 1 : Créer un Tunnel sur Cloudflare
+1. Allez sur le [Dashboard Cloudflare Zero Trust](https://one.dash.cloudflare.com/) (c'est gratuit).
+2. Dans le menu de gauche, allez dans **Networks** > **Tunnels**.
+3. Cliquez sur **Create a tunnel** (sélectionnez "Cloudflared").
+4. Nommez-le (ex: "bboard-tunnel") et cliquez sur `Save tunnel`.
+
+### Étape 2 : Récupérer le Token secret
+Dans la page d'installation du tunnel, regardez la commande Docker générée. Vous y verrez un long texte après `--token` : c'est votre `TUNNEL_TOKEN`.
+*(Copiez uniquement cette longue chaîne de caractères, ex: `eyJh...`)*.
+
+### Étape 3 : Configurer BBOARD
+Sur le serveur où tourne BBOARD (ex: votre VPS ou PC) :
+1. Créez un fichier `.env` à la racine du projet BBOARD :
+   ```bash
+   echo "TUNNEL_TOKEN=votre_long_token_ici" > .env
+   ```
+2. Lancez l'application **avec le profil Cloudflare** :
+   ```bash
+   docker compose --profile cloudflare up -d
+   ```
+*Votre serveur BBOARD est maintenant connecté de manière invisible et sécurisée aux serveurs Cloudflare.*
+
+### Étape 4 : Lier un nom de domaine
+Retournez sur le Dashboard Cloudflare (là où vous avez créé le tunnel) :
+1. Cliquez sur **Next** pour aller dans l'onglet `Public Hostname`.
+2. Sous **Subdomain**, mettez par exemple `camp` et choisissez votre **Domain** (`blacki.net`).
+3. Sous **Service**, choisissez **Type:** `HTTP` et **URL:** `localhost:8080` (C'est le port par défaut de BBOARD en local).
+4. Cliquez sur **Save**.
+
+🎉 **Terminé !** BBOARD est maintenant accessible depuis n'importe où via `https://camp.votre-domaine.com`, avec un certificat SSL géré automatiquement.
 
 ---
 
