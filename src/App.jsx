@@ -8,6 +8,7 @@ import Settings from './components/Settings';
 import MeetingRecap from './components/MeetingRecap';
 import ExitSheet from './components/ExitSheet';
 import Attendance from './components/Attendance';
+import Dashboard from './components/Dashboard';
 import { v4 as uuidv4 } from 'uuid';
 import { io } from 'socket.io-client';
 
@@ -47,7 +48,7 @@ class ErrorBoundary extends React.Component {
 export default function App() {
     // Persist active tab state
     const [activeTab, setActiveTab] = useState(() => {
-        return localStorage.getItem('colo-active-tab') || 'seatmap';
+        return localStorage.getItem('colo-active-tab') || 'dashboard';
     });
 
     // State for groups
@@ -358,6 +359,7 @@ export default function App() {
                     </div>
 
                     {[
+                        { id: 'dashboard', label: 'Accueil', icon: <Tent size={20} /> },
                         { id: 'seatmap', label: 'Plans', icon: <MapIcon size={20} /> },
                         { id: 'schedule', label: 'Planning', icon: <Calendar size={20} /> },
                         { id: 'exitsheet', label: 'Sortie', icon: <FileText size={20} /> },
@@ -464,6 +466,7 @@ export default function App() {
 
                         <div className="desktop-only" style={{ display: 'flex', gap: '0.5rem' }}>
                             {[
+                                { id: 'dashboard', label: 'Accueil', icon: <Tent size={18} /> },
                                 { id: 'seatmap', label: 'Plans', icon: <MapIcon size={18} /> },
                                 { id: 'schedule', label: 'Planning', icon: <Calendar size={18} /> },
                                 { id: 'exitsheet', label: 'Sortie', icon: <FileText size={18} /> },
@@ -496,7 +499,16 @@ export default function App() {
                 </header>
 
                 <div className="workspace-area">
-                    {activeTab === 'seatmap' ? (
+                    {activeTab === 'dashboard' ? (
+                        <div className="animate-fade-in" style={{ height: '100%' }}>
+                            <Dashboard
+                                participants={participants}
+                                groups={groups}
+                                activities={activities}
+                                onNavigate={setActiveTab}
+                            />
+                        </div>
+                    ) : activeTab === 'seatmap' ? (
                         <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                             <SeatMap
                                 participants={participants}
