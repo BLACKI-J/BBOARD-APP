@@ -1,191 +1,103 @@
-# BBOARD - Summer Camp Management System
+<div align="center">
+  <img src="public/logo/logo.png" alt="BBOARD Logo" width="200" style="border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 20px;" />
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
-[![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white)](https://nodejs.org/)
-[![SQLite](https://img.shields.io/badge/sqlite-%2307405e.svg?style=flat&logo=sqlite&logoColor=white)](https://sqlite.org/)
-[![Socket.io](https://img.shields.io/badge/socket.io-black?style=flat&logo=socket.io&logoColor=white)](https://socket.io/)
-[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+  # BBOARD 🚀
+  **L'application de gestion de Centre de Vacances (Colo) nouvelle génération.**
 
-> **The modern all-in-one solution for Summer Camp & Youth Center organization.**  
-> *Manage participants, transport logistics, schedules, and medical sheets in one seamless interface.*
+  [![React](https://img.shields.io/badge/React-18.2-blue.svg?style=flat&logo=react)](https://reactjs.org/)
+  [![Vite](https://img.shields.io/badge/Vite-5.2-purple.svg?style=flat&logo=vite)](https://vitejs.dev/)
+  [![Node.js](https://img.shields.io/badge/Node.js-Backend-green.svg?style=flat&logo=node.js)](https://nodejs.org/)
+  [![SQLite](https://img.shields.io/badge/Database-SQLite-003B57.svg?style=flat&logo=sqlite)](https://www.sqlite.org/)
+</div>
 
----
+<br/>
 
-## Key Features
-
-| Feature | Description |
-| :--- | :--- |
-| **Visual Transport** | Interactive SeatMap for Bus and Van layouts with real-time drag-and-drop. |
-| **Real-time Sync** | Instant data synchronization across all devices via WebSockets. |
-| **Dynamic Planning** | Easily manage weekly schedules, activities, and locations. |
-| **Automated Forms** | Generate professional Exit Sheets (A4) with health data and signatures. |
-| **Centralized Directory** | Comprehensive database for children, staff, and medical alerts. |
-| **Docker Ready** | One-command deployment for production environments. |
+**BBOARD** est une application web complète, pensée pour faciliter la vie des directeurs et animateurs de colonies de vacances. Dotée d'une interface premium novatrice (nom de code *Impeccable* combinant Glassmorphism et fluidité extrême), elle centralise tous les outils nécessaires au bon déroulement d'un séjour.
 
 ---
 
-## Quick Start (Ubuntu / Debian)
+## ✨ Fonctionnalités Principales
 
-The fastest way to get your camp running is using our automatic installation script.
+*   🔒 **Système de Connexion Sécurisé** : Profils individualisés pour les animateurs et la direction avec codes PIN personnels.
+*   📅 **Planning Interactif (*Schedule*)** : Gestion des activités par jour et par groupe avec un système intuitif de drag & drop.
+*   🚌 **Gestion des Transports (*Seatmap*)** : Placement dynamique des enfants dans les bus et navettes (glisser-déposer sur un plan interactif).
+*   📇 **Annuaire & Suivi (*Directory & Attendance*)** : Informations vitales des participants (allergies, autorisations) et modules de pointage sécurisés (check-in/check-out).
+*   📦 **Inventaire Avancé (*Inventory*)** : Gestion du matériel (jeux, trousses de secours, sonorisation) avec suivi dynamique des stocks.
+*   🚨 **Gestion de Crise (*FEI*)** : Création et suivi des Fiches d'Événements Indésirables (Incidents, problèmes médicaux, etc.) directement exportables.
+*   ⚙️ **Espace Administration** : Module de paramétrage exclusif à la direction. Permet la gestion des permissions, la création d'utilisateurs et l'accès aux journaux système.
 
+---
+
+## 🛠️ Stack Technique
+
+*   **Frontend** : [React.js](https://reactjs.org/) architecturé avec [Vite](https://vitejs.dev/) pour des performances optimales.
+*   **Design** : CSS natif exploitant les variables `OKLCH` pour des couleurs ultra-modernes, couplé à [TailwindCSS](https://tailwindcss.com/) pour la structure. Icônes par [Lucide React](https://lucide.dev/).
+*   **Backend** : [Node.js](https://nodejs.org/) & [Express.js](https://expressjs.com/).
+*   **Base de Données** : [SQLite](https://www.sqlite.org/) pour une portabilité et une légèreté maximales.
+*   **Temps Réel** : Intégration de Websockets (Socket.io).
+
+---
+
+## 🚀 Installation & Démarrage rapide
+
+Si vous souhaitez tester l'application en local sur votre machine, suivez ces étapes simples :
+
+### Prérequis
+*   [Node.js](https://nodejs.org/) (version 18+ recommandée)
+*   NPM ou Yarn
+
+### 1. Cloner le projet
 ```bash
-# 1. Clone the repository
 git clone https://github.com/BLACKI-J/BBOARD-APP.git
 cd BBOARD-APP
-
-# 2. Run the automatic installer (installs Docker & Docker Compose)
-bash install_docker.sh
-
-# 3. Launch the application
-docker compose up -d --build
 ```
-*Your application will be live at `http://localhost:8080`.*
 
----
+### 2. Installer les dépendances
+Il faut installer les dépendances pour le frontend (React) ET pour le backend (Serveur).
 
-## Tech Stack & Architecture
-
-- **Frontend**: Built with **React 18** and **Vite**. UI styling via **TailwindCSS** and standard CSS Modules. Drag-and-drop powered by `@dnd-kit`.
-- **Backend**: **Node.js** & **Express** server handling REST APIs and real-time events.
-- **Communication**: **Socket.io** for bi-directional, event-based communication.
-- **Database**: **SQLite** (relational) with an automatic JSON-to-SQL migration engine.
-- **Containers**: Multi-stage **Docker** builds (Nginx for frontend, Node/Debian for backend).
-
----
-
-## Developer Setup (Manual)
-
-If you'd like to contribute or run the project outside of Docker:
-
-### Prerequisites
-- Node.js (v20+ recommended)
-- npm
-
-### Installation
-1. **Initialize Backend**:
-   ```bash
-   cd server
-   npm install
-   node index.js
-   ```
-2. **Initialize Frontend**:
-   ```bash
-   cd ..
-   npm install
-   npm run dev
-   ```
-3. **Run Tests**:
-   ```bash
-   npm run test
-   ```
-
----
-
-## Dépannage (Troubleshooting)
-
-### Erreur "permission denied" (Ubuntu 24.04)
-Si vous voyez l'erreur `open sysctl net.ipv4.ip_unprivileged_port_start file: permission denied` lors du lancement :
-
-C'est une restriction de sécurité d'Ubuntu 24.04. Exécutez cette commande :
 ```bash
-echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
+# Installation des dépendances front
+npm install
+
+# Installation des dépendances serveur
+cd server
+npm install
+cd ..
 ```
-*Note: Le script `install_docker.sh` inclut déjà ce correctif.*
 
-### Cas spécial : Proxmox LXC
-Si vous installez BBOARD dans un conteneur **LXC sur Proxmox** (ex: CT Ubuntu 24.04), le système de fichiers `/proc` est souvent en lecture seule (Read-only).
+### 3. Lancer l'application
+L'application fournit un script de lancement (`dev.sh`) pour démarrer le backend et le frontend simultanément.
 
-Pour régler cela :
-1. **Sur l'Hôte Proxmox (pas dans le CT)** : Lancez la commande suivante :
-   ```bash
-   echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
-   ```
-2. **Dans l'interface Proxmox (Web GUI)** :
-   - Allez sur votre Conteneur > **Options** > **Features**.
-   - Cochez la case **Nesting** (indispensable pour Docker dans LXC).
-3. **Redémarrez le conteneur**.
-
----
-
-## Deployment & Production
-
-For production servers, use the `docker-compose.yml` file. It handles:
-- **Service Isolation**: Separate containers for logic and UI.
-- **Auto-restart**: Ensures the server comes back up after crashes.
-- **Volume Persistence**: Your SQLite database is safely stored in a Docker volume.
-
-To update an existing installation:
+**Sur MacOS / Linux :**
 ```bash
-git pull origin main
-docker compose up -d --build
+# Donnez les droits d'exécution au script
+chmod +x dev.sh
+
+# Lancez le script
+./dev.sh
 ```
 
----
+*(Si vous êtes sous Windows, lancez la commande `npm run dev` dans le dossier racine, et ouvrez un second terminal pour exécuter `npm run dev` dans le dossier `/server`)*.
 
-## Exposer l'Application sur Internet avec Cloudflare Zero Trust
+### 4. Accéder à l'application
+Ouvrez votre navigateur sur : **`http://localhost:5173`**
 
-Il est fortement recommandé de ne **pas** ouvrir de ports sur votre box ou pare-feu. BBOARD intègre une configuration prête à l'emploi pour **Cloudflare Tunnel (Zero Trust)**, ce qui permet à n'importe qui d'y accéder depuis un nom de domaine sécurisé (ex: `camp.votresite.com`), de façon 100% sécurisée.
-
-### Étape 1 : Créer un Tunnel sur Cloudflare
-1. Allez sur le [Dashboard Cloudflare Zero Trust](https://one.dash.cloudflare.com/) (c'est gratuit).
-2. Dans le menu de gauche, allez dans **Networks** > **Tunnels**.
-3. Cliquez sur **Create a tunnel** (sélectionnez "Cloudflared").
-4. Nommez-le (ex: "bboard-tunnel") et cliquez sur `Save tunnel`.
-
-### Étape 2 : Récupérer le Token secret
-Dans la page d'installation du tunnel, regardez la commande Docker générée. Vous y verrez un long texte après `--token` : c'est votre `TUNNEL_TOKEN`.
-*(Copiez uniquement cette longue chaîne de caractères, ex: `eyJh...`)*.
-
-### Étape 3 : Configurer BBOARD
-Sur le serveur où tourne BBOARD (ex: votre VPS ou PC) :
-1. Créez un fichier `.env` à la racine du projet BBOARD :
-   ```bash
-   echo "TUNNEL_TOKEN=votre_long_token_ici" > .env
-   ```
-2. Lancez l'application **avec le profil Cloudflare** :
-   ```bash
-   docker compose --profile cloudflare up -d
-   ```
-*Votre serveur BBOARD est maintenant connecté de manière invisible et sécurisée aux serveurs Cloudflare.*
-
-### Étape 4 : Lier un nom de domaine
-Retournez au Dashboard Cloudflare (là où vous avez créé le tunnel) :
-1. Cliquez sur **Next** pour aller dans l'onglet `Public Hostname`.
-2. Sous **Subdomain**, mettez par exemple `camp` et choisissez votre **Domain** (`blacki.net`).
-3. Sous **Service**, choisissez **Type:** `HTTP` et **URL:** `localhost:8080` (C'est le port par défaut de BBOARD en local).
-4. Cliquez sur **Save**.
-
-Terminé ! BBOARD est maintenant accessible depuis n'importe où via `https://camp.votre-domaine.com`, avec un certificat SSL géré automatiquement.
+*(Le backend tourne en parallèle sur le port `3001`)*.
 
 ---
 
-## 🎨 Personnalisation BBOARD (Mettre votre Logo)
+## 🔐 Identifiants de Test (Démarrage par défaut)
 
-L'application est prévue pour être déployable par toutes les structures. 
-Si vous souhaitez que l'application utilise **le logo de votre organisme** (dans le menu principal, sur toutes les fiches d'impression PDF, etc.) :
+À la première ouverture, vous serez redirigé vers la page de **Login**. L'application contient un profil de base pré-configuré.
 
-1. Allez dans le dossier `public/logo/` à la racine de l'application.
-2. Ajoutez votre propre image avec un fond transparent et nommez-la **strictement `logo.png`**.
-3. Remplacez le fichier existant (le chemin final doit être `public/logo/logo.png`).
-4. Relancez ou actualisez l'application.
+*   **Profil** : `Direction Générale`
+*   **Code PIN Général par défaut** : `1234`
 
-> Si aucun logo n'est placé dans ce dossier, le système affichera un logo de base très générique (le petit "éclair") pour éviter de casser l'interface.
+Une fois connecté, nous vous invitons à aller dans le module **Paramètres** (icône d'engrenage / espace sécurisé) pour créer vos propres profils animateurs avec leurs codes PIN individuels et tester la plateforme !
 
 ---
 
-## Contributing
-
-We welcome contributions of all kinds!
-1. **Fork** the project.
-2. Create your **Feature Branch** (`git checkout -b feature/AmazingFeature`).
-3. **Commit** your changes (`git commit -m 'Add some AmazingFeature'`).
-4. **Push** to the branch (`git push origin feature/AmazingFeature`).
-5. Open a **Pull Request**.
-
----
-
-## License
-This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
-
-Developed with care by **BLACKI-J** for the camp management community.
+<div align="center">
+  <i>Développé avec passion pour l'animation socio-culturelle.</i><br/>
+  <strong>BBOARD © 2024</strong>
+</div>
