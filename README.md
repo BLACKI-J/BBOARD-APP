@@ -34,7 +34,7 @@ Le plus simple (et recommandé) pour déployer BBOARD est d'utiliser **Docker**.
    *(Optionnel : un script `install_docker.sh` est fourni à la racine pour les systèmes Debian/Ubuntu).*
 3. Lancez les conteneurs :
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
 
 Votre application web est maintenant accessible sur le port **8080** de votre serveur.
@@ -54,7 +54,7 @@ Sur votre serveur, dans le dossier `BBOARD-APP` :
    ```
 2. Reconstruisez et relancez les images Docker avec le nouveau code :
    ```bash
-   docker-compose up -d --build
+   docker compose up -d --build
    ```
 
 Nettoyez occasionnellement les vieilles images avec `docker image prune -a`.
