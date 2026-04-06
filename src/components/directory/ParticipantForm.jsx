@@ -1,238 +1,290 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Edit2 } from 'lucide-react';
+import { X, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { useUi } from '../../ui/UiProvider';
 
-const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, editingId, groups }) => {
+const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, editingId, groups, canEdit }) => {
+    const ui = useUi();
     if (!isOpen) return null;
 
-    // Initialize pocket money if missing
-    if (formData.role === 'child' && !formData.pocketMoney) {
-        formData.pocketMoney = { initial: 0, current: 0, history: [] };
-    }
+    const pocketMoney = formData.pocketMoney || { initial: 0, current: 0, history: [] };
 
-    const addPocketExpense = () => {
-        const amount = prompt("Montant de la dépense (€) :");
-        if (!amount || isNaN(amount)) return;
-        const desc = prompt("Motif de la dépense :");
-        if (!desc) return;
-
-        const newExpense = { id: uuidv4(), date: new Date().toISOString(), amount: parseFloat(amount), description: desc };
-        const newHistory = [...formData.pocketMoney.history, newExpense];
-
-        // Calculate new current total
-        const totalSpent = newHistory.reduce((sum, tx) => sum + tx.amount, 0);
-        const newCurrent = formData.pocketMoney.initial - totalSpent;
-
-        setFormData({
-            ...formData,
-            pocketMoney: {
-                ...formData.pocketMoney,
-                current: newCurrent,
-                history: newHistory
+    const addPocketExpense = async () => {
+        const amount = await ui.prompt({
+            title: 'Nouvelle dépense',
+            message: 'Montant de la dépense (€)',
+            placeholder: '0.00',
+            validate: (value) => {
+                if (!value?.trim()) return 'Le montant est requis.';
+                const num = Number(value.replace(',', '.'));
+                if (Number.isNaN(num)) return 'Entrez un montant valide.';
+                if (num <= 0) return 'Le montant doit être positif.';
+                return '';
             }
         });
+        if (!amount) return;
+        const desc = await ui.prompt({
+            title: 'Motif de la dépense',
+            message: 'Ajoutez un motif clair (ex: Snack, Souvenir...)',
+            placeholder: 'Souvenirs...',
+            validate: (value) => !value?.trim() ? 'Le motif est requis.' : ''
+        });
+        if (!desc) return;
+
+        const numAmount = parseFloat(amount.replace(',', '.'));
+        const newExpense = { id: uuidv4(), date: new Date().toISOString(), amount: numAmount, description: desc };
+        const newHistory = [...pocketMoney.history, newExpense];
+        const totalSpent = newHistory.reduce((sum, tx) => sum + tx.amount, 0);
+        const newCurrent = pocketMoney.initial - totalSpent;
+
+        setFormData({ ...formData, pocketMoney: { ...pocketMoney, current: newCurrent, history: newHistory } });
     };
 
     const handleInitialMoneyUpdate = (e) => {
         const initial = parseFloat(e.target.value) || 0;
-        const totalSpent = formData.pocketMoney.history.reduce((sum, tx) => sum + tx.amount, 0);
-        setFormData({
-            ...formData,
-            pocketMoney: {
-                ...formData.pocketMoney,
-                initial: initial,
-                current: initial - totalSpent
-            }
-        });
+        const totalSpent = pocketMoney.history.reduce((sum, tx) => sum + tx.amount, 0);
+        setFormData({ ...formData, pocketMoney: { ...pocketMoney, initial: initial, current: initial - totalSpent } });
     };
 
     const removePocketExpense = (txId) => {
-        const newHistory = formData.pocketMoney.history.filter(tx => tx.id !== txId);
+        const newHistory = pocketMoney.history.filter(tx => tx.id !== txId);
         const totalSpent = newHistory.reduce((sum, tx) => sum + tx.amount, 0);
-        const newCurrent = formData.pocketMoney.initial - totalSpent;
-
-        setFormData({
-            ...formData,
-            pocketMoney: {
-                ...formData.pocketMoney,
-                current: newCurrent,
-                history: newHistory
-            }
-        });
+        const newCurrent = pocketMoney.initial - totalSpent;
+        setFormData({ ...formData, pocketMoney: { ...pocketMoney, current: newCurrent, history: newHistory } });
     };
 
-    return (
-        <div className="modal-overlay">
-            <div className="modal-content animate-scale-in">
+    const roleColor = formData.role === 'animator' ? 'var(--secondary-color)' : (formData.role === 'direction' ? 'var(--accent-color)' : 'var(--primary-color)');
 
-                {/* Left Sidebar */}
-                <div className="modal-sidebar" style={{ background: '#f8fafc', padding: '2rem', borderRight: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column' }}>
-                    <h3 style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1e293b', marginBottom: '1.5rem', lineHeight: '1.2' }}>
-                        {editingId ? 'Modifier\nParticipant' : 'Nouveau\nParticipant'}
-                    </h3>
-                    <div style={{ flex: 1 }}></div>
-                    <button className="btn btn-outline" onClick={onClose} style={{ justifyContent: 'center' }}>
-                        <X size={18} /> Fermer
-                    </button>
+    return (
+        <div className="modal-overlay animate-fade-in" onClick={(e) => e.target === e.currentTarget && onClose()} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', zIndex: 1000 }}>
+            <div className="modal-content animate-scale-in" style={{ 
+                maxWidth: '940px', 
+                width: '100%', 
+                borderRadius: '32px', 
+                background: 'white', 
+                overflow: 'hidden', 
+                display: 'flex', 
+                flexDirection: 'row',
+                boxShadow: '0 25px 80px oklch(0% 0 0 / 0.25)',
+                border: '1.5px solid var(--glass-border)'
+            }}>
+
+                {/* Sidebar Context */}
+                <div style={{ 
+                    width: '320px', 
+                    background: `linear-gradient(180deg, ${roleColor} 0%, oklch(from ${roleColor} 80% 0.1 h) 100%)`, 
+                    padding: '3rem 2.5rem', 
+                    color: 'white', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '2rem' 
+                }} className="hide-mobile">
+                    <div style={{ width: '64px', height: '64px', background: 'rgba(255,255,255,0.2)', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {editingId ? <Edit2 size={32} strokeWidth={2.5} /> : <Plus size={32} strokeWidth={2.5} />}
+                    </div>
+                    <div>
+                        <h3 style={{ fontSize: '2rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', lineHeight: '1.1', letterSpacing: '-0.04em', margin: 0 }}>
+                            {editingId ? 'Modifier le membre' : 'Nouveau membre'}
+                        </h3>
+                        <p style={{ marginTop: '1rem', fontSize: '1rem', fontWeight: '700', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>
+                            {editingId ? "Mettez à jour les informations et les documents du participant." : "Créez une nouvelle fiche pour un enfant ou un membre du staff."}
+                        </p>
+                    </div>
+
+                    <div style={{ marginTop: 'auto' }}>
+                        <div style={{ padding: '1.25rem', background: 'rgba(255,255,255,0.15)', borderRadius: '20px', backdropFilter: 'blur(10px)', border: '1.5px solid rgba(255,255,255,0.2)' }}>
+                            <div style={{ fontSize: '10px', fontWeight: '950', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: '8px' }}>CONSEIL</div>
+                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '700', lineHeight: '1.4' }}>
+                                Assurez-vous d'avoir la fiche sanitaire avant d'autoriser le départ en activité.
+                            </p>
+                        </div>
+                    </div>
                 </div>
 
-                {/* Right Content - Form */}
-                <div style={{ flex: 1, padding: '2rem', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-                    <form onSubmit={onSubmit} style={{ display: 'grid', gap: '1.5rem' }}>
-
-                        {/* Role Selection - Top Bar */}
-                        <div className="form-row-aligned">
-                            <label>Rôle</label>
-                            <div className="role-selector">
-                                {['child', 'animator', 'direction'].map(role => (
-                                    <div
-                                        key={role}
-                                        className={`role-option ${formData.role === role ? 'active' : ''}`}
-                                        onClick={() => setFormData({ ...formData, role })}
+                {/* Scrollable Form */}
+                <div style={{ flex: 1, maxHeight: '90vh', overflowY: 'auto', padding: '3rem' }} className="no-scrollbar">
+                    <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                        
+                        {/* Role Selection */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <label className="form-label">Rôle au sein de la structure</label>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', background: 'oklch(0% 0 0 / 0.05)', padding: '6px', borderRadius: '18px' }}>
+                                {[
+                                    { id: 'child', label: 'Enfant', icon: <User size={18} /> },
+                                    { id: 'animator', label: 'Anim.', icon: <Users size={18} /> },
+                                    { id: 'direction', label: 'Dir.', icon: <Shield size={18} /> }
+                                ].map(r => (
+                                    <button 
+                                        key={r.id}
+                                        type="button" 
+                                        onClick={() => setFormData({ ...formData, role: r.id })}
+                                        style={{ 
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem',
+                                            padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
+                                            fontWeight: '950', fontSize: '0.85rem', transition: 'all 0.3s',
+                                            background: formData.role === r.id ? 'white' : 'transparent',
+                                            color: formData.role === r.id ? roleColor : 'var(--text-muted)',
+                                            boxShadow: formData.role === r.id ? 'var(--shadow-sm)' : 'none'
+                                        }}
                                     >
-                                        {role === 'child' ? 'Enfant' : role === 'animator' ? 'Animateur' : 'Direction'}
-                                    </div>
+                                        {r.icon} {r.label}
+                                    </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* General Fields */}
-                        <div className="form-row-aligned">
-                            <label>Prénom</label>
-                            <input type="text" className="input-field" required value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} />
-
-                            <label style={{ marginLeft: '1rem' }}>Nom</label>
-                            <input type="text" className="input-field" required value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <label className="form-label">Prénom</label>
+                                <input type="text" required value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} 
+                                    className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <label className="form-label">Nom</label>
+                                <input type="text" required value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} 
+                                    className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
+                            </div>
                         </div>
 
-                        <div className="form-row-aligned">
-                            <label>Date de naissance</label>
-                            <input type="date" className="input-field" value={formData.birthDate} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} />
-
-                            <label style={{ marginLeft: '1rem' }}>Groupe</label>
-                            <select className="input-field" value={formData.group} onChange={e => setFormData({ ...formData, group: e.target.value })}>
-                                <option value="">-- Aucun --</option>
-                                {groups.map(g => (
-                                    <option key={g.id} value={g.id}>{g.name}</option>
-                                ))}
-                            </select>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.25rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <label className="form-label">Date de Naissance</label>
+                                <input type="date" value={formData.birthDate || ''} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} 
+                                    className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <label className="form-label">Affectation Groupe</label>
+                                <select value={formData.group || ''} onChange={e => setFormData({ ...formData, group: e.target.value })}
+                                    className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', cursor: 'pointer' }}>
+                                    <option value="">Aucun groupe</option>
+                                    {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                </select>
+                            </div>
                         </div>
 
                         {formData.role === 'child' && (
-                            <div className="form-row-aligned" style={{ marginTop: '-0.5rem', background: '#f8fafc', padding: '1rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                                <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '600', color: '#1e293b' }}>
-                                    <input type="checkbox" checked={!!formData.healthDocProvided} onChange={e => setFormData({ ...formData, healthDocProvided: e.target.checked })} style={{ width: '18px', height: '18px', accentColor: '#10b981', cursor: 'pointer' }} />
-                                    Fiche sanitaire fournie
-                                </label>
-                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>Cochez si vous avez reçu le document médical complet.</span>
+                             <div 
+                                onClick={() => setFormData({ ...formData, healthDocProvided: !formData.healthDocProvided })}
+                                style={{ 
+                                    background: formData.healthDocProvided ? 'oklch(62% 0.18 145 / 0.08)' : 'var(--bg-secondary)', 
+                                    padding: '1.25rem', borderRadius: '20px', border: '1.5px solid', 
+                                    borderColor: formData.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)',
+                                    display: 'flex', alignItems: 'center', gap: '1.25rem', cursor: 'pointer', transition: 'all 0.3s'
+                                }}>
+                                <div style={{ 
+                                    width: '32px', height: '32px', borderRadius: '10px', 
+                                    background: formData.healthDocProvided ? 'var(--success-color)' : 'white',
+                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    border: '1.5px solid', borderColor: formData.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)'
+                                }}>
+                                    {formData.healthDocProvided && <Check size={20} strokeWidth={3} />}
+                                </div>
+                                <div>
+                                    <div style={{ fontWeight: '950', fontSize: '0.95rem', color: formData.healthDocProvided ? 'var(--success-color)' : 'var(--text-main)' }}>Dossier Sanitaire Reçu</div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700' }}>Cochez si la fiche médicale signée est en votre possession.</div>
+                                </div>
                             </div>
                         )}
 
-                        {/* Animator / Direction Specific Fields */}
+                        {/* Animator / Director Sections */}
                         {(formData.role === 'animator' || formData.role === 'direction') && (
-                            <div style={{ display: 'grid', gap: '1.5rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                <h4 style={{ margin: 0, fontSize: '0.9rem', color: 'var(--secondary-color)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Détails Encadrement</h4>
-
-                                <div className="form-row-aligned">
-                                    <label>Formation</label>
-                                    <input type="text" className="input-field" placeholder="Ex: BAFA, BAFD, PSC1..." value={formData.training} onChange={e => setFormData({ ...formData, training: e.target.value })} />
-
-                                    <label style={{ marginLeft: '1rem' }}>Téléphone</label>
-                                    <input type="tel" className="input-field" placeholder="06..." value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} />
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.75rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px solid var(--glass-border)' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><GraduationCap size={14} /> Formation</label>
+                                        <input type="text" placeholder="BAFA, BAFD..." value={formData.training || ''} onChange={e => setFormData({ ...formData, training: e.target.value })} 
+                                            className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
+                                    </div>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Phone size={14} /> Contact</label>
+                                        <input type="tel" placeholder="06..." value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} 
+                                            className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
+                                    </div>
                                 </div>
-
-                                <div className="form-row-aligned">
-                                    <label>Adresse</label>
-                                    <input type="text" className="input-field" placeholder="Adresse complète..." value={formData.address} onChange={e => setFormData({ ...formData, address: e.target.value })} style={{ gridColumn: '2 / span 3' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={14} /> Adresse Résidentielle</label>
+                                    <input type="text" placeholder="Rue, Ville, Code Postal..." value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} 
+                                        className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                                 </div>
-
-                                <div className="form-row-aligned">
-                                    <label>Contact Urgence</label>
-                                    <input type="text" className="input-field" placeholder="Nom et numéro du contact..." value={formData.emergencyContact} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} style={{ gridColumn: '2 / span 3' }} />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><ShieldAlert size={14} /> Contact d'Urgence (Nom/Tél)</label>
+                                    <input type="text" placeholder="Prénom Nom - 06..." value={formData.emergencyContact || ''} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} 
+                                        className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                                 </div>
                             </div>
                         )}
 
-                        <div className="form-row-aligned" style={{ alignItems: 'flex-start' }}>
-                            <label style={{ marginTop: '0.75rem' }}>Allergies</label>
-                            <textarea className="input-field" rows="2" placeholder="Ex: Arachides, Pénicilline..." value={formData.allergies} onChange={e => setFormData({ ...formData, allergies: e.target.value })} style={{ resize: 'vertical' }} />
-                        </div>
-
-                        <div className="form-row-aligned" style={{ alignItems: 'flex-start' }}>
-                            <label style={{ marginTop: '0.75rem' }}>Notes</label>
-                            <textarea className="input-field" rows="2" placeholder="Informations importantes..." value={formData.constraints} onChange={e => setFormData({ ...formData, constraints: e.target.value })} style={{ resize: 'vertical' }} />
-                        </div>
-
-                        <div className="form-row-aligned">
-                            <label>Photo</label>
-                            <div style={{ display: 'flex', gap: '0.5rem', gridColumn: '2 / span 3' }}>
-                                <input type="url" className="input-field" placeholder="Lien URL existant..." value={formData.photo} onChange={e => setFormData({ ...formData, photo: e.target.value })} style={{ flex: 1 }} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <label className="form-label">Allergies Connues</label>
+                                <textarea rows="2" placeholder="Aucune allergie..." value={formData.allergies || ''} onChange={e => setFormData({ ...formData, allergies: e.target.value })} 
+                                    className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <label className="form-label">Remarques / Régime</label>
+                                <textarea rows="2" placeholder="Notes diverses..." value={formData.constraints || ''} onChange={e => setFormData({ ...formData, constraints: e.target.value })} 
+                                    className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
                             </div>
                         </div>
 
-                        {/* Pocket Money Section - Only for children */}
+                        {/* Pocket Money UI */}
                         {formData.role === 'child' && (
-                            <div style={{ marginTop: '1rem', padding: '1.5rem', background: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                    <h4 style={{ margin: 0, fontSize: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                        💰 Argent de Poche
-                                    </h4>
-                                    <div style={{ background: 'white', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontWeight: '700', fontSize: '1.1rem', color: formData.pocketMoney.current < 0 ? '#ef4444' : '#1e293b', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
-                                        Reste : {Number(formData.pocketMoney.current || 0).toFixed(2)} €
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px solid var(--glass-border)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>
+                                        <Coins size={22} color="oklch(71% 0.19 45)" /> ARGENT DE POCHE
+                                    </div>
+                                    <div style={{ padding: '0.5rem 1rem', borderRadius: '12px', background: 'white', border: '1.5px solid var(--glass-border)', fontWeight: '950', color: pocketMoney.current < 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
+                                        Restant : {Number(pocketMoney.current || 0).toFixed(2)} €
                                     </div>
                                 </div>
 
-                                <div className="form-row-aligned" style={{ marginBottom: '1rem' }}>
-                                    <label>Dépôt Initial (€)</label>
-                                    <input
-                                        type="number" step="0.5"
-                                        className="input-field"
-                                        value={formData.pocketMoney.initial}
-                                        onChange={handleInitialMoneyUpdate}
-                                        style={{ width: '120px' }}
-                                    />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+                                    <div style={{ flex: 1 }}>
+                                        <label className="form-label" style={{ marginBottom: '8px' }}>Dépôt Initial (€)</label>
+                                        <input type="number" step="0.5" value={pocketMoney.initial} onChange={handleInitialMoneyUpdate} 
+                                            className="glass-input" style={{ width: '100%', background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.75rem 1rem', borderRadius: '14px', fontWeight: '800' }} />
+                                    </div>
+                                    <button type="button" onClick={addPocketExpense} className="btn btn-primary" style={{ marginTop: 'auto', padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '950', gap: '0.5rem', background: 'var(--success-color)', boxShadow: 'none' }}>
+                                        <Plus size={18} strokeWidth={3} /> Nouvelle Dépense
+                                    </button>
                                 </div>
 
-                                <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', overflow: 'hidden' }}>
-                                    <div style={{ padding: '0.75rem 1rem', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.85rem', fontWeight: '600', color: '#64748b', textTransform: 'uppercase' }}>Historique des dépenses</span>
-                                        <button type="button" onClick={addPocketExpense} style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', padding: '0.3rem 0.6rem', fontSize: '0.8rem', fontWeight: '600', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.2rem' }}>
-                                            <Plus size={14} /> Dépense
-                                        </button>
-                                    </div>
-
-                                    {formData.pocketMoney.history.length === 0 ? (
-                                        <div style={{ padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                                            Aucune dépense enregistrée.
-                                        </div>
-                                    ) : (
-                                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-                                            {formData.pocketMoney.history.map(tx => (
-                                                <div key={tx.id} style={{ padding: '0.75rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <div>
-                                                        <div style={{ fontWeight: '600', color: '#334155', fontSize: '0.9rem' }}>{tx.description}</div>
-                                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{new Date(tx.date).toLocaleDateString()}</div>
-                                                    </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                        <span style={{ fontWeight: '700', color: '#ef4444' }}>- {tx.amount.toFixed(2)} €</span>
-                                                        <button type="button" onClick={() => removePocketExpense(tx.id)} style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '4px' }}>
-                                                            <Trash2 size={16} />
-                                                        </button>
-                                                    </div>
+                                {pocketMoney.history && pocketMoney.history.length > 0 && (
+                                    <div style={{ marginTop: '0.5rem', background: 'white', borderRadius: '16px', border: '1.5px solid var(--glass-border)', overflow: 'hidden' }}>
+                                        {pocketMoney.history.map((tx, idx) => (
+                                            <div key={tx.id} style={{ padding: '0.85rem 1.25rem', borderBottom: idx < pocketMoney.history.length - 1 ? '1.5px solid var(--glass-border)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: '850', color: 'var(--text-main)', fontSize: '0.9rem' }}>{tx.description}</div>
+                                                    <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>{new Date(tx.date).toLocaleDateString()}</div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                                    <span style={{ fontWeight: '950', color: 'var(--danger-color)' }}>-{tx.amount.toFixed(2)} €</span>
+                                                    <button type="button" onClick={() => removePocketExpense(tx.id)} style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: 'none', color: 'var(--danger-color)', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                        <Trash2 size={16} strokeWidth={2} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid #f1f5f9' }}>
-                            <button type="button" className="btn btn-outline" onClick={onClose}>Annuler</button>
-                            <button type="submit" className="btn btn-primary" style={{ padding: '0.75rem 2rem' }}>Enregistrer</button>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem', paddingTop: '2.5rem', borderTop: '1.5px solid var(--glass-border)' }}>
+                            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ padding: '1rem 2rem', fontWeight: '900', borderRadius: '16px' }}>Annuler</button>
+                            <button type="submit" className="btn btn-primary" style={{ padding: '1rem 3rem', fontWeight: '950', borderRadius: '16px', fontSize: '1rem' }}>{editingId ? 'Mettre à jour la fiche' : 'Créer le membre'}</button>
                         </div>
                     </form>
                 </div>
+
+                <style>{`
+                    .form-label { font-size: 11px; font-weight: 950; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.5rem; display: block; }
+                    .glass-input:focus { border-color: ${roleColor} !important; background: white !important; box-shadow: 0 0 0 4px oklch(from ${roleColor} l c h / 0.1) !important; outline: none; }
+                    @media (max-width: 1024px) {
+                        .hide-mobile { display: none !important; }
+                    }
+                `}</style>
             </div>
         </div>
     );

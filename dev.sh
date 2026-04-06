@@ -1,35 +1,30 @@
 #!/bin/bash
 
-# Script pour lancer le mode développement instantané (HMR)
-# Frontend sur port 5173, Backend sur port 3001
+# Script de développement pour BBOARD
 
-echo "🚀 Lancement du mode développement..."
+echo "--------------------------------------------------------"
+echo "Lancement du mode développement..."
+echo "--------------------------------------------------------"
 
-# Kill potential existing processes (FORCE)
-echo "🔒 Libération des ports 3001 et 5173..."
-echo "root" | sudo -S fuser -k 3001/tcp 2>/dev/null
-echo "root" | sudo -S fuser -k 5173/tcp 2>/dev/null
+echo "Libération des ports 3001 et 5173..."
+fuser -k 3001/tcp 2>/dev/null || true
+fuser -k 5173/tcp 2>/dev/null || true
 
-# Clean up any leftover Docker containers that might use the ports
-echo "🧹 Nettoyage des anciens conteneurs..."
-echo "root" | sudo -S docker stop bboard-frontend bboard-backend 2>/dev/null
-echo "root" | sudo -S docker rm bboard-frontend bboard-backend 2>/dev/null
+echo "Nettoyage des anciens conteneurs..."
+docker rm -f bboard-dev 2>/dev/null || true
 
-# Store the base directory
-BASE_DIR=$(pwd)
-
-# Active the backend
-echo "📦 Démarrage du Backend (port 3001)..."
-cd "$BASE_DIR/server" && npm run dev &
+# Lancement du backend en arrière-plan
+echo "Démarrage du Backend (port 3001)..."
+cd server
+npm run dev > /dev/null 2>&1 &
 BACKEND_PID=$!
 
-# Wait a bit for backend to start
-sleep 3
+# Lancement du frontend
+echo "Démarrage du Frontend (port 5173)..."
+cd ..
+npm run dev
 
-# Active the frontend
-echo "💻 Démarrage du Frontend (port 5173)..."
-cd "$BASE_DIR" && npm run dev
-
-# When frontend stops, kill backend
+# Fermeture propre
+echo "Arrêt des services..."
 kill $BACKEND_PID
-echo "✅ Mode développement arrêté."
+echo "Mode développement arrêté."

@@ -18,19 +18,21 @@ export default function VanLayout({
 
     return (
         <div className="vehicle-card van-layout" style={{
-            background: 'white',
-            border: '1px solid #e2e8f0',
-            borderRadius: '16px',
+            background: 'rgba(255, 255, 255, 0.45)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.5)',
+            borderRadius: '24px',
             overflow: 'hidden',
-            boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-            maxWidth: '300px',
+            boxShadow: 'inset 0 0 1px rgba(255,255,255,0.8), 0 12px 40px rgba(15, 23, 42, 0.08)',
+            maxWidth: '320px',
             margin: '0 auto',
         }}>
             {/* Header */}
             <div style={{
-                padding: '1rem 1.25rem 0',
-                borderBottom: `3px solid ${accent}`,
-                background: `linear-gradient(135deg, ${accent}0d 0%, ${accent}04 100%)`,
+                padding: '1.25rem 1.5rem 0',
+                borderBottom: `4px solid ${accent}`,
+                background: `linear-gradient(180deg, ${accent}15 0%, transparent 100%)`,
             }}>
                 {/* Top row: title + actions */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -89,7 +91,7 @@ export default function VanLayout({
 
                 {/* Row 1: Driver + Front passengers */}
                 <div className="seat-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Seat id="Driver" label="🚗" vehiclePrefix={prefix} placements={placements} participants={participants}
+                    <Seat id="Driver" label="" vehiclePrefix={prefix} placements={placements} participants={participants}
                         onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave} onRemove={onRemove} isDriverSeat={true} />
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
                         <Seat id="F1" vehiclePrefix={prefix} placements={placements} participants={participants}

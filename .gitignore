@@ -26,3 +26,13 @@ dist-ssr
 # Database
 server/*.sqlite
 server/data/*.sqlite
+
+# Local Environment
+.env
+.env.local
+.env.*.local
+
+# AI Agent Context
+.agent/
+.agents/
+.gemini/

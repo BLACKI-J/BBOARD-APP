@@ -1,116 +1,130 @@
 import React from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, LayoutGrid } from 'lucide-react';
 
-const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setParticipants, newGroupData, setNewGroupData, onAddGroup, onDeleteGroup }) => {
+const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setParticipants, newGroupData, setNewGroupData, onAddGroup, onDeleteGroup, canEdit }) => {
     if (!isOpen) return null;
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
+        <div className="modal-overlay animate-fade-in" onClick={onClose} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', zIndex: 1000 }}>
             <div 
                 className="modal-content animate-scale-in" 
                 onClick={e => e.stopPropagation()}
                 style={{ 
-                    width: '380px', // Small fixed width
-                    maxHeight: '80vh',
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    borderRadius: '16px',
+                    width: '100%',
+                    maxWidth: '440px',
+                    borderRadius: '28px',
                     background: 'white',
-                    boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)',
-                    overflow: 'hidden'
+                    boxShadow: '0 25px 80px oklch(0% 0 0 / 0.15)',
+                    overflow: 'hidden',
+                    border: '1.5px solid var(--glass-border)'
                 }}
             >
                 {/* Header */}
-                <div className="modal-header" style={{ 
-                    padding: '1.25rem', 
-                    borderBottom: '1px solid #e2e8f0', 
+                <div style={{ 
+                    padding: '1.5rem 2rem', 
+                    background: 'var(--primary-gradient)', 
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center',
-                    background: '#f8fafc'
+                    color: 'white'
                 }}>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 'bold', color: '#1e293b' }}>Gestion des Groupes</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                        <div style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <LayoutGrid size={20} strokeWidth={2.5} />
+                        </div>
+                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>Gestion des Groupes</h3>
+                    </div>
                     <button 
                         onClick={onClose}
-                        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#64748b', padding: '4px', display: 'flex' }}
+                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', color: 'white', borderRadius: '10px', padding: '6px', display: 'flex' }}
                     >
-                        <X size={20} />
+                        <X size={20} strokeWidth={2.5} />
                     </button>
                 </div>
 
                 {/* Body */}
-                <div className="modal-body" style={{ padding: '1.25rem', overflowY: 'auto' }}>
+                <div style={{ padding: '2rem', overflowY: 'auto' }} className="no-scrollbar">
                      {/* Add Group Form */}
-                     <form onSubmit={onAddGroup} style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                        <input 
-                            type="text" 
-                            value={newGroupData.name} 
-                            onChange={e => setNewGroupData({ ...newGroupData, name: e.target.value })} 
-                            placeholder="Nom du groupe..."
-                            required
-                            className="input-field"
-                            style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem' }}
-                        />
-                        <div style={{ position: 'relative', width: '40px', height: '38px', borderRadius: '8px', overflow: 'hidden', border: '1px solid #cbd5e1', cursor: 'pointer' }}>
+                     {canEdit && (
+                         <form onSubmit={onAddGroup} style={{ display: 'flex', gap: '0.75rem', marginBottom: '2.5rem' }}>
                             <input 
-                                type="color" 
-                                value={newGroupData.color} 
-                                onChange={e => setNewGroupData({ ...newGroupData, color: e.target.value })} 
-                                style={{ 
-                                    position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', 
-                                    padding: 0, margin: 0, cursor: 'pointer', border: 'none' 
-                                }}
+                                type="text" 
+                                value={newGroupData.name} 
+                                onChange={e => setNewGroupData({ ...newGroupData, name: e.target.value })} 
+                                placeholder="Nom du groupe..."
+                                required
+                                className="glass-input"
+                                style={{ flex: 1, padding: '0.75rem 1rem', borderRadius: '14px', border: '1.5px solid var(--glass-border)', fontSize: '0.9rem', fontWeight: '700', background: 'var(--bg-secondary)', outline: 'none' }}
                             />
-                        </div>
-                        <button 
-                            type="submit" 
-                            className="btn btn-primary"
-                            style={{ 
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                                padding: '0 0.75rem', borderRadius: '8px', background: 'var(--primary-color)', color: 'white', border: 'none' 
-                            }}
-                        >
-                            <Plus size={18} />
-                        </button>
-                    </form>
-
-                    {/* Groups List */}
-                    <div className="groups-list" style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                        {groups.length === 0 && (
-                            <div style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem', padding: '1rem' }}>
-                                Aucun groupe créé.
+                            <div style={{ position: 'relative', width: '48px', height: '48px', borderRadius: '14px', overflow: 'hidden', border: '1.5px solid var(--glass-border)', cursor: 'pointer', background: 'white' }}>
+                                <input 
+                                    type="color" 
+                                    value={newGroupData.color} 
+                                    onChange={e => setNewGroupData({ ...newGroupData, color: e.target.value })} 
+                                    style={{ 
+                                        position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', 
+                                        padding: 0, margin: 0, cursor: 'pointer', border: 'none' 
+                                    }}
+                                />
                             </div>
-                        )}
-                        {groups.map(group => (
-                            <div 
-                                key={group.id} 
-                                className="group-item animate-fade-in" 
+                            <button 
+                                type="submit" 
+                                className="btn btn-primary"
                                 style={{ 
-                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                    padding: '0.75rem 1rem', background: 'white', 
-                                    border: '1px solid #f1f5f9', borderRadius: '8px',
-                                    boxShadow: '0 1px 2px rgba(0,0,0,0.02)',
-                                    borderLeft: `4px solid ${group.color}`
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                                    width: '48px', height: '48px', borderRadius: '14px', padding: 0, flexShrink: 0
                                 }}
                             >
-                                <span style={{ fontWeight: 500, color: '#334155' }}>{group.name}</span>
-                                <button 
-                                    onClick={() => onDeleteGroup(group.id)}
-                                    title="Supprimer"
-                                    style={{ 
-                                        background: 'transparent', border: 'none', cursor: 'pointer', 
-                                        color: '#cbd5e1', padding: '4px', transition: 'color 0.2s' 
-                                    }}
-                                    onMouseEnter={(e) => e.currentTarget.style.color = '#ef4444'}
-                                    onMouseLeave={(e) => e.currentTarget.style.color = '#cbd5e1'}
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <Plus size={24} strokeWidth={3} />
+                            </button>
+                        </form>
+                     )}
+
+                    {/* Groups List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {groups.length === 0 ? (
+                            <div style={{ textAlign: 'center', padding: '3rem 1rem', background: 'var(--bg-secondary)', borderRadius: '20px', border: '1.5px dashed var(--glass-border)' }}>
+                                <div style={{ marginBottom: '1rem', color: 'var(--text-muted)', opacity: 0.4 }}><LayoutGrid size={44} /></div>
+                                <div style={{ fontSize: '0.9rem', fontWeight: '800', color: 'var(--text-muted)' }}>Aucun groupe créé</div>
                             </div>
-                        ))}
+                        ) : (
+                            groups.map(group => (
+                                <div 
+                                    key={group.id} 
+                                    className="card-glass animate-fade-in" 
+                                    style={{ 
+                                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                        padding: '1.25rem 1.5rem', background: 'white', 
+                                        borderRadius: '18px',
+                                        border: '1.5px solid var(--glass-border)',
+                                        borderLeft: `8px solid ${group.color}`,
+                                        transition: 'transform 0.3s var(--ease-out-expo)'
+                                    }}
+                                >
+                                    <span style={{ fontWeight: '950', color: 'var(--text-main)', fontSize: '1rem', letterSpacing: '-0.01em' }}>{group.name}</span>
+                                    {canEdit && (
+                                        <button 
+                                            onClick={() => onDeleteGroup(group.id)}
+                                            className="btn-icon-ref danger"
+                                            title="Supprimer le groupe"
+                                            style={{ width: '36px', height: '36px', borderRadius: '10px' }}
+                                        >
+                                            <Trash2 size={16} strokeWidth={2.5} />
+                                        </button>
+                                    )}
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
+
+                <div style={{ padding: '1.5rem 2rem', background: 'var(--bg-secondary)', borderTop: '1.5px solid var(--glass-border)', textAlign: 'right' }}>
+                    <button onClick={onClose} className="btn btn-secondary" style={{ padding: '0.75rem 1.5rem', borderRadius: '12px', fontWeight: '950' }}>Fermer</button>
+                </div>
             </div>
+            <style>{`
+                .glass-input:focus { border-color: var(--primary-color) !important; background: white !important; }
+            `}</style>
         </div>
     );
 };

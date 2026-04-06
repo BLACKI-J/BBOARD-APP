@@ -1,155 +1,199 @@
 import React from 'react';
-import { X, Mail, Phone, Edit2, AlertCircle, CheckSquare, Coins } from 'lucide-react';
+import { X, Mail, Phone, Edit2, ShieldAlert, CheckCircle2, Coins, MapPin, GraduationCap, Calendar, History, ArrowRight } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { RoleBadge, GroupBadge } from '../common/Badges';
 import { getAge } from '../../utils/participantUtils';
 
-const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleEdit, groups }) => {
+const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleEdit, groups, canEdit }) => {
     if (!viewingParticipant) return null;
 
-    return (
-        <div className="modal-overlay" onClick={() => setViewingParticipant(null)}>
-            <div className="modal-content animate-scale-in" style={{ borderRadius: '20px', overflow: 'hidden' }} onClick={(e) => e.stopPropagation()}>
+    const age = getAge(viewingParticipant.birthDate);
+    const roleColor = viewingParticipant.role === 'animator' ? 'var(--secondary-color)' : (viewingParticipant.role === 'direction' ? 'var(--accent-color)' : 'var(--primary-color)');
 
-                {/* Header Image */}
+    return (
+        <div className="modal-overlay animate-fade-in" onClick={() => setViewingParticipant(null)} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', zIndex: 1000 }}>
+            <div className="modal-content animate-scale-in" 
+                style={{ 
+                    borderRadius: '32px', 
+                    overflow: 'hidden', 
+                    maxWidth: '520px', 
+                    width: '100%',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    boxShadow: '0 25px 80px oklch(0% 0 0 / 0.25)',
+                    border: '1.5px solid var(--glass-border)'
+                }} 
+                onClick={(e) => e.stopPropagation()}>
+
+                {/* Header Image / Gradient Area */}
                 <div style={{
-                    height: '140px', // Increased height
-                    background: `linear-gradient(135deg, ${viewingParticipant.role === 'animator' ? '#10b981' : (viewingParticipant.role === 'direction' ? '#8b5cf6' : '#3b82f6')} 0%, #f8fafc 100%)`,
+                    height: '120px',
+                    background: `linear-gradient(135deg, ${roleColor} 0%, oklch(from ${roleColor} 90% 0.05 h) 100%)`,
                     position: 'relative',
                     flexShrink: 0
                 }}>
-                    <button className="close-btn" onClick={() => setViewingParticipant(null)} style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'white', color: '#64748b', borderRadius: '50%', padding: '6px', border: 'none', cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-                        <X size={18} />
+                    <button onClick={() => setViewingParticipant(null)} 
+                        style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '12px', padding: '8px', border: 'none', cursor: 'pointer', backdropFilter: 'blur(10px)', display: 'flex' }}>
+                        <X size={20} strokeWidth={2.5} />
                     </button>
                 </div>
 
-                <div style={{ padding: '0 2rem 2rem 2rem', overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-                    {/* Profile Info */}
-                    <div className="profile-section" style={{ marginTop: '-70px', marginBottom: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                        <div className="profile-avatar" style={{ border: '4px solid white', borderRadius: '50%', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)', background: 'white', marginBottom: '0.75rem' }}>
-                            <Avatar participant={viewingParticipant} size={120} /> {/* Increased size */}
+                <div style={{ padding: '0 2rem 2.5rem 2.5rem', maxHeight: '80vh', overflowY: 'auto' }} className="no-scrollbar">
+                    {/* Profile Header */}
+                    <div style={{ marginTop: '-60px', marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
+                        <div style={{ border: '6px solid white', borderRadius: '32px', boxShadow: '0 12px 30px oklch(0% 0 0 / 0.15)', background: 'white', marginBottom: '1.25rem' }}>
+                            <Avatar participant={viewingParticipant} size={110} />
                         </div>
-                        <h2 style={{ fontSize: '1.4rem', color: '#1e293b', margin: '0 0 0.5rem 0', fontWeight: '700', textAlign: 'center' }}>
-                            {viewingParticipant.firstName} <span style={{ fontWeight: 400 }}>{viewingParticipant.lastName}</span>
+                        <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)', margin: '0 0 0.5rem 0', fontWeight: '950', fontFamily: 'Sora, sans-serif', textAlign: 'center', letterSpacing: '-0.03em' }}>
+                            {viewingParticipant.firstName} <span style={{ textTransform: 'uppercase' }}>{viewingParticipant.lastName}</span>
                         </h2>
-                        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                             <RoleBadge role={viewingParticipant.role} />
                             <GroupBadge groupId={viewingParticipant.group} groups={groups} />
                         </div>
                     </div>
 
-                    {/* Info List */}
-                    <div className="info-list" style={{ background: 'white', borderRadius: '12px', border: '1px solid #f1f5f9', padding: '0.5rem', marginBottom: '1.5rem', boxShadow: '0 1px 2px rgba(0,0,0,0.02)' }}>
-                        <div className="info-item">
-                            <span className="label">Âge</span>
-                            <span className="value">{getAge(viewingParticipant.birthDate)} <span className="sub">({viewingParticipant.birthDate || 'N/A'})</span></span>
+                    {/* Quick Stats Grid */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
+                        <div className="card-glass" style={{ padding: '1rem', background: 'white', textAlign: 'center', borderRadius: '20px' }}>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Âge</div>
+                            <div style={{ color: 'var(--text-main)', fontWeight: '900', fontSize: '1.1rem' }}>{age || '—'}</div>
                         </div>
-
-                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.training && (
-                            <div className="info-item">
-                                <span className="label">Formation</span>
-                                <span className="value">{viewingParticipant.training}</span>
-                            </div>
-                        )}
-
-                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.phone && (
-                            <div className="info-item">
-                                <span className="label">Téléphone</span>
-                                <div className="value-row">
-                                    <Phone size={14} className="icon" />
-                                    <span>{viewingParticipant.phone}</span>
-                                </div>
-                            </div>
-                        )}
-
-                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.address && (
-                            <div className="info-item" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '4px' }}>
-                                <span className="label" style={{ alignSelf: 'flex-start' }}>Adresse</span>
-                                <span className="value" style={{ textAlign: 'left', fontSize: '0.85rem' }}>{viewingParticipant.address}</span>
-                            </div>
-                        )}
-
-                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && viewingParticipant.emergencyContact && (
-                            <div className="info-item" style={{ background: '#fffbeb', margin: '4px', borderRadius: '8px', border: '1px solid #fef3c7' }}>
-                                <span className="label" style={{ color: '#92400e' }}>Urgence</span>
-                                <span className="value" style={{ color: '#92400e' }}>{viewingParticipant.emergencyContact}</span>
-                            </div>
-                        )}
+                        <div className="card-glass" style={{ padding: '1rem', background: 'white', textAlign: 'center', borderRadius: '20px' }}>
+                            <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Date Naiss.</div>
+                            <div style={{ color: 'var(--text-main)', fontWeight: '900', fontSize: '1.1rem' }}>{viewingParticipant.birthDate || '—'}</div>
+                        </div>
                     </div>
 
-                    {/* Pocket Money Section - Child Only */}
-                    {viewingParticipant.role === 'child' && viewingParticipant.pocketMoney && (
-                        <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', padding: '1.25rem', marginBottom: '1.5rem', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                                <h3 style={{ margin: 0, fontSize: '1rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                    <Coins size={18} color="#64748b" /> Argent de Poche
-                                </h3>
-                                <div style={{ background: viewingParticipant.pocketMoney.current < 0 ? '#fee2e2' : '#ecfdf5', color: viewingParticipant.pocketMoney.current < 0 ? '#ef4444' : '#059669', padding: '0.25rem 0.75rem', borderRadius: '8px', fontWeight: '700', fontSize: '1.1rem' }}>
-                                    {Number(viewingParticipant.pocketMoney.current || 0).toFixed(2)} €
+                    {/* Details List */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        
+                        {/* Medical / Alerte Section */}
+                        {(viewingParticipant.allergies || viewingParticipant.constraints) ? (
+                            <div style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: '1.5px solid oklch(62% 0.2 28 / 0.15)', borderRadius: '24px', padding: '1.5rem', color: 'var(--danger-color)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                                    <ShieldAlert size={20} strokeWidth={2.5} /> SÉCURITÉ MÉDICALE
                                 </div>
-                            </div>
-
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', color: '#64748b', marginBottom: '0.5rem', padding: '0 0.5rem' }}>
-                                <span>Dépôt initial : <strong>{Number(viewingParticipant.pocketMoney.initial || 0).toFixed(2)} €</strong></span>
-                                <span>Dépenses : <strong>{Number((viewingParticipant.pocketMoney.initial || 0) - (viewingParticipant.pocketMoney.current || 0)).toFixed(2)} €</strong></span>
-                            </div>
-
-                            {viewingParticipant.pocketMoney.history && viewingParticipant.pocketMoney.history.length > 0 && (
-                                <div style={{ marginTop: '0.75rem', background: '#f8fafc', borderRadius: '8px', overflow: 'hidden', border: '1px solid #f1f5f9' }}>
-                                    {viewingParticipant.pocketMoney.history.slice(0, 3).map((tx, idx) => (
-                                        <div key={tx.id} style={{ padding: '0.5rem 0.75rem', borderBottom: idx < Math.min(viewingParticipant.pocketMoney.history.length, 3) - 1 ? '1px solid #f1f5f9' : 'none', display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                                            <span style={{ color: '#475569' }}>{tx.description}</span>
-                                            <span style={{ fontWeight: '600', color: '#ef4444' }}>- {Number(tx.amount || 0).toFixed(2)} €</span>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                    {viewingParticipant.allergies && (
+                                        <div>
+                                            <div style={{ fontSize: '10px', fontWeight: '950', opacity: 0.6, marginBottom: '2px' }}>ALLERGIES</div>
+                                            <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem' }}>{viewingParticipant.allergies}</div>
                                         </div>
-                                    ))}
-                                    {viewingParticipant.pocketMoney.history.length > 3 && (
-                                        <div style={{ padding: '0.5rem', textAlign: 'center', fontSize: '0.8rem', color: '#94a3b8', background: '#f1f5f9' }}>
-                                            + {viewingParticipant.pocketMoney.history.length - 3} autre(s) dépense(s)
+                                    )}
+                                    {viewingParticipant.constraints && (
+                                        <div>
+                                            <div style={{ fontSize: '10px', fontWeight: '950', opacity: 0.6, marginBottom: '2px' }}>CONTRAINTES / RÉGIME</div>
+                                            <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem' }}>{viewingParticipant.constraints}</div>
                                         </div>
                                     )}
                                 </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Medical / Notes */}
-                    {(viewingParticipant.allergies || viewingParticipant.constraints) ? (
-                        <div className="medical-card">
-                            <div className="medical-header">
-                                <AlertCircle size={18} />
-                                <span>Santé & Sécurité</span>
                             </div>
-                            {viewingParticipant.allergies && (
-                                <div className="medical-item">
-                                    <span className="label">Allergies</span>
-                                    <span className="value">{viewingParticipant.allergies}</span>
+                        ) : (
+                            <div style={{ background: 'var(--bg-secondary)', borderRadius: '24px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-muted)' }}>
+                                <CheckCircle2 size={20} style={{ color: 'var(--success-color)' }} />
+                                <span style={{ fontWeight: '850', fontSize: '0.85rem' }}>AUCUN PROBLÈME MÉDICAL SIGNALÉ</span>
+                            </div>
+                        )}
+
+                        {/* Professional Info (Staff Only) */}
+                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <h3 style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0.5rem 0 0 0' }}>Informations Professionnelles</h3>
+                                <div className="card-glass" style={{ background: 'white', padding: '1.5rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                    {viewingParticipant.training && (
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <GraduationCap size={18} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+                                            <div>
+                                                <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)' }}>FORMATION</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>{viewingParticipant.training}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {viewingParticipant.phone && (
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <Phone size={18} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+                                            <div>
+                                                <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)' }}>TÉLÉPHONE</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>{viewingParticipant.phone}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {viewingParticipant.address && (
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <MapPin size={18} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+                                            <div>
+                                                <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)' }}>ADRESSE</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.95rem', lineHeight: 1.4 }}>{viewingParticipant.address}</div>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                            {viewingParticipant.constraints && (
-                                <div className="medical-item">
-                                    <span className="label">Contraintes</span>
-                                    <span className="value">{viewingParticipant.constraints}</span>
+                            </div>
+                        )}
+
+                        {/* Pocket Money Section (Children Only) */}
+                        {viewingParticipant.role === 'child' && viewingParticipant.pocketMoney && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                                <h3 style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0.5rem 0 0 0' }}>Gestion de l'argent de poche</h3>
+                                <div className="card-glass" style={{ background: 'white', padding: '1.75rem', borderRadius: '24px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                        <div>
+                                            <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', marginBottom: '4px' }}>SOLDE ACTUEL</div>
+                                            <div style={{ fontSize: '2rem', fontWeight: '950', color: viewingParticipant.pocketMoney.current < 0 ? 'var(--danger-color)' : 'var(--success-color)', lineHeight: 1 }}>
+                                                {Number(viewingParticipant.pocketMoney.current || 0).toFixed(2)} €
+                                            </div>
+                                        </div>
+                                        <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'oklch(71% 0.19 45 / 0.1)', color: 'oklch(71% 0.19 45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <Coins size={24} />
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '16px' }}>
+                                         <div>
+                                            <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)' }}>DÉPOT INITIAL</div>
+                                            <div style={{ fontWeight: '900', fontSize: '0.9rem' }}>{Number(viewingParticipant.pocketMoney.initial || 0).toFixed(2)} €</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)' }}>TOTAL DÉPENSÉ</div>
+                                            <div style={{ fontWeight: '900', fontSize: '0.9rem', color: 'var(--danger-color)' }}>
+                                                {Number((viewingParticipant.pocketMoney.initial || 0) - (viewingParticipant.pocketMoney.current || 0)).toFixed(2)} €
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {viewingParticipant.pocketMoney.history && viewingParticipant.pocketMoney.history.length > 0 && (
+                                        <div style={{ marginTop: '1.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                                                <History size={12} /> DERNIÈRES OPÉRATIONS
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                {viewingParticipant.pocketMoney.history.slice(0, 3).map((tx) => (
+                                                    <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '12px', fontSize: '0.85rem' }}>
+                                                        <span style={{ fontWeight: '800' }}>{tx.description}</span>
+                                                        <span style={{ fontWeight: '950', color: 'var(--danger-color)' }}>-{Number(tx.amount || 0).toFixed(2)} €</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="empty-state-card" style={{ marginBottom: '1.5rem', padding: '1.5rem' }}>
-                            <CheckSquare size={20} color="#cbd5e1" />
-                            <span style={{ fontSize: '0.9rem' }}>Aucune info médicale</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Footer Actions */}
+                    {canEdit && (
+                        <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1rem' }}>
+                            <button onClick={() => setViewingParticipant(null)} className="btn btn-secondary" style={{ flex: 1, padding: '1rem', borderRadius: '16px', fontWeight: '900' }}>Fermer</button>
+                            <button onClick={() => {
+                                const p = viewingParticipant;
+                                setViewingParticipant(null);
+                                handleEdit(p);
+                            }} className="btn btn-primary" style={{ flex: 1.5, padding: '1rem', borderRadius: '16px', fontWeight: '950', gap: '0.75rem' }}>
+                                <Edit2 size={18} strokeWidth={2.5} /> Modifier la fiche
+                            </button>
                         </div>
                     )}
-
-                    {/* Actions Footer */}
-                    <div className="drawer-footer" style={{ marginTop: '0', paddingTop: '0', borderTop: 'none' }}>
-                        <button className="btn btn-outline" onClick={() => setViewingParticipant(null)}>Fermer</button>
-                        <button className="btn btn-primary" onClick={() => {
-                            const p = viewingParticipant;
-                            setViewingParticipant(null);
-                            handleEdit(p);
-                        }}>
-                            <Edit2 size={16} style={{ marginRight: '8px' }} /> Modifier
-                        </button>
-                    </div>
                 </div>
             </div>
         </div>
