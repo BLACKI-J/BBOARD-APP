@@ -1,5 +1,4 @@
 <div align="center">
-  <img src="public/logo/logo.png" alt="BBOARD Logo" width="200" style="border-radius: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); margin-bottom: 20px;" />
 
   # BBOARD 🚀
   **L'application de gestion de Centre de Vacances (Colo) nouvelle génération.**
