@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# 🚀 BBOARD-APP : Script d'installation Docker UNIVERSEL
+# BBOARD-APP : Script d'installation Docker UNIVERSEL
 # ==============================================================================
 # Supporte : Ubuntu (incluant 24.04), Debian, Kali Linux, CentOS, Fedora, RHEL
 # Optimisé pour : Bare Metal, VM, Proxmox LXC
@@ -10,7 +10,7 @@
 set -e
 
 echo "--------------------------------------------------------"
-echo "  🐳 Installation de Docker & Docker Compose"
+echo "  Installation de Docker & Docker Compose"
 echo "--------------------------------------------------------"
 
 # 1. Détection initiale du système
@@ -19,14 +19,14 @@ if [ -f /etc/os-release ]; then
     OS_NAME=$NAME
     OS_ID=$ID
 else
-    echo "❌ Erreur : Impossible de détecter le système d'exploitation."
+    echo "Erreur : Impossible de détecter le système d'exploitation."
     exit 1
 fi
 
-echo "🔍 Système détecté : $OS_NAME ($OS_ID)"
+echo "Système détecté : $OS_NAME ($OS_ID)"
 
 # 2. Nettoyage préventif (Crucial pour Kali et Ubuntu)
-echo "🧹 Nettoyage des anciennes versions et conflits..."
+echo "Nettoyage des anciennes versions et conflits..."
 if [[ "$OS_ID" == "ubuntu" || "$OS_ID" == "debian" || "$OS_ID" == "kali" ]]; then
     sudo rm -f /etc/apt/sources.list.d/docker.list || true
     sudo apt-get update -qq || true
@@ -42,23 +42,23 @@ fi
 # 3. Correctif de sécurité (Ubuntu 24.04 / AppArmor)
 # Ce correctif empêche l'erreur "permission denied" sur les nouvelles distros
 if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
-    echo "🛡️  Tentative d'application du correctif AppArmor..."
+    echo "Tentative d'application du correctif AppArmor..."
     # On ignore l'erreur si le système de fichiers est en lecture seule (cas du LXC Proxmox)
-    (echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns > /dev/null 2>&1) || echo "⚠️  Note : Impossible de modifier /proc (système de fichiers en lecture seule). Si vous êtes en LXC, ignorez ce message ou appliquez ce réglage sur l'HÔTE Proxmox."
+    (echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns > /dev/null 2>&1) || echo "Note : Impossible de modifier /proc (système de fichiers en lecture seule). Si vous êtes en LXC, ignorez ce message ou appliquez ce réglage sur l'HÔTE Proxmox."
     
     (echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/60-apparmor-docker.conf > /dev/null 2>&1) || true
     sudo sysctl -p /etc/sysctl.d/60-apparmor-docker.conf >/dev/null 2>&1 || true
 fi
 
 # 4. Installation via le script officiel Docker (Méthode la plus stable et universelle)
-echo "📥 Téléchargement et installation de Docker officiel..."
+echo "Téléchargement et installation de Docker officiel..."
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh > /dev/null
 rm get-docker.sh
 
 # 5. Installation du plugin Docker Compose V2 (si non présent via get.docker.com)
 if ! docker compose version >/dev/null 2>&1; then
-    echo "🛠️  Installation manuelle du plugin Docker Compose..."
+    echo "Installation manuelle du plugin Docker Compose..."
     if [[ "$OS_ID" == "ubuntu" || "$OS_ID" == "debian" || "$OS_ID" == "kali" ]]; then
         sudo apt-get update -qq
         sudo apt-get install -y docker-compose-plugin > /dev/null
@@ -66,15 +66,15 @@ if ! docker compose version >/dev/null 2>&1; then
 fi
 
 # 6. Optimisation spécifique pour BBOARD (Base de données et Proxmox)
-echo "📂 Préparation des répertoires de données..."
+echo "Préparation des répertoires de données..."
 mkdir -p server/data
 chmod 777 server/data
-echo "✅ Répertoire server/data prêt (Permissions 777 pour compatibilité LXC)."
+echo "Répertoire server/data prêt (Permissions 777 pour compatibilité LXC)."
 
 # 7. Détection LXC et conseils spécifiques
 if [ -f /run/systemd/container ] || grep -q "lxc" /proc/1/environ 2>/dev/null; then
-    echo "🏗️  Environnement de conteneur (LXC/Docker) détecté."
-    echo "💡 Astuce Proxmox : Assurez-vous que 'Nesting' est coché dans Options > Features."
+    echo "Environnement de conteneur (LXC/Docker) détecté."
+    echo "Astuce Proxmox : Assurez-vous que 'Nesting' est coché dans Options > Features."
 fi
 
 # 8. Configuration des permissions (Groupe Docker)
@@ -85,8 +85,8 @@ sudo usermod -aG docker $USER
 
 # 9. Finalisation
 echo "--------------------------------------------------------"
-echo "✅ Installation réussie !"
+echo "Installation réussie !"
 echo "--------------------------------------------------------"
-echo "🚀 Pour lancer le projet (Port 8080) :"
+echo "Pour lancer le projet (Port 8080) :"
 echo "   docker compose up -d --build"
 echo "--------------------------------------------------------"

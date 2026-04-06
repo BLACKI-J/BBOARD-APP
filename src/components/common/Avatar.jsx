@@ -4,19 +4,28 @@ const Avatar = ({ participant = {}, size = 32, className = '' }) => {
     const hasPhoto = participant?.photo && participant.photo.trim() !== '';
     const initial = participant?.firstName && participant.firstName.length > 0 ? participant.firstName[0].toUpperCase() : '?';
     
-    // Safety check for role color
     let bgColor = 'var(--primary-color)';
     if (participant?.role === 'animator') bgColor = 'var(--secondary-color)';
-    if (participant?.role === 'direction') bgColor = '#8b5cf6';
+    if (participant?.role === 'direction') bgColor = 'var(--accent-color)';
 
     return (
         <div 
             className={`avatar ${className}`}
             style={{ 
-                width: `${size}px`, height: `${size}px`, borderRadius: '50%', 
+                width: `${size}px`, 
+                height: `${size}px`, 
+                borderRadius: size > 48 ? '22px' : '14px', 
                 background: hasPhoto ? `url(${participant.photo}) center/cover` : bgColor,
-                color: 'white', display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: `${size * 0.4}px`,
-                flexShrink: 0, fontWeight: 'bold', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                color: 'white', 
+                display: 'flex', 
+                justifyContent: 'center', 
+                alignItems: 'center', 
+                fontSize: `${size * 0.4}px`,
+                flexShrink: 0, 
+                fontWeight: '950', 
+                boxShadow: size > 48 ? '0 12px 24px oklch(0% 0 0 / 0.12)' : '0 4px 10px oklch(0% 0 0 / 0.08)',
+                border: '2.5px solid white',
+                transition: 'all 0.3s var(--ease-out-expo)'
             }}
         >
             {!hasPhoto && initial}

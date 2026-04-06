@@ -1,42 +1,134 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Users, Calendar, Map as MapIcon, Contact, Settings as SettingsIcon, Tent, Menu, ClipboardList, FileText, Utensils, Bell, ClipboardCheck } from 'lucide-react';
-import Sidebar from './components/Sidebar';
-import SeatMap from './components/SeatMap';
-import Schedule from './components/Schedule';
-import Directory from './components/Directory';
-import Settings from './components/Settings';
-import MeetingRecap from './components/MeetingRecap';
-import ExitSheet from './components/ExitSheet';
-import Attendance from './components/Attendance';
-import { v4 as uuidv4 } from 'uuid';
+import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
+import { Users, Calendar, Map as MapIcon, Contact, Settings as SettingsIcon, Menu, ClipboardList, FileText, Bell, ClipboardCheck, AlertCircle, AlertTriangle, Package, Utensils, Zap, Sparkles, ChevronDown, UserCircle } from 'lucide-react';
 import { io } from 'socket.io-client';
+import Sidebar from './components/Sidebar';
+import Login from './components/Login';
+
+const loadSeatMap = () => import('./components/SeatMap');
+const loadSchedule = () => import('./components/Schedule');
+const loadDirectory = () => import('./components/Directory');
+const loadSettings = () => import('./components/Settings');
+const loadMeetingRecap = () => import('./components/MeetingRecap');
+const loadExitSheet = () => import('./components/ExitSheet');
+const loadAttendance = () => import('./components/Attendance');
+const loadIncidentSheet = () => import('./components/IncidentSheet');
+const loadInventory = () => import('./components/Inventory');
+
+const SeatMap = React.lazy(loadSeatMap);
+const Schedule = React.lazy(loadSchedule);
+const Directory = React.lazy(loadDirectory);
+const Settings = React.lazy(loadSettings);
+const MeetingRecap = React.lazy(loadMeetingRecap);
+const ExitSheet = React.lazy(loadExitSheet);
+const Attendance = React.lazy(loadAttendance);
+const IncidentSheet = React.lazy(loadIncidentSheet);
+const Inventory = React.lazy(loadInventory);
 
 const API_URL = '/api';
 
+const Logo = () => (
+    <div style={{ position: 'relative', width: '38px', height: '38px', flexShrink: 0 }}>
+        <img src="/logo/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px', background: 'white' }} 
+             onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} />
+        
+        <div style={{
+            display: 'none', position: 'absolute', inset: 0,
+            alignItems: 'center', justifyContent: 'center', background: 'var(--primary-gradient)',
+            borderRadius: '12px', boxShadow: '0 8px 24px var(--shadow-color)', overflow: 'hidden'
+        }}>
+            <Zap size={22} color="white" strokeWidth={3} />
+            <div style={{
+                position: 'absolute', inset: 0,
+                background: 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, transparent 50%, rgba(255,255,255,0.1) 100%)',
+                pointerEvents: 'none'
+            }} />
+        </div>
+    </div>
+);
+
+const TAB_TITLES = {
+    seatmap: 'Transports',
+    schedule: 'Planning',
+    exitsheet: 'Fiche de sortie',
+    incident: 'FEI',
+    recap: 'Coordination',
+    attendance: 'Pointage',
+    inventory: 'Matériel',
+    directory: 'Annuaire',
+    settings: 'Paramètres'
+};
+
+const defaultAccessControl = {
+    hiddenSections: {
+        seatmap: false, schedule: false, exitsheet: false, incident: false,
+        recap: false, attendance: false, inventory: false, directory: false
+    },
+    rolePermissions: {
+        direction: {
+            viewSeatmap: true, editSeatmap: true, viewSchedule: true, editSchedule: true,
+            viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
+            viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
+            viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
+            searchInventoryAI: true, viewSettings: true, manageUsers: true, manageAccess: true, viewLogs: true
+        },
+        animator: {
+            viewSeatmap: true, editSeatmap: true, viewSchedule: true, editSchedule: true,
+            viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
+            viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
+            viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
+            searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
+        }
+    },
+    userPermissions: {}, disabledUsers: {}, incidentAiDefaultMode: 'detaille'
+};
+
+function mergeAccessControl(raw) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    return {
+        ...defaultAccessControl, ...source,
+        hiddenSections: { ...defaultAccessControl.hiddenSections, ...(source.hiddenSections || {}) },
+        rolePermissions: {
+            direction: { ...defaultAccessControl.rolePermissions.direction, ...(source.rolePermissions?.direction || {}) },
+            animator: { ...defaultAccessControl.rolePermissions.animator, ...(source.rolePermissions?.animator || {}) }
+        },
+        userPermissions: { ...defaultAccessControl.userPermissions, ...(source.userPermissions || {}) },
+        disabledUsers: { ...defaultAccessControl.disabledUsers, ...(source.disabledUsers || {}) }
+    };
+}
+
+const sectionPermissionMap = {
+    seatmap: 'viewSeatmap', schedule: 'viewSchedule', exitsheet: 'viewExitSheet',
+    incident: 'viewIncident', recap: 'viewRecap', attendance: 'viewAttendance',
+    inventory: 'viewInventory', directory: 'viewDirectory'
+};
+
+const tabPreloaders = {
+    seatmap: loadSeatMap, schedule: loadSchedule, exitsheet: loadExitSheet,
+    incident: loadIncidentSheet, recap: loadMeetingRecap, attendance: loadAttendance,
+    inventory: loadInventory, directory: loadDirectory, settings: loadSettings
+};
+
+const nextLikelyTab = {
+    seatmap: 'schedule', schedule: 'exitsheet', exitsheet: 'incident',
+    incident: 'recap', recap: 'attendance', attendance: 'directory',
+    directory: 'inventory', inventory: 'seatmap'
+};
+
 class ErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false, error: null, info: null };
-    }
-
-    static getDerivedStateFromError(error) {
-        return { hasError: true, error: error };
-    }
-
-    componentDidCatch(error, info) {
-        this.setState({ info });
-    }
-
+    constructor(props) { super(props); this.state = { hasError: false, error: null, info: null }; }
+    static getDerivedStateFromError(error) { return { hasError: true, error }; }
+    componentDidCatch(error, info) { this.setState({ info }); }
     render() {
         if (this.state.hasError) {
             return (
-                <div style={{ padding: '2rem', background: '#fee2e2', color: '#991b1b', height: '100%', overflow: 'auto' }}>
-                    <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>Erreur fatale de rendu React</h2>
-                    <details style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', background: '#fef2f2', padding: '1rem', border: '1px solid #fecaca', borderRadius: '8px' }}>
-                        <summary style={{ cursor: 'pointer', fontWeight: 'bold', marginBottom: '0.5rem' }}>{this.state.error && this.state.error.toString()}</summary>
-                        <br />
-                        {this.state.info && this.state.info.componentStack}
+                <div style={{ padding: '3rem', background: 'var(--bg-secondary)', color: 'var(--danger-color)', height: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', justifyContent: 'center' }}>
+                    <AlertTriangle size={64} />
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Sora' }}>Interruption du service</h2>
+                    <details style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', background: 'white', padding: '1.5rem', border: '1.5px solid var(--glass-border)', borderRadius: '24px', maxWidth: '800px', width: '100%', maxHeight: '400px', overflow: 'auto' }}>
+                        <summary style={{ cursor: 'pointer', fontWeight: '950' }}>{this.state.error?.toString()}</summary>
+                        <div style={{ marginTop: '1rem', fontSize: '13px', lineHeight: '1.6', opacity: 0.7 }}>{this.state.info?.componentStack}</div>
                     </details>
+                    <button onClick={() => window.location.reload()} className="btn btn-primary" style={{ padding: '0.75rem 2rem', borderRadius: '14px' }}>Réinitialiser l'interface</button>
                 </div>
             );
         }
@@ -45,514 +137,405 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
-    // Persist active tab state
-    const [activeTab, setActiveTab] = useState(() => {
-        return localStorage.getItem('colo-active-tab') || 'seatmap';
-    });
-
-    // State for groups
+    const isDataLoaded = useRef(false);
+    const ignoreNextSocketUpdate = useRef(false);
+    const [activeTab, setActiveTab] = useState(() => localStorage.getItem('colo-active-tab') || 'schedule');
     const [groups, setGroups] = useState(() => {
         const saved = localStorage.getItem('colo-groups');
-        if (saved) {
-            try { const parsed = JSON.parse(saved); return Array.isArray(parsed) ? parsed : []; } catch (e) { return []; }
-        }
-        return [];
+        try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
     });
-
-    // State for participants (children + animators + direction)
     const [participants, setParticipants] = useState(() => {
         const saved = localStorage.getItem('colo-participants');
-        if (saved) {
-            try { const parsed = JSON.parse(saved); return Array.isArray(parsed) ? parsed : []; } catch (e) { return []; }
-        }
-        return [];
+        try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
     });
-
-    // State for schedule activities
     const [activities, setActivities] = useState(() => {
         const saved = localStorage.getItem('colo-activities');
-        if (saved) {
-            try { const parsed = JSON.parse(saved); return Array.isArray(parsed) ? parsed : []; } catch (e) { return []; }
-        }
-        return [];
+        try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
     });
+    const [incidentSheets, setIncidentSheets] = useState([]);
+    const [exitSheets, setExitSheets] = useState([]);
+    const [meetingRecaps, setMeetingRecaps] = useState([]);
+    const [inventoryItems, setInventoryItems] = useState([]);
+    const [savedViews, setSavedViews] = useState(() => {
+        const saved = localStorage.getItem('colo-saved-views');
+        if (saved) try { return JSON.parse(saved); } catch (e) { console.error(e); }
+        return {};
+    });
+    const [currentViewName, setCurrentViewName] = useState(() => localStorage.getItem('colo-current-view-name') || '');
 
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isNavOpen, setIsNavOpen] = useState(false);
     const [isAlertsOpen, setIsAlertsOpen] = useState(false);
+    const [isAdminMode, setIsAdminMode] = useState(() => localStorage.getItem('colo-admin-mode') === 'true');
+    const [isAttendanceEnabled, setIsAttendanceEnabled] = useState(() => localStorage.getItem('colo-attendance-enabled') === 'true');
+    const [adminPin, setAdminPin] = useState(() => localStorage.getItem('colo-admin-pin') || '1234');
+    const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
 
-    // Admin States
-    const [isAdminMode, setIsAdminMode] = useState(() => {
-        return localStorage.getItem('colo-admin-mode') === 'true';
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+    const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('colo-authenticated') === 'true');
+    const isMobile = windowWidth < 1024;
+
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const [accessControl, setAccessControl] = useState(() => {
+        const saved = localStorage.getItem('colo-access-control');
+        try { return saved ? mergeAccessControl(JSON.parse(saved)) : defaultAccessControl; } catch (e) { return defaultAccessControl; }
     });
+    const [activeUserId, setActiveUserId] = useState(() => localStorage.getItem('colo-active-user-id') || 'director');
 
-    const [isAttendanceEnabled, setIsAttendanceEnabled] = useState(() => {
-        return localStorage.getItem('colo-attendance-enabled') === 'true';
-    });
+    const staffUsers = useMemo(() => {
+        const staff = (participants || []).filter((p) => p && (p.role === 'animator' || p.role === 'direction'));
+        return [{ id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction', pin: adminPin }, ...staff];
+    }, [participants]);
 
-    const [adminPin, setAdminPin] = useState(() => {
-        return localStorage.getItem('colo-admin-pin') || '1234';
-    });
+    const activeUser = useMemo(() => {
+        return staffUsers.find((u) => u.id === activeUserId) || staffUsers[0] || { id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction' };
+    }, [staffUsers, activeUserId]);
+
+    const permissions = useMemo(() => {
+        const role = activeUser?.role === 'direction' ? 'direction' : 'animator';
+        const base = { ...(accessControl.rolePermissions?.[role] || defaultAccessControl.rolePermissions[role]) };
+        const userOverride = accessControl.userPermissions?.[activeUser?.id] || {};
+        if (!!accessControl.disabledUsers?.[activeUser?.id]) return Object.fromEntries(Object.keys(base).map((k) => [k, false]));
+        return { ...base, ...userOverride };
+    }, [activeUser, accessControl]);
+
+    const actorHeaders = useMemo(() => ({
+        'Content-Type': 'application/json',
+        'x-actor-id': activeUser?.id || 'unknown',
+        'x-actor-name': `${activeUser?.firstName || ''} ${activeUser?.lastName || ''}`.trim() || 'Unknown',
+        'x-actor-role': activeUser?.role || 'unknown'
+    }), [activeUser]);
+
+    const canAccessSection = useCallback((sectionId) => {
+        if (accessControl.hiddenSections?.[sectionId]) return false;
+        const key = sectionPermissionMap[sectionId];
+        if (!key) return true;
+        return !!permissions[key];
+    }, [accessControl.hiddenSections, permissions]);
+
+    const navItems = useMemo(() => {
+        const all = [
+            { id: 'schedule', label: 'Planning', icon: <Calendar size={22} strokeWidth={2.5} /> },
+            { id: 'exitsheet', label: 'Fiche de sortie', icon: <FileText size={22} strokeWidth={2.5} /> },
+            { id: 'incident', label: 'FEI', icon: <AlertTriangle size={22} strokeWidth={2.5} /> },
+            { id: 'recap', label: 'Coordination', icon: <ClipboardList size={22} strokeWidth={2.5} /> },
+            { id: 'attendance', label: 'Pointage', icon: <ClipboardCheck size={22} strokeWidth={2.5} /> },
+            { id: 'inventory', label: 'Matériel', icon: <Package size={22} strokeWidth={2.5} /> },
+            { id: 'directory', label: 'Annuaire', icon: <Contact size={22} strokeWidth={2.5} /> }
+        ];
+        return all.filter((item) => canAccessSection(item.id));
+    }, [canAccessSection]);
 
     useEffect(() => {
-        localStorage.setItem('colo-admin-mode', isAdminMode);
-    }, [isAdminMode]);
+        if (activeTab === 'settings' && !permissions.viewSettings) { setActiveTab(navItems[0]?.id || 'schedule'); return; }
+        if (activeTab !== 'settings' && !canAccessSection(activeTab)) { setActiveTab(navItems[0]?.id || 'schedule'); }
+    }, [activeTab, permissions.viewSettings, canAccessSection, navItems]);
 
-    useEffect(() => {
-        localStorage.setItem('colo-attendance-enabled', isAttendanceEnabled);
-    }, [isAttendanceEnabled]);
+    useEffect(() => { localStorage.setItem('colo-active-tab', activeTab); }, [activeTab]);
+    useEffect(() => { localStorage.setItem('colo-active-user-id', activeUserId); }, [activeUserId]);
+    useEffect(() => { localStorage.setItem('colo-access-control', JSON.stringify(accessControl)); }, [accessControl]);
+    useEffect(() => { localStorage.setItem('colo-authenticated', isAuthenticated); }, [isAuthenticated]);
 
-    useEffect(() => {
-        localStorage.setItem('colo-active-tab', activeTab);
-    }, [activeTab]);
+    const handleLogin = (user) => {
+        setActiveUserId(user.id);
+        setIsAuthenticated(true);
+    };
 
-    useEffect(() => {
-        localStorage.setItem('colo-admin-pin', adminPin);
-    }, [adminPin]);
+    const handleLogout = () => {
+        setIsAuthenticated(false);
+        setIsUserSwitcherOpen(false);
+    };
 
-    // Compute Health Alerts
-    const healthAlerts = React.useMemo(() => {
+    const healthAlerts = useMemo(() => {
         const alerts = [];
         const today = new Date();
         const currentMonth = today.getMonth();
         const currentDate = today.getDate();
-
-        const safeArr = Array.isArray(participants) ? participants : [];
-        safeArr.filter(p => p && p.role === 'child').forEach(child => {
-            // Birthdays
+        (participants || []).filter((p) => p && p.role === 'child').forEach((child) => {
             if (child.birthDate) {
                 const bDate = new Date(child.birthDate);
                 if (bDate.getMonth() === currentMonth && bDate.getDate() === currentDate) {
-                    alerts.push({ id: `bday-${child.id}`, type: 'birthday', message: `🎂 C'est l'anniversaire de ${child.firstName} ${child.lastName} aujourd'hui !` });
+                    alerts.push({ id: `bday-${child.id}`, type: 'birthday', message: `Anniversaire : ${child.firstName} ${child.lastName}` });
                 }
             }
-            // Missing health documents
             if (!child.healthDocProvided) {
-                alerts.push({ id: `doc-${child.id}`, type: 'warning', message: `⚠️ Fiche sanitaire manquante pour ${child.firstName} ${child.lastName}.` });
+                alerts.push({ id: `doc-${child.id}`, type: 'warning', message: `Fiche sanitaire manquante : ${child.firstName} ${child.lastName}` });
             }
         });
         return alerts;
     }, [participants]);
 
-    // State for seats/placements
-    const [savedViews, setSavedViews] = useState(() => {
-        const saved = localStorage.getItem('colo-saved-views');
-        if (saved) return JSON.parse(saved);
-
-        const oldPlacements = localStorage.getItem('colo-placements');
-        if (oldPlacements) {
-            return { 'Défaut': JSON.parse(oldPlacements) };
-        }
-        return {};
-    });
-
-    const [currentViewName, setCurrentViewName] = useState(() => {
-        const saved = localStorage.getItem('colo-current-view-name');
-        return saved || '';
-    });
-
-    const placements = savedViews[currentViewName] || {};
-
-    const setPlacements = (newPlacements) => {
-        setSavedViews(prev => ({
-            ...prev,
-            [currentViewName]: newPlacements
-        }));
-    };
-
-
-    // Sync with Backend
-    const isInitialLoad = useRef(true);
-
-    useEffect(() => {
-        const socket = io(); // Connects to the same host/port by default
-
-        const fetchData = async () => {
-            try {
-                const [gRes, pRes, aRes, vRes, vnRes] = await Promise.all([
-                    fetch(`${API_URL}/groups`),
-                    fetch(`${API_URL}/participants`),
-                    fetch(`${API_URL}/activities`),
-                    fetch(`${API_URL}/state/savedViews`),
-                    fetch(`${API_URL}/state/currentViewName`),
-                    fetch(`${API_URL}/state/adminPin`)
-                ]);
-
-                const gData = await gRes.json();
-                const pData = await pRes.json();
-                const aData = await aRes.json();
-                const vData = await vRes.json();
-                const vnData = await vnRes.json();
-                const pinData = await pinRes.json();
-
-                // Equality checks to avoid loops
-                setGroups(prev => JSON.stringify(prev) !== JSON.stringify(gData) && gData?.length > 0 ? gData : prev);
-                setParticipants(prev => JSON.stringify(prev) !== JSON.stringify(pData) && pData?.length > 0 ? pData : prev);
-                setActivities(prev => JSON.stringify(prev) !== JSON.stringify(aData) && aData?.length > 0 ? aData : prev);
-                setSavedViews(prev => JSON.stringify(prev) !== JSON.stringify(vData) && vData ? vData : prev);
-                setCurrentViewName(prev => vnData && prev !== vnData ? vnData : prev);
-                setAdminPin(prev => pinData && prev !== pinData ? pinData : prev);
-
-                // Migration if server is empty AND local has data
-                if (isInitialLoad.current) {
-                    if ((!gData || gData.length === 0) && groups.length > 0) {
-                        await fetch(`${API_URL}/groups`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(groups) });
-                    }
-                    if ((!pData || pData.length === 0) && participants.length > 0) {
-                        await fetch(`${API_URL}/participants`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(participants) });
-                    }
-                    if ((!aData || aData.length === 0) && activities.length > 0) {
-                        await fetch(`${API_URL}/activities`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(activities) });
-                    }
-                    isInitialLoad.current = false;
-                }
-            } catch (err) {
-                console.error("Backend sync failed:", err);
-            }
-        };
-
-        fetchData();
-
-        socket.on('data_updated', (data) => {
-            console.log('Real-time update received:', data);
-            fetchData();
-        });
-
-        return () => {
-            socket.disconnect();
-        };
+    const prefetchedTabs = useRef(new Set());
+    const prefetchTab = useCallback((tabId) => {
+        if (!tabId || prefetchedTabs.current.has(tabId)) return;
+        const loader = tabPreloaders[tabId];
+        if (loader) loader().then(() => prefetchedTabs.current.add(tabId)).catch(() => {});
     }, []);
 
-    // Keep localStorage and Backend in sync
     useEffect(() => {
-        localStorage.setItem('colo-participants', JSON.stringify(participants));
-        if (!isInitialLoad.current) {
-            fetch(`${API_URL}/participants`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(participants)
-            }).catch(console.error);
-        }
-    }, [participants]);
+        const first = nextLikelyTab[activeTab];
+        if (first && canAccessSection(first)) prefetchTab(first);
+    }, [activeTab, canAccessSection, prefetchTab]);
 
     useEffect(() => {
-        localStorage.setItem('colo-groups', JSON.stringify(groups));
-        if (!isInitialLoad.current) {
-            fetch(`${API_URL}/groups`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(groups)
-            }).catch(console.error);
-        }
-    }, [groups]);
-
-    useEffect(() => {
-        localStorage.setItem('colo-saved-views', JSON.stringify(savedViews));
-        if (!isInitialLoad.current) {
-            fetch(`${API_URL}/state/savedViews`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(savedViews)
-            }).catch(console.error);
-        }
-    }, [savedViews]);
-
-    useEffect(() => {
-        localStorage.setItem('colo-current-view-name', currentViewName);
-        if (!isInitialLoad.current) {
-            fetch(`${API_URL}/state/currentViewName`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(currentViewName)
-            }).catch(console.error);
-        }
-    }, [currentViewName]);
-
-    useEffect(() => {
-        localStorage.setItem('colo-activities', JSON.stringify(activities));
-        if (!isInitialLoad.current) {
-            fetch(`${API_URL}/activities`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(activities)
-            }).catch(console.error);
-        }
-    }, [activities]);
-
-    useEffect(() => {
-        if (!isInitialLoad.current) {
-            fetch(`${API_URL}/state/adminPin`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(adminPin)
-            }).catch(console.error);
-        }
-    }, [adminPin]);
-
-    // Clean placements when a participant is deleted
-    useEffect(() => {
-        const newSavedViews = { ...savedViews };
-        let globalChanged = false;
-
-        Object.keys(newSavedViews).forEach(viewName => {
-            const viewPlacements = { ...newSavedViews[viewName] };
-            let changed = false;
-            Object.keys(viewPlacements).forEach(seatId => {
-                if (!participants.find(p => p.id === viewPlacements[seatId])) {
-                    delete viewPlacements[seatId];
-                    changed = true;
-                }
-            });
-            if (changed) {
-                newSavedViews[viewName] = viewPlacements;
-                globalChanged = true;
+        const socket = io();
+        const refreshData = async (payload) => {
+            if (ignoreNextSocketUpdate.current) {
+                ignoreNextSocketUpdate.current = false;
+                return;
             }
-        });
+            try {
+                const results = await Promise.all([
+                    fetch(`${API_URL}/groups`), fetch(`${API_URL}/participants`),
+                    fetch(`${API_URL}/activities`), fetch(`${API_URL}/state/savedViews`),
+                    fetch(`${API_URL}/state/currentViewName`), fetch(`${API_URL}/state/adminPin`),
+                    fetch(`${API_URL}/state/accessControl`), fetch(`${API_URL}/incident-sheets`),
+                    fetch(`${API_URL}/exit-sheets`), fetch(`${API_URL}/meeting-recaps`),
+                    fetch(`${API_URL}/inventory/items`)
+                ]);
+                const data = await Promise.all(results.map(r => r.json()));
+                setGroups(data[0]); setParticipants(data[1]); setActivities(data[2]); setSavedViews(data[3]);
+                setCurrentViewName(data[4]); setAdminPin(data[5]); setAccessControl(mergeAccessControl(data[6]));
+                setIncidentSheets(data[7] || []);
+                setExitSheets(data[8] || []);
+                setMeetingRecaps(data[9] || []);
+                setInventoryItems(data[10] || []);
+                isDataLoaded.current = true;
+            } catch (err) { console.error('Sync failed:', err); }
+        };
+        refreshData();
+        socket.on('data_updated', refreshData);
+        window._refreshBboardData = refreshData;
+        return () => socket.disconnect();
+    }, []);
 
-        if (globalChanged) setSavedViews(newSavedViews);
-    }, [participants]);
+    const mutateCollection = useCallback(async (endpoint, setter, update, currentValue) => {
+        const finalValue = typeof update === 'function' ? update(currentValue) : update;
+        setter(finalValue);
+        ignoreNextSocketUpdate.current = true; 
+        try {
+            await fetch(endpoint, {
+                method: 'POST',
+                headers: actorHeaders,
+                body: JSON.stringify(finalValue)
+            });
+        } catch (err) {
+            console.error(`Failed to sync ${endpoint}:`, err);
+            ignoreNextSocketUpdate.current = false;
+        }
+    }, [actorHeaders]);
+
+    const loadingShell = (
+        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div className="card-glass" style={{ padding: 'var(--space-lg)', background: 'white', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)', border: '1.5px solid var(--glass-border)' }}>
+                <div className="spinner-large" />
+                <div style={{ fontWeight: '950', color: 'var(--text-main)', fontSize: '1rem', letterSpacing: '-0.02em' }}>Assemblage du module...</div>
+            </div>
+        </div>
+    );
+
+    if (!isAuthenticated) {
+        return <Login staffUsers={staffUsers} onLogin={handleLogin} adminPin={adminPin} />;
+    }
 
     return (
-        <div className="app-container">
-            {/* Mobile Overlay */}
-            <div
-                className={`sidebar-overlay ${isSidebarOpen ? 'open' : ''}`}
-                onClick={() => setIsSidebarOpen(false)}
-            />
-
-            {/* Sidebar for Participants List - only visible in seatmap */}
-            <div className={`sidebar-wrapper ${isSidebarOpen ? 'open' : ''} ${activeTab !== 'seatmap' ? 'hidden-desktop' : ''}`}>
-                {activeTab === 'seatmap' && <Sidebar participants={participants} setParticipants={setParticipants} groups={groups} />}
-            </div>
-
-
-            {/* Mobile Nav Drawer */}
-            <div
-                className={`sidebar-overlay ${isNavOpen ? 'open' : ''}`}
-                onClick={() => setIsNavOpen(false)}
-                style={{ zIndex: 60 }}
-            />
-            <div className={`nav-drawer ${isNavOpen ? 'open' : ''}`}>
-                <div style={{ padding: '2rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                        <div style={{
-                            background: 'white',
-                            padding: '0.2rem',
-                            borderRadius: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)'
-                        }}>
-                            <img src="/logo.png" alt="BBOARD" style={{ width: '32px', height: '32px', objectFit: 'contain', borderRadius: '8px' }} />
-                        </div>
-                        <h2 style={{
-                            fontSize: '1.75rem',
-                            fontWeight: '800',
-                            margin: 0,
-                            letterSpacing: '-0.5px',
-                            background: 'linear-gradient(135deg, var(--text-main) 30%, var(--accent-color))',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                        }}>BBOARD</h2>
+        <div className="app-layout" style={{ background: 'var(--bg-main)', overflow: 'hidden', display: 'flex', width: '100vw', height: '100dvh' }}>
+            {/* Sidebar Navigation */}
+            <aside className={`nav-sidebar ${isNavOpen ? 'open' : ''}`} style={{ borderRight: '1.5px solid var(--glass-border)', background: 'var(--glass-bg)', backdropFilter: 'blur(32px)', zIndex: 110, transition: 'all 0.4s var(--ease-out-expo)', flexShrink: 0, width: isMobile ? '100%' : '250px' }}>
+                <div style={{ padding: '1.75rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    <Logo />
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontFamily: 'Sora, sans-serif', fontWeight: '950', fontSize: '1.4rem', color: 'var(--text-main)', letterSpacing: '-0.05em', lineHeight: 1 }}>BBOARD</span>
+                        <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: '2px' }}>Plateforme Session</div>
                     </div>
+                </div>
 
-                    {[
-                        { id: 'seatmap', label: 'Plans', icon: <MapIcon size={20} /> },
-                        { id: 'schedule', label: 'Planning', icon: <Calendar size={20} /> },
-                        { id: 'exitsheet', label: 'Sortie', icon: <FileText size={20} /> },
-                        { id: 'recap', label: 'Récap', icon: <ClipboardList size={20} /> },
-                        (isAdminMode || isAttendanceEnabled) ? { id: 'attendance', label: 'Pointage', icon: <ClipboardCheck size={20} /> } : null,
-                        { id: 'directory', label: 'Annuaire', icon: <Contact size={20} /> },
-                        { id: 'settings', label: 'Paramètres', icon: <SettingsIcon size={20} /> }
-                    ].filter(Boolean).map(item => (
+                <nav style={{ padding: '0 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+                    {navItems.map((item) => (
                         <button
                             key={item.id}
-                            className={`btn ${activeTab === item.id ? 'btn-primary' : 'btn-outline'}`}
-                            onClick={() => {
-                                setActiveTab(item.id);
-                                setIsNavOpen(false);
+                            onClick={() => { setActiveTab(item.id); setIsNavOpen(false); }}
+                            onMouseEnter={() => prefetchTab(item.id)}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem',
+                                border: 'none', background: activeTab === item.id ? 'var(--primary-gradient)' : 'transparent',
+                                color: activeTab === item.id ? 'white' : 'var(--text-muted)',
+                                borderRadius: '16px', fontWeight: '950', cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)',
+                                textAlign: 'left', fontSize: '0.9rem', boxShadow: activeTab === item.id ? '0 8px 24px var(--shadow-color)' : 'none'
                             }}
-                            style={{ justifyContent: 'flex-start', padding: '1rem', border: activeTab === item.id ? 'none' : '1px solid #e2e8f0' }}
                         >
-                            {item.icon}
-                            {item.label}
+                            <span style={{ display: 'flex' }}>{item.icon}</span>
+                            <span>{item.label}</span>
+                            {activeTab === item.id && <Sparkles size={14} style={{ marginLeft: 'auto', opacity: 0.8 }} />}
                         </button>
                     ))}
-                </div>
-            </div>
-
-
-            {/* Main Content Area */}
-            <main className="main-content">
-                <header className="content-header glass-surface" style={{ zIndex: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem 1.5rem' }}>
-                    {/* Left: Logo & Menu */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    
+                    {permissions.viewSettings && (
                         <button
-                            className="btn-icon mobile-only"
-                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            style={{ display: activeTab === 'seatmap' ? 'block' : 'none' }}
+                            onClick={() => { setActiveTab('settings'); setIsNavOpen(false); }}
+                            style={{
+                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem', marginTop: 'auto', marginBottom: '1.5rem',
+                                border: 'none', background: activeTab === 'settings' ? 'var(--primary-gradient)' : 'transparent',
+                                color: activeTab === 'settings' ? 'white' : 'var(--text-muted)',
+                                borderRadius: '16px', fontWeight: '950', cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)',
+                                textAlign: 'left', fontSize: '0.9rem', boxShadow: activeTab === 'settings' ? '0 8px 24px var(--shadow-color)' : 'none'
+                            }}
                         >
-                            <Users size={24} />
+                            <SettingsIcon size={22} strokeWidth={2.5} />
+                            <span>Paramètres</span>
                         </button>
+                    )}
+                </nav>
+            </aside>
 
-                        <div style={{
-                            background: 'white',
-                            padding: '0.2rem',
-                            borderRadius: '10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            boxShadow: '0 4px 10px rgba(0, 0, 0, 0.1)'
-                        }}>
-                            <img src="/logo.png" alt="BBOARD" style={{ width: '28px', height: '28px', objectFit: 'contain', borderRadius: '6px' }} />
-                        </div>
-                        <h1 style={{
-                            fontSize: '1.4rem',
-                            fontWeight: '800',
-                            margin: 0,
-                            letterSpacing: '-0.5px',
-                            background: 'linear-gradient(135deg, var(--text-main) 30%, var(--accent-color))',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent'
-                        }}>BBOARD</h1>
+            {/* Mobile Overlays */}
+            {isNavOpen && <div className="mobile-overlay" onClick={() => setIsNavOpen(false)} style={{ zIndex: 105, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }} />}
+
+            {/* Main Content */}
+            <main style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
+                <div className="morph-blob" style={{ top: '-10%', right: '-5%' }} />
+                <div className="morph-blob-2" style={{ bottom: '-5%', left: '5%' }} />
+
+                {/* Topbar Header */}
+                <header style={{ 
+                    height: isMobile ? '70px' : '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: isMobile ? '0 0.75rem' : '0 2.5rem', background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(16px)',
+                    borderBottom: '1.5px solid var(--glass-border)', zIndex: 100, transition: 'all 0.3s var(--ease-out-expo)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1.5rem', minWidth: 0, flex: 1 }}>
+                        {isMobile && (
+                            <button onClick={() => setIsNavOpen(true)} className="btn-icon-ref" style={{ background: 'white', borderRadius: '12px', width: '40px', height: '40px' }}>
+                                <Menu size={20} strokeWidth={3} />
+                            </button>
+                        )}
+                        <h1 style={{ margin: 0, fontSize: isMobile ? '0.85rem' : '1.5rem', fontWeight: '950', fontFamily: 'Sora', color: 'var(--text-main)', letterSpacing: '-0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                            {TAB_TITLES[activeTab] || activeTab}
+                        </h1>
                     </div>
 
-                    {/* Right: Navigation */}
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flex: 1, justifyContent: 'flex-end', position: 'relative' }}>
-
-                        {/* Health Alerts */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1.25rem' }}>
+                        {/* Notification Bell */}
                         <div style={{ position: 'relative' }}>
-                            <button
-                                className="btn-icon"
-                                onClick={() => setIsAlertsOpen(!isAlertsOpen)}
-                                title="Alertes Santé"
-                                style={{ padding: '0.5rem', borderRadius: '50%', background: isAlertsOpen ? '#e0e7ff' : 'transparent', color: isAlertsOpen ? '#4338ca' : '#64748b', transition: 'all 0.2s', position: 'relative' }}
-                            >
-                                <Bell size={20} />
-                                {healthAlerts.length > 0 && (
-                                    <span style={{ position: 'absolute', top: 0, right: 0, background: '#ef4444', color: 'white', fontSize: '10px', fontWeight: 'bold', width: '16px', height: '16px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid white' }}>
-                                        {healthAlerts.length}
-                                    </span>
-                                )}
+                            <button onClick={() => setIsAlertsOpen(!isAlertsOpen)} className="btn-icon-ref" style={{ background: 'white', borderRadius: '14px', width: isMobile ? '40px' : '44px', height: isMobile ? '40px' : '44px', color: isAlertsOpen ? 'var(--primary-color)' : 'var(--text-muted)' }}>
+                                <Bell size={isMobile ? 20 : 22} strokeWidth={2.5} />
+                                {healthAlerts.length > 0 && <span style={{ position: 'absolute', top: isMobile ? '8px' : '10px', right: isMobile ? '8px' : '10px', width: '8px', height: '8px', background: 'var(--danger-color)', borderRadius: '50%', border: '2px solid white' }} />}
                             </button>
-
+                            
                             {isAlertsOpen && (
-                                <div style={{ position: 'absolute', top: 'calc(100% + 10px)', right: 0, width: '320px', background: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', zIndex: 100, overflow: 'hidden' }}>
-                                    <div style={{ padding: '1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '700', color: '#1e293b' }}>Alertes & Suivi</h3>
-                                        <span style={{ fontSize: '0.75rem', background: '#e2e8f0', padding: '2px 8px', borderRadius: '10px', fontWeight: '600' }}>{healthAlerts.length}</span>
+                                <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: isMobile ? '50px' : '64px', right: 0, width: isMobile ? 'calc(100vw - 2rem)' : '360px', zIndex: 200, background: 'white', padding: 0, borderRadius: '24px', border: '1.5px solid var(--glass-border)', boxShadow: '0 40px 80px rgba(0,0,0,0.15)' }}>
+                                    <div style={{ padding: '1.25rem', borderBottom: '1.5px solid var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h3 style={{ margin: 0, fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '0.02em' }}>ALERTES SANTÉ</h3>
+                                        <div style={{ background: 'var(--danger-color)', color: 'white', fontSize: '10px', fontWeight: '950', padding: '2px 8px', borderRadius: '100px' }}>{healthAlerts.length}</div>
                                     </div>
-                                    <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                        {healthAlerts.length === 0 ? (
-                                            <div style={{ padding: '2rem 1rem', textAlign: 'center', color: '#94a3b8' }}>
-                                                <Bell size={24} style={{ margin: '0 auto 0.5rem', opacity: 0.5 }} />
-                                                <p style={{ fontSize: '0.85rem', margin: 0 }}>Aucune alerte pour l'instant.</p>
+                                    <div style={{ maxHeight: '350px', overflowY: 'auto', padding: '0.75rem' }} className="no-scrollbar">
+                                        {healthAlerts.length === 0 ? <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontWeight: '850', fontSize: '0.9rem' }}>Tout est sous contrôle.</p> : healthAlerts.map(a => (
+                                            <div key={a.id} style={{ padding: '1rem', borderRadius: '16px', background: a.type === 'birthday' ? 'oklch(62% 0.15 82 / 0.08)' : 'oklch(62% 0.18 20 / 0.05)', marginBottom: '0.5rem', display: 'flex', gap: '0.75rem' }}>
+                                                <AlertCircle size={16} style={{ color: a.type === 'birthday' ? 'oklch(62% 0.15 82)' : 'var(--danger-color)', flexShrink: 0 }} strokeWidth={3} />
+                                                <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '850', lineHeight: '1.4', color: 'var(--text-main)' }}>{a.message}</p>
                                             </div>
-                                        ) : (
-                                            healthAlerts.map(alert => (
-                                                <div key={alert.id} style={{ padding: '0.875rem 1rem', borderBottom: '1px solid #f1f5f9', display: 'flex', gap: '0.75rem', alignItems: 'flex-start', background: alert.type === 'birthday' ? '#fff7ed' : '#fef2f2' }}>
-                                                    <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>{alert.type === 'birthday' ? '🎂' : '⚠️'}</span>
-                                                    <p style={{ margin: 0, fontSize: '0.85rem', color: alert.type === 'birthday' ? '#c2410c' : '#b91c1c', lineHeight: 1.4 }}>{alert.message}</p>
-                                                </div>
-                                            ))
-                                        )}
+                                        ))}
                                     </div>
                                 </div>
                             )}
                         </div>
 
-                        <div className="desktop-only" style={{ display: 'flex', gap: '0.5rem' }}>
-                            {[
-                                { id: 'seatmap', label: 'Plans', icon: <MapIcon size={18} /> },
-                                { id: 'schedule', label: 'Planning', icon: <Calendar size={18} /> },
-                                { id: 'exitsheet', label: 'Sortie', icon: <FileText size={18} /> },
-                                { id: 'recap', label: 'Récap', icon: <ClipboardList size={18} /> },
-                                (isAdminMode || isAttendanceEnabled) ? { id: 'attendance', label: 'Pointage', icon: <ClipboardCheck size={18} /> } : null,
-                                { id: 'directory', label: 'Annuaire', icon: <Contact size={18} /> },
-                                { id: 'settings', label: 'Paramètres', icon: <SettingsIcon size={18} />, onlyIcon: true }
-                            ].filter(Boolean).map(item => (
-                                <button
-                                    key={item.id}
-                                    className={`btn ${activeTab === item.id ? 'btn-primary' : 'btn-outline'}`}
-                                    onClick={() => setActiveTab(item.id)}
-                                    style={activeTab !== item.id ? { border: 'none', background: 'transparent' } : {}}
-                                >
-                                    {item.icon}
-                                    {!item.onlyIcon && item.label}
-                                </button>
-                            ))}
+                        {!isMobile && <div style={{ width: '1.5px', height: '24px', background: 'var(--glass-border)', margin: '0 0.5rem' }} />}
+
+                        {/* User Profile Switcher */}
+                        <div style={{ position: 'relative' }}>
+                            <button onClick={() => setIsUserSwitcherOpen(!isUserSwitcherOpen)} style={{ background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '20px', padding: isMobile ? '0.25rem' : '0.4rem 0.4rem 0.4rem 1.25rem', display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', transition: 'all 0.2s', boxShadow: 'var(--shadow-sm)' }}>
+                                {!isMobile && (
+                                    <div style={{ textAlign: 'right' }}>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{activeUser?.firstName}</div>
+                                        <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{activeUser?.role}</div>
+                                    </div>
+                                )}
+                                <div style={{ width: isMobile ? '34px' : '40px', height: isMobile ? '34px' : '40px', background: 'var(--primary-gradient)', borderRadius: isMobile ? '10px' : '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: isMobile ? '0.85rem' : '1rem', border: '2.5px solid white', boxShadow: '0 4px 12px var(--shadow-color)' }}>
+                                    {activeUser?.firstName[0]}
+                                </div>
+                                {!isMobile && <ChevronDown size={14} style={{ marginRight: '0.5rem', opacity: 0.5 }} />}
+                            </button>
+
+                            {isUserSwitcherOpen && (
+                                <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: isMobile ? '50px' : '64px', right: 0, width: isMobile ? '240px' : '280px', zIndex: 200, background: 'white', padding: '0.75rem', borderRadius: '24px', border: '1.5px solid var(--glass-border)', boxShadow: '0 32px 64px rgba(0,0,0,0.12)' }}>
+                                    <div style={{ padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Profil actif</div>
+                                    <div style={{ maxHeight: '250px', overflowY: 'auto' }} className="no-scrollbar">
+                                        {staffUsers.map(u => (
+                                            <button key={u.id} onClick={() => { setActiveUserId(u.id); setIsUserSwitcherOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem', border: 'none', background: activeUserId === u.id ? 'var(--primary-light)' : 'transparent', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                                                <div style={{ width: '28px', height: '28px', background: u.role === 'direction' ? 'var(--primary-gradient)' : 'oklch(62% 0.18 200)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '0.75rem' }}>{u.firstName[0]}</div>
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{u.firstName}</div>
+                                                    <div style={{ fontSize: '8px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{u.role}</div>
+                                                </div>
+                                                {activeUserId === u.id && <Sparkles size={12} color="var(--primary-color)" />}
+                                            </button>
+                                        ))}
+                                        <div style={{ margin: '0.75rem 0', height: '1.5px', background: 'var(--glass-border)', opacity: 0.5 }} />
+                                        <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem', border: 'none', background: 'transparent', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', color: 'var(--danger-color)', fontWeight: '950' }}>
+                                            <div style={{ width: '28px', height: '28px', background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Zap size={14} />
+                                            </div>
+                                            <div style={{ fontSize: '0.85rem' }}>Déconnexion</div>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-
-                        <button
-                            className="btn-icon mobile-only"
-                            onClick={() => setIsNavOpen(true)}
-                            style={{ display: 'none' }}
-                        >
-                            <Menu size={28} />
-                        </button>
-
                     </div>
                 </header>
 
-                <div className="workspace-area">
-                    {activeTab === 'seatmap' ? (
-                        <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <SeatMap
-                                participants={participants}
-                                placements={placements}
-                                setPlacements={setPlacements}
-                                savedViews={savedViews}
-                                setSavedViews={setSavedViews}
-                                currentViewName={currentViewName}
-                                setCurrentViewName={setCurrentViewName}
-                                groups={groups}
-                            />
-                        </div>
-                    ) : activeTab === 'schedule' ? (
-                        <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <Schedule activities={activities} setActivities={setActivities} participants={participants} groups={groups} />
-                        </div>
-                    ) : activeTab === 'exitsheet' ? (
-                        <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <ExitSheet participants={participants} groups={groups} />
-                        </div>
-                    ) : activeTab === 'recap' ? (
-                        <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <MeetingRecap participants={participants} />
-                        </div>
-                    ) : activeTab === 'directory' ? (
-                        <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <ErrorBoundary>
-                                <Directory participants={participants} setParticipants={setParticipants} groups={groups} setGroups={setGroups} />
-                            </ErrorBoundary>
-                        </div>
-                    ) : activeTab === 'attendance' ? (
-                        <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                            <Attendance participants={participants} setParticipants={setParticipants} groups={groups} />
-                        </div>
-                    ) : (
-                        <div className="animate-fade-in" style={{ height: '100%', overflow: 'auto' }}>
-                            <Settings
-                                participants={participants}
-                                setParticipants={setParticipants}
-                                groups={groups}
-                                setGroups={setGroups}
-                                activities={activities}
-                                setActivities={setActivities}
-                                savedViews={savedViews}
-                                setSavedViews={setSavedViews}
-                                isAdminMode={isAdminMode}
-                                setIsAdminMode={setIsAdminMode}
-                                isAttendanceEnabled={isAttendanceEnabled}
-                                setIsAttendanceEnabled={setIsAttendanceEnabled}
-                                adminPin={adminPin}
-                                setAdminPin={setAdminPin}
-                            />
-                        </div>
-                    )}
+                {/* Workspace Area */}
+                <div style={{ flex: 1, padding: isMobile ? 'var(--space-sm)' : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }} className="no-scrollbar">
+                    <Suspense fallback={loadingShell}>
+                        <ErrorBoundary>
+                            {activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} isMobile={isMobile} />
+                            : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                            : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                            : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                            : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)} canEdit={permissions.editDirectory} isMobile={isMobile} />
+                            : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
+                            : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} setInventoryItems={(v) => mutateCollection(`${API_URL}/inventory/items`, setInventoryItems, v, inventoryItems)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                            : activeTab === 'settings' ? <Settings
+                                participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)}
+                                activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
+                                isAdminMode={isAdminMode} setIsAdminMode={setIsAdminMode} isAttendanceEnabled={isAttendanceEnabled}
+                                setIsAttendanceEnabled={setIsAttendanceEnabled} adminPin={adminPin} setAdminPin={(v) => mutateCollection(`${API_URL}/state/adminPin`, setAdminPin, v, adminPin)}
+                                accessControl={accessControl} setAccessControl={(v) => mutateCollection(`${API_URL}/state/accessControl`, setAccessControl, v, accessControl)}
+                                actorHeaders={actorHeaders} currentUser={activeUser} permissions={permissions} isMobile={isMobile}
+                            /> : null}
+                        </ErrorBoundary>
+                    </Suspense>
                 </div>
             </main>
+
+            <style>{`
+                .btn-icon-ref {
+                    border: 1.5px solid var(--glass-border);
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    transition: all 0.2s var(--ease-out-expo);
+                }
+                .btn-icon-ref:hover {
+                    transform: translateY(-2px);
+                    border-color: var(--primary-color);
+                    box-shadow: var(--shadow-md);
+                }
+                .spinner-large {
+                    width: 48px;
+                    height: 48px;
+                    border: 5px solid var(--primary-light);
+                    border-top-color: var(--primary-color);
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                }
+                @keyframes spin { to { transform: rotate(360deg); } }
+            `}</style>
         </div>
     );
 }

@@ -109,7 +109,7 @@ export default function AttendanceTracker({ isOpen, onClose, participants, setPa
                 {/* Bulk Actions */}
                 <div style={{ padding: '0.75rem 1.5rem', display: 'flex', gap: '0.5rem' }}>
                     <button onClick={() => markAllVisible(true)} style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
-                        ✓ Tout pointer
+                        Tout pointer
                     </button>
                     <button onClick={() => markAllVisible(false)} style={{ fontSize: '0.8rem', padding: '0.4rem 0.8rem', background: '#f1f5f9', color: '#64748b', border: '1px solid #e2e8f0', borderRadius: '6px', cursor: 'pointer', fontWeight: '600' }}>
                         Annuler tout

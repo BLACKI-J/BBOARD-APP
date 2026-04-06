@@ -5,15 +5,26 @@ import Seat from './Seat';
 export default function BusLayout({ participants, placements, onDrop, onDragOver, onDragLeave, onRemove, onClear }) {
     const rows = 12; // 12 rows of 4 seats
     return (
-        <div className="vehicle-card bus-layout">
-            <button onClick={onClear} className="btn-icon no-print" style={{ position: 'absolute', top: '1rem', right: '1rem', color: 'var(--danger-color)' }} title="Vider le car">
+        <div className="vehicle-card bus-layout" style={{
+            background: 'rgba(255, 255, 255, 0.45)',
+            backdropFilter: 'blur(12px)',
+            WebkitBackdropFilter: 'blur(12px)',
+            border: '1px solid rgba(255, 255, 255, 0.5)',
+            borderRadius: '28px',
+            overflow: 'hidden',
+            boxShadow: 'inset 0 0 1px rgba(255,255,255,0.8), 0 15px 45px rgba(15, 23, 42, 0.1)',
+            maxWidth: '480px',
+            margin: '0 auto',
+            position: 'relative'
+        }}>
+            <button onClick={onClear} className="btn-icon no-print" style={{ position: 'absolute', top: '1.25rem', right: '1.25rem', color: '#ef4444', opacity: 0.6 }} title="Vider le car">
                 <Trash2 size={16} />
             </button>
 
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
-                <h3 style={{ margin: 0, color: 'var(--text-main)', fontSize: '1rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: '800' }}>Grand Car</h3>
-                <div style={{ background: 'var(--primary-light)', color: 'var(--primary-color)', padding: '4px 12px', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold', border: '1px solid var(--primary-color)' }}>
-                    {Object.keys(placements).filter(k => k.startsWith('bus-')).length} / 53 Places
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '1rem', padding: '1.5rem 1.5rem 0', marginBottom: '2.5rem' }}>
+                <h3 style={{ margin: 0, color: '#1e293b', fontSize: '1.1rem', textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: '900' }}>Grand Voyageur</h3>
+                <div style={{ background: 'oklch(65% 0.22 260 / 0.1)', color: 'oklch(65% 0.22 260)', padding: '5px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '800', border: '1.5px solid oklch(65% 0.22 260 / 0.2)' }}>
+                    {Object.keys(placements).filter(k => k.startsWith('bus-')).length} / 53
                 </div>
             </div>
 

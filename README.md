@@ -1,4 +1,4 @@
-# 🏕️ BBOARD - Summer Camp Management System
+# BBOARD - Summer Camp Management System
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)](https://reactjs.org/)
@@ -12,20 +12,20 @@
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
 | Feature | Description |
 | :--- | :--- |
-| **🚌 Visual Transport** | Interactive SeatMap for Bus and Van layouts with real-time drag-and-drop. |
-| **🔄 Real-time Sync** | Instant data synchronization across all devices via WebSockets. |
-| **📅 Dynamic Planning** | Easily manage weekly schedules, activities, and locations. |
-| **📄 Automated Forms** | Generate professional Exit Sheets (A4) with health data and signatures. |
-| **👥 Centralized Directory** | Comprehensive database for children, staff, and medical alerts. |
-| **📦 Docker Ready** | One-command deployment for production environments. |
+| **Visual Transport** | Interactive SeatMap for Bus and Van layouts with real-time drag-and-drop. |
+| **Real-time Sync** | Instant data synchronization across all devices via WebSockets. |
+| **Dynamic Planning** | Easily manage weekly schedules, activities, and locations. |
+| **Automated Forms** | Generate professional Exit Sheets (A4) with health data and signatures. |
+| **Centralized Directory** | Comprehensive database for children, staff, and medical alerts. |
+| **Docker Ready** | One-command deployment for production environments. |
 
 ---
 
-## ⚡ Quick Start (Ubuntu / Debian)
+## Quick Start (Ubuntu / Debian)
 
 The fastest way to get your camp running is using our automatic installation script.
 
@@ -44,7 +44,7 @@ docker compose up -d --build
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## Tech Stack & Architecture
 
 - **Frontend**: Built with **React 18** and **Vite**. UI styling via **TailwindCSS** and standard CSS Modules. Drag-and-drop powered by `@dnd-kit`.
 - **Backend**: **Node.js** & **Express** server handling REST APIs and real-time events.
@@ -54,7 +54,7 @@ docker compose up -d --build
 
 ---
 
-## 💻 Developer Setup (Manual)
+## Developer Setup (Manual)
 
 If you'd like to contribute or run the project outside of Docker:
 
@@ -82,9 +82,9 @@ If you'd like to contribute or run the project outside of Docker:
 
 ---
 
-## 🔍 Dépannage (Troubleshooting)
+## Dépannage (Troubleshooting)
 
-### ❌ Erreur "permission denied" (Ubuntu 24.04)
+### Erreur "permission denied" (Ubuntu 24.04)
 Si vous voyez l'erreur `open sysctl net.ipv4.ip_unprivileged_port_start file: permission denied` lors du lancement :
 
 C'est une restriction de sécurité d'Ubuntu 24.04. Exécutez cette commande :
@@ -93,7 +93,7 @@ echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns
 ```
 *Note: Le script `install_docker.sh` inclut déjà ce correctif.*
 
-### 🛠️ Cas spécial : Proxmox LXC
+### Cas spécial : Proxmox LXC
 Si vous installez BBOARD dans un conteneur **LXC sur Proxmox** (ex: CT Ubuntu 24.04), le système de fichiers `/proc` est souvent en lecture seule (Read-only).
 
 Pour régler cela :
@@ -108,7 +108,7 @@ Pour régler cela :
 
 ---
 
-## 🚀 Deployment & Production
+## Deployment & Production
 
 For production servers, use the `docker-compose.yml` file. It handles:
 - **Service Isolation**: Separate containers for logic and UI.
@@ -123,7 +123,7 @@ docker compose up -d --build
 
 ---
 
-## 🌐 Exposer l'Application sur Internet avec Cloudflare Zero Trust
+## Exposer l'Application sur Internet avec Cloudflare Zero Trust
 
 Il est fortement recommandé de ne **pas** ouvrir de ports sur votre box ou pare-feu. BBOARD intègre une configuration prête à l'emploi pour **Cloudflare Tunnel (Zero Trust)**, ce qui permet à n'importe qui d'y accéder depuis un nom de domaine sécurisé (ex: `camp.votresite.com`), de façon 100% sécurisée.
 
@@ -150,17 +150,31 @@ Sur le serveur où tourne BBOARD (ex: votre VPS ou PC) :
 *Votre serveur BBOARD est maintenant connecté de manière invisible et sécurisée aux serveurs Cloudflare.*
 
 ### Étape 4 : Lier un nom de domaine
-Retournez sur le Dashboard Cloudflare (là où vous avez créé le tunnel) :
+Retournez au Dashboard Cloudflare (là où vous avez créé le tunnel) :
 1. Cliquez sur **Next** pour aller dans l'onglet `Public Hostname`.
 2. Sous **Subdomain**, mettez par exemple `camp` et choisissez votre **Domain** (`blacki.net`).
 3. Sous **Service**, choisissez **Type:** `HTTP` et **URL:** `localhost:8080` (C'est le port par défaut de BBOARD en local).
 4. Cliquez sur **Save**.
 
-🎉 **Terminé !** BBOARD est maintenant accessible depuis n'importe où via `https://camp.votre-domaine.com`, avec un certificat SSL géré automatiquement.
+Terminé ! BBOARD est maintenant accessible depuis n'importe où via `https://camp.votre-domaine.com`, avec un certificat SSL géré automatiquement.
 
 ---
 
-## 🤝 Contributing
+## 🎨 Personnalisation BBOARD (Mettre votre Logo)
+
+L'application est prévue pour être déployable par toutes les structures. 
+Si vous souhaitez que l'application utilise **le logo de votre organisme** (dans le menu principal, sur toutes les fiches d'impression PDF, etc.) :
+
+1. Allez dans le dossier `public/logo/` à la racine de l'application.
+2. Ajoutez votre propre image avec un fond transparent et nommez-la **strictement `logo.png`**.
+3. Remplacez le fichier existant (le chemin final doit être `public/logo/logo.png`).
+4. Relancez ou actualisez l'application.
+
+> Si aucun logo n'est placé dans ce dossier, le système affichera un logo de base très générique (le petit "éclair") pour éviter de casser l'interface.
+
+---
+
+## Contributing
 
 We welcome contributions of all kinds!
 1. **Fork** the project.
@@ -171,7 +185,7 @@ We welcome contributions of all kinds!
 
 ---
 
-## 📄 License
+## License
 This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
-Developed with ❤️ by **BLACKI-J** for the camp management community.
+Developed with care by **BLACKI-J** for the camp management community.

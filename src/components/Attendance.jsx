@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CheckCircle2, Circle, Search, Users, Camera, Image as ImageIcon, Filter, ListFilter, SortAsc, UserCheck, UserMinus, LayoutGrid, LayoutList, X, ArrowLeft, Trophy, ChevronRight } from 'lucide-react';
+import { CheckCircle2, Circle, Search, Users, Camera, Image as ImageIcon, UserCheck, UserMinus, LayoutGrid, LayoutList, X, Trophy, ChevronRight, ShieldAlert, Check } from 'lucide-react';
 import WebcamPhotoCapture from './directory/WebcamPhotoCapture';
 import confetti from 'canvas-confetti';
+import { useUi } from '../ui/UiProvider';
 
-export default function Attendance({ participants, setParticipants, groups }) {
+export default function Attendance({ participants, setParticipants, groups, canEdit = true, isMobile }) {
+    const ui = useUi();
     const [searchTerm, setSearchTerm] = useState('');
     const [filterGroup, setFilterGroup] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all'); // all, present, absent
@@ -45,23 +47,20 @@ export default function Attendance({ participants, setParticipants, groups }) {
     // Confetti effect when reaching 100%
     useEffect(() => {
         if (progress === 100 && totalCount > 0) {
-            const duration = 3 * 1000;
+            const duration = 4 * 1000;
             const animationEnd = Date.now() + duration;
-            const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+            const defaults = { startVelocity: 40, spread: 360, ticks: 100, zIndex: 1000 };
 
             const randomInRange = (min, max) => Math.random() * (max - min) + min;
 
             const interval = setInterval(function () {
                 const timeLeft = animationEnd - Date.now();
+                if (timeLeft <= 0) return clearInterval(interval);
 
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-
-                const particleCount = 50 * (timeLeft / duration);
-                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-            }, 250);
+                const particleCount = 60 * (timeLeft / duration);
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.4), y: Math.random() - 0.2 } });
+                confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.6, 0.9), y: Math.random() - 0.2 } });
+            }, 300);
         }
     }, [progress, totalCount]);
 
@@ -77,20 +76,27 @@ export default function Attendance({ participants, setParticipants, groups }) {
     });
 
     const togglePresence = (id) => {
+        if (!canEdit) {
+            ui.toast('Pointage non autorisé.', { type: 'error' });
+            return;
+        }
         setParticipants(participants.map(p => p.id === id ? { ...p, isPresent: !p.isPresent } : p));
     };
 
     const markAllVisible = (status) => {
+        if (!canEdit) return;
         const visibleIds = filteredChildren.map(c => c.id);
         setParticipants(participants.map(p => visibleIds.includes(p.id) ? { ...p, isPresent: status } : p));
     };
 
     const markGroupPresent = (groupId) => {
+        if (!canEdit) return;
         const groupMembersIds = children.filter(c => c.group === groupId).map(c => c.id);
         setParticipants(participants.map(p => groupMembersIds.includes(p.id) ? { ...p, isPresent: true } : p));
     };
 
     const handlePhotoUpload = (e, participantId) => {
+        if (!canEdit) return;
         const file = e.target.files[0];
         if (file) {
             const reader = new FileReader();
@@ -102,158 +108,179 @@ export default function Attendance({ participants, setParticipants, groups }) {
     };
 
     const handlePhotoCaptured = (photoBase64) => {
+        if (!canEdit) return;
         setParticipants(participants.map(p => p.id === selectedParticipantId ? { ...p, photo: photoBase64 } : p));
         setIsCameraOpen(false);
         setSelectedParticipantId(null);
     };
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: '#f8fafc' }}>
-            {/* Main Header */}
-            <div style={{ padding: '1.25rem 1.5rem', background: 'white', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                    <div style={{ background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)', padding: '0.75rem', borderRadius: '12px', color: 'white', display: 'flex', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)' }}>
-                        <UserCheck size={24} />
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
+            <div style={{ maxWidth: '1600px', width: '96%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+            {/* Action Bar */}
+            <div style={{ 
+                padding: isMobile ? '0.75rem 1rem' : '1rem 2.5rem', 
+                background: 'var(--glass-bg)', 
+                backdropFilter: 'blur(var(--glass-blur))', 
+                borderBottom: '1.5px solid var(--glass-border)', 
+                display: 'flex', 
+                flexDirection: 'column',
+                gap: isMobile ? '0.75rem' : '1rem',
+                zIndex: 20 
+            }}>
+                <div style={{ display: 'flex', gap: isMobile ? '0.75rem' : '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {/* Search */}
+                    <div style={{ flex: isMobile ? '1 1 100%' : '1', minWidth: isMobile ? '0' : '280px', position: 'relative', order: isMobile ? 2 : 1 }}>
+                        <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder={isMobile ? "Rechercher..." : "Rechercher un enfant..."}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ 
+                                width: '100%', 
+                                padding: isMobile ? '0.65rem 2.5rem' : '0.75rem 2.8rem', 
+                                border: '1.5px solid var(--glass-border)', 
+                                borderRadius: '14px', 
+                                fontSize: '0.9rem', 
+                                fontWeight: '600',
+                                outline: 'none', 
+                                background: 'rgba(255, 255, 255, 0.6)', 
+                                transition: 'all 0.3s var(--ease-out-expo)' 
+                            }}
+                            className="glass-input"
+                        />
+                        {searchTerm && (
+                            <button onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-muted)', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                <X size={12} />
+                            </button>
+                        )}
                     </div>
-                    <div>
-                        <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', color: '#1e293b', letterSpacing: '-0.5px' }}>Pointage & Présences</h1>
-                        <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#64748b', fontWeight: '500' }}>{presentCount} sur {totalCount} enfants présents</p>
+
+                    {/* Bulk Actions */}
+                    <div style={{ display: 'flex', gap: '0.5rem', width: isMobile ? '100%' : 'auto', order: isMobile ? 1 : 2 }}>
+                        <button onClick={() => markAllVisible(true)} className="btn btn-primary" style={{ flex: isMobile ? 1 : 'none', padding: '0.65rem 1rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '900', gap: '0.5rem' }}>
+                            <UserCheck size={16} strokeWidth={2.5} /> Tout cocher
+                        </button>
+                        <button onClick={() => markAllVisible(false)} className="btn btn-secondary" style={{ width: '40px', height: '40px', padding: '0', borderRadius: '12px', justifyContent: 'center' }} title="Réinitialiser">
+                            <UserMinus size={18} strokeWidth={2.5} />
+                        </button>
+                        
+                        <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.06)', padding: '4px', borderRadius: '12px', backdropFilter: 'blur(10px)', marginLeft: isMobile ? 'auto' : '0.5rem' }}>
+                            <button onClick={() => setViewMode('grid')} style={{ width: '32px', height: '32px', borderRadius: '8px', background: viewMode === 'grid' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'grid' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}>
+                                <LayoutGrid size={16} color={viewMode === 'grid' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={2.5} />
+                            </button>
+                            <button onClick={() => setViewMode('list')} style={{ width: '32px', height: '32px', borderRadius: '8px', background: viewMode === 'list' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'list' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}>
+                                <LayoutList size={16} color={viewMode === 'list' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={2.5} />
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {/* Sticky Stats & Filters Bar */}
-            <div style={{ position: 'sticky', top: 0, zIndex: 15, background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)' }}>
-                {/* Progress Mini Bar (Always visible at top of sticky) */}
-                <div style={{ height: '4px', background: '#f1f5f9', width: '100%' }}>
-                    <div style={{ width: `${progress}%`, height: '100%', background: progress === 100 ? '#10b981' : '#4f46e5', transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)' }} />
-                </div>
-
-                <div style={{ padding: '0.75rem 1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                        {/* Search */}
-                        <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
-                            <Search size={18} color="#94a3b8" style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)' }} />
-                            <input
-                                ref={searchInputRef}
-                                type="text"
-                                placeholder="Rechercher par nom..."
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
-                                style={{ width: '100%', boxSizing: 'border-box', padding: '0.65rem 2.5rem', border: '1.5px solid #e2e8f0', borderRadius: '12px', fontSize: '0.9rem', outline: 'none', background: 'white', transition: 'all 0.2s', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)' }}
-                                onFocus={(e) => e.target.style.borderColor = '#4f46e5'}
-                                onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
-                            />
-                            {searchTerm && (
-                                <button onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: '0.75rem', top: '50%', transform: 'translateY(-50%)', background: '#f1f5f9', border: 'none', color: '#64748b', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                                    <X size={14} />
-                                </button>
-                            )}
-                        </div>
-
-                        {/* Bulk Actions Mini */}
-                        <div style={{ display: 'flex', gap: '0.5rem' }}>
-                            <button onClick={() => markAllVisible(true)} style={{ padding: '0.65rem 1rem', borderRadius: '12px', border: 'none', background: '#10b981', color: 'white', fontSize: '0.8rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 2px 4px rgba(16,185,129,0.2)' }}>
-                                <UserCheck size={16} /> Tout cocher
-                            </button>
-                            <button onClick={() => markAllVisible(false)} style={{ padding: '0.65rem', borderRadius: '12px', border: '1.5px solid #e2e8f0', background: 'white', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }} title="Réinitialiser">
-                                <UserMinus size={18} />
-                            </button>
-                        </div>
-
-                        <div style={{ display: 'flex', background: '#f1f5f9', padding: '3px', borderRadius: '10px' }}>
-                            <button onClick={() => setViewMode('grid')} style={{ padding: '6px', borderRadius: '7px', background: viewMode === 'grid' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', boxShadow: viewMode === 'grid' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none' }}>
-                                <LayoutGrid size={18} color={viewMode === 'grid' ? '#4f46e5' : '#64748b'} />
-                            </button>
-                            <button onClick={() => setViewMode('list')} style={{ padding: '6px', borderRadius: '7px', background: viewMode === 'list' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', boxShadow: viewMode === 'list' ? '0 2px 4px rgba(0,0,0,0.1)' : 'none' }}>
-                                <LayoutList size={18} color={viewMode === 'list' ? '#4f46e5' : '#64748b'} />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-                        <div style={{ display: 'flex', gap: '0.4rem' }}>
-                            {[
-                                { id: 'all', label: 'Tous', count: children.length },
-                                { id: 'absent', label: 'Restants', count: children.length - presentCount, color: '#f59e0b' },
-                                { id: 'present', label: 'Cochés', count: presentCount, color: '#10b981' }
-                            ].map(pill => (
-                                <button
-                                    key={pill.id}
-                                    onClick={() => setStatusFilter(pill.id)}
-                                    style={{
-                                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                        padding: '0.4rem 0.8rem', borderRadius: '30px', fontSize: '0.75rem', fontWeight: '700',
-                                        border: '1.5px solid',
-                                        borderColor: statusFilter === pill.id ? (pill.color || '#4f46e5') : 'transparent',
-                                        background: statusFilter === pill.id ? (pill.color || '#4f46e5') : '#fff',
-                                        color: statusFilter === pill.id ? 'white' : '#64748b',
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                                        cursor: 'pointer', transition: 'all 0.2s'
-                                    }}
-                                >
-                                    {pill.label}
-                                    <span style={{ opacity: 0.8, fontSize: '0.7rem', background: statusFilter === pill.id ? 'rgba(255,255,255,0.2)' : '#f1f5f9', padding: '1px 6px', borderRadius: '10px' }}>{pill.count}</span>
-                                </button>
-                            ))}
-                        </div>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
-                            <SortAsc size={14} />
-                            <span style={{ fontWeight: '600' }}>Trier par :</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', width: isMobile ? '100%' : 'auto', paddingBottom: isMobile ? '4px' : 0 }} className="no-scrollbar">
+                        {[
+                            { id: 'all', label: 'Tous', count: children.length },
+                            { id: 'absent', label: 'Restants', count: children.length - presentCount, color: 'var(--cta-color)' },
+                            { id: 'present', label: 'Présents', count: presentCount, color: 'var(--success-color)' }
+                        ].map(pill => (
                             <button
-                                onClick={() => setSortBy(sortBy === 'lastName' ? 'firstName' : 'lastName')}
-                                style={{ background: '#fff', border: '1.5px solid #e2e8f0', padding: '0.4rem 0.75rem', borderRadius: '8px', color: '#4f46e5', fontWeight: '700', cursor: 'pointer', fontSize: '0.75rem' }}
+                                key={pill.id}
+                                onClick={() => setStatusFilter(pill.id)}
+                                style={{
+                                    display: 'flex', alignItems: 'center', gap: '0.625rem',
+                                    padding: '0.5rem 1rem', borderRadius: '30px', fontSize: '0.8rem', fontWeight: '900',
+                                    border: '1.5px solid',
+                                    borderColor: statusFilter === pill.id ? 'transparent' : 'var(--glass-border)',
+                                    background: statusFilter === pill.id ? (pill.color || 'var(--primary-color)') : 'white',
+                                    color: statusFilter === pill.id ? 'white' : 'var(--text-muted)',
+                                    boxShadow: statusFilter === pill.id ? '0 8px 16px oklch(0% 0 0 / 0.1)' : 'none',
+                                    cursor: 'pointer', transition: 'all 0.2s', flexShrink: 0
+                                }}
                             >
-                                {sortBy === 'lastName' ? 'Nom' : 'Prénom'}
+                                {pill.label}
+                                <span style={{ opacity: 0.8, fontSize: '0.7rem', background: 'rgba(0,0,0,0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: '950' }}>{pill.count}</span>
                             </button>
-                        </div>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
+                        <select
+                            value={filterGroup}
+                            onChange={(e) => setFilterGroup(e.target.value)}
+                            style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.4rem 0.65rem', borderRadius: '10px', color: 'var(--text-main)', fontWeight: '800', cursor: 'pointer', fontSize: '0.75rem', outline: 'none', flex: isMobile ? 1 : 'none' }}
+                        >
+                            <option value="all">Tous Groupes</option>
+                            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                        </select>
+                        <button
+                            onClick={() => setSortBy(sortBy === 'lastName' ? 'firstName' : 'lastName')}
+                            style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.4rem 0.65rem', borderRadius: '10px', color: 'var(--primary-color)', fontWeight: '900', cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s', flex: isMobile ? 1 : 'none' }}
+                        >
+                            Trier : {sortBy === 'lastName' ? 'NOM' : 'PRÉNOM'}
+                        </button>
                     </div>
                 </div>
             </div>
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                {/* Lateral Summary Sidebar (Desktop Only) */}
-                <div style={{ width: '280px', borderRight: '1px solid #e2e8f0', background: 'white', overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }} className="hide-mobile">
+                {/* Lateral Summary Sidebar */}
+                <div style={{ 
+                    width: '320px', 
+                    borderRight: '1.5px solid var(--glass-border)', 
+                    background: 'rgba(255, 255, 255, 0.4)', 
+                    backdropFilter: 'blur(10px)',
+                    overflowY: 'auto', 
+                    padding: '2rem 1.5rem', 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    gap: '2rem' 
+                }} className="hide-mobile no-scrollbar">
+                    
                     <div>
-                        <h3 style={{ fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Users size={14} /> RÉSUMÉ PAR GROUPE
+                        <h3 style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--primary-gradient)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+                                <Users size={14} />
+                            </div>
+                            Groupes ({groupStats.length})
                         </h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                             {groupStats.map(group => (
-                                <div key={group.id} style={{
-                                    padding: '1rem', borderRadius: '16px', border: `1.5px solid ${group.isComplete ? '#10b981' : '#f1f5f9'}`,
-                                    background: group.isComplete ? '#f0fdf4' : '#fff',
-                                    transition: 'all 0.2s',
-                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                                <div key={group.id} className="card-glass" style={{
+                                    padding: '1.25rem', 
+                                    border: `1.5px solid ${group.isComplete ? 'var(--success-color)' : 'var(--glass-border)'}`,
+                                    background: group.isComplete ? 'oklch(62% 0.18 145 / 0.08)' : 'rgba(255, 255, 255, 0.7)',
+                                    transition: 'transform 0.3s var(--ease-out-expo)'
                                 }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                                        <div style={{ fontWeight: '800', fontSize: '0.85rem', color: group.isComplete ? '#065f46' : '#1e293b' }}>{group.name}</div>
-                                        <div style={{ fontSize: '0.75rem', fontWeight: '800', color: group.isComplete ? '#10b981' : '#64748b', background: group.isComplete ? '#dcfce7' : '#f8fafc', padding: '2px 8px', borderRadius: '6px' }}>
-                                            {group.presentCount}/{group.count}
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                        <div style={{ fontWeight: '950', fontSize: '0.95rem', color: group.isComplete ? 'var(--success-color)' : 'var(--text-main)', letterSpacing: '-0.02em' }}>{group.name}</div>
+                                        <div style={{ fontSize: '11px', fontWeight: '950', color: group.isComplete ? 'white' : 'var(--text-muted)', background: group.isComplete ? 'var(--success-color)' : 'rgba(0,0,0,0.06)', padding: '3px 10px', borderRadius: '20px' }}>
+                                            {group.presentCount} / {group.count}
                                         </div>
                                     </div>
-                                    <div style={{ height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden', marginBottom: '0.8rem' }}>
+                                    <div style={{ height: '8px', background: 'rgba(0,0,0,0.06)', borderRadius: '10px', overflow: 'hidden', marginBottom: '1.25rem' }}>
                                         <div style={{
                                             width: `${group.count > 0 ? (group.presentCount / group.count) * 100 : 0}%`,
                                             height: '100%',
-                                            background: group.isComplete ? '#10b981' : group.color || '#4f46e5',
-                                            transition: 'width 0.4s ease'
+                                            background: group.isComplete ? 'var(--success-color)' : group.color || 'var(--primary-color)',
+                                            borderRadius: '10px',
+                                            transition: 'width 1s var(--ease-out-expo)'
                                         }} />
                                     </div>
                                     {!group.isComplete && group.count > 0 && (
                                         <button
                                             onClick={() => markGroupPresent(group.id)}
-                                            style={{ width: '100%', padding: '0.5rem', borderRadius: '10px', background: `${group.color}10`, color: group.color, border: 'none', fontSize: '0.75rem', fontWeight: '800', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', transition: 'all 0.2s' }}
-                                            onMouseOver={(e) => e.currentTarget.style.background = `${group.color}20`}
-                                            onMouseOut={(e) => e.currentTarget.style.background = `${group.color}10`}
+                                            style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', background: 'white', border: '1.5px solid var(--glass-border)', color: group.color || 'var(--primary-color)', fontSize: '0.8rem', fontWeight: '900', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', transition: 'all 0.2s' }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'var(--glass-bg)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'white'}
                                         >
-                                            Tout pointer <ChevronRight size={14} />
+                                            Tout cocher <ChevronRight size={16} strokeWidth={2.5} />
                                         </button>
                                     )}
                                     {group.isComplete && group.count > 0 && (
-                                        <div style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.75rem', fontWeight: '800', justifyContent: 'center', padding: '0.4rem' }}>
-                                            <CheckCircle2 size={16} /> Complet
+                                        <div style={{ color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '0.625rem', fontSize: '0.85rem', fontWeight: '950', justifyContent: 'center', background: 'white', padding: '0.75rem', borderRadius: '12px', border: '1.5px solid var(--success-color)' }}>
+                                            <Check size={18} strokeWidth={3} /> GROUPE COMPLET
                                         </div>
                                     )}
                                 </div>
@@ -261,32 +288,36 @@ export default function Attendance({ participants, setParticipants, groups }) {
                         </div>
                     </div>
 
-                    <div style={{ marginTop: 'auto', padding: '1.25rem', background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)', borderRadius: '20px', textAlign: 'center', border: '1px solid #e2e8f0' }}>
-                        <div style={{ width: '48px', height: '48px', background: progress === 100 ? '#fef3c7' : '#fff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 0.75rem', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
-                            <Trophy size={24} color={progress === 100 ? '#f59e0b' : '#cbd5e1'} />
+                    <div style={{ marginTop: 'auto', padding: '1.5rem', background: 'var(--primary-gradient)', borderRadius: '24px', textAlign: 'center', color: 'white', boxShadow: '0 12px 30px oklch(58% 0.18 var(--brand-hue) / 0.25)', border: '2px solid white' }}>
+                        <div style={{ width: '56px', height: '56px', background: 'rgba(255, 255, 255, 0.2)', borderRadius: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', backdropFilter: 'blur(10px)' }}>
+                            <Trophy size={28} />
                         </div>
-                        <div style={{ fontSize: '0.8rem', fontWeight: '800', color: '#1e293b', marginBottom: '4px' }}>
-                            {progress === 100 ? "Objectif Atteint !" : "Progression"}
+                        <div style={{ fontSize: '1.1rem', fontWeight: '950', marginBottom: '6px', letterSpacing: '-0.02em' }}>
+                            Pointage Atteint
                         </div>
-                        <div style={{ fontSize: '0.7rem', fontWeight: '600', color: '#64748b', lineHeight: '1.4' }}>
-                            {progress === 100 ? "Tous les enfants sont présents sur le camp." : `Encore ${totalCount - presentCount} enfants à pointer pour finir.`}
+                        <div style={{ fontSize: '2.5rem', fontWeight: '950', marginBottom: '8px', lineHeight: 1 }}>{progress}%</div>
+                        <div style={{ height: '6px', background: 'rgba(255,255,255,0.2)', borderRadius: '10px', overflow: 'hidden', margin: '15px 0' }}>
+                             <div style={{ width: `${progress}%`, height: '100%', background: 'white', transition: 'width 1s' }} />
                         </div>
+                        <p style={{ fontSize: '0.8rem', fontWeight: '700', color: 'rgba(255,255,255,0.9)', lineHeight: '1.5' }}>
+                            {progress === 100 ? "Mission accomplie ! Tous les enfants sont là." : `Encore ${totalCount - presentCount} enfants à trouver.`}
+                        </p>
                     </div>
                 </div>
 
-                {/* Main Content (Participant List) */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', background: '#f8fafc' }}>
+                {/* Main Content */}
+                <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2.5rem', background: 'rgba(0,0,0,0.02)' }} className="no-scrollbar">
                     {filteredChildren.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '5rem 2rem', color: '#94a3b8', background: 'white', borderRadius: '24px', border: '2px dashed #e2e8f0', maxWidth: '600px', margin: '2rem auto' }}>
-                            <div style={{ width: '80px', height: '80px', background: '#f1f5f9', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
-                                <Users size={40} style={{ opacity: 0.3 }} />
+                        <div className="card-glass" style={{ textAlign: 'center', padding: '6rem 2rem', maxWidth: '600px', margin: '4rem auto', border: '2.5px dashed var(--glass-border)' }}>
+                            <div style={{ width: '90px', height: '90px', background: 'var(--bg-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+                                <Users size={44} style={{ opacity: 0.15 }} />
                             </div>
-                            <h3 style={{ color: '#1e293b', fontSize: '1.25rem', fontWeight: '800', marginBottom: '0.5rem' }}>Aucun résultat</h3>
-                            <p style={{ fontSize: '0.9rem', color: '#64748b', lineHeight: '1.6' }}>Aucun enfant ne correspond à vos critères de recherche ou de filtrage.</p>
+                            <h3 style={{ color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: '950', marginBottom: '0.75rem', letterSpacing: '-0.03em' }}>Aucun résultat</h3>
+                            <p style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '600', lineHeight: '1.6' }}>Affinez vos critères de recherche ou réinitialisez les filtres.</p>
                             {(searchTerm || filterGroup !== 'all' || statusFilter !== 'all') && (
                                 <button
                                     onClick={() => { setSearchTerm(''); setFilterGroup('all'); setStatusFilter('all'); }}
-                                    style={{ marginTop: '1.5rem', padding: '0.75rem 1.5rem', borderRadius: '12px', background: '#4f46e5', color: 'white', border: 'none', fontWeight: '700', cursor: 'pointer', boxShadow: '0 4px 12px rgba(79, 70, 229, 0.2)' }}
+                                    className="btn btn-primary" style={{ marginTop: '2rem', padding: '0.85rem 2rem', fontWeight: '950' }}
                                 >
                                     Réinitialiser tout
                                 </button>
@@ -296,103 +327,99 @@ export default function Attendance({ participants, setParticipants, groups }) {
                         <div style={{
                             display: viewMode === 'grid' ? 'grid' : 'flex',
                             flexDirection: 'column',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                            gap: '1rem',
-                            paddingBottom: '2rem'
+                            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
+                            gap: isMobile ? '0.75rem' : '1.25rem',
+                            paddingBottom: isMobile ? '2rem' : '4rem'
                         }}>
-                            {filteredChildren.map(child => {
+                            {filteredChildren.map((child, idx) => {
                                 const group = groups.find(g => g.id === child.group);
                                 return (
                                     <div
                                         key={child.id}
-                                        className="attendance-card"
+                                        className="card-glass attendance-card animate-fade-in"
                                         style={{
-                                            background: 'white',
-                                            border: `1.5px solid ${child.isPresent ? '#10b981' : '#fff'}`,
-                                            borderRadius: '20px', padding: '1rem',
-                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                            boxShadow: child.isPresent ? '0 8px 16px -4px rgba(16,185,129,0.1)' : '0 2px 4px rgba(0,0,0,0.04)',
-                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                                            position: 'relative', overflow: 'hidden'
+                                            '--i': idx,
+                                            animationDelay: `calc(var(--i, 0) * 20ms)`,
+                                            border: `1.5px solid ${child.isPresent ? 'var(--success-color)' : 'var(--glass-border)'}`,
+                                            background: child.isPresent ? 'white' : 'rgba(255,255,255,0.7)',
+                                            padding: isMobile ? '0.75rem' : '1.25rem',
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'space-between',
+                                            gap: isMobile ? '0.75rem' : '1rem',
+                                            cursor: 'pointer',
+                                            borderRadius: isMobile ? '20px' : '24px'
                                         }}
+                                        onClick={() => togglePresence(child.id)}
                                     >
-                                        {child.isPresent && (
-                                            <div style={{ position: 'absolute', top: 0, left: 0, width: '4px', height: '100%', background: '#10b981' }} />
-                                        )}
-
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                                            {/* Avatar */}
-                                            <div style={{ position: 'relative' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.75rem' : '1.25rem', minWidth: 0 }}>
+                                            {/* Avatar Area */}
+                                            <div style={{ position: 'relative', flexShrink: 0 }}>
                                                 {child.photo ? (
-                                                    <img src={child.photo} alt={child.firstName} style={{ width: '64px', height: '64px', borderRadius: '18px', objectFit: 'cover', border: '2px solid #fff', boxShadow: '0 4px 8px rgba(0,0,0,0.1)' }} />
+                                                    <img src={child.photo} alt={child.firstName} style={{ width: isMobile ? '56px' : '68px', height: isMobile ? '56px' : '68px', borderRadius: isMobile ? '16px' : '20px', objectFit: 'cover', border: '2.5px solid white', boxShadow: 'var(--shadow-md)' }} />
                                                 ) : (
-                                                    <div style={{ width: '64px', height: '64px', borderRadius: '18px', background: `linear-gradient(135deg, ${group?.color || '#4f46e5'}15 0%, ${group?.color || '#4f46e5'}30 100%)`, color: group?.color || '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '800', fontSize: '1.4rem', border: '2px solid #fff' }}>
+                                                    <div style={{ width: isMobile ? '56px' : '68px', height: isMobile ? '56px' : '68px', borderRadius: isMobile ? '16px' : '20px', background: `linear-gradient(135deg, ${group?.color || 'var(--primary-color)'}15 0%, ${group?.color || 'var(--primary-color)'}30 100%)`, color: group?.color || 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950', fontSize: isMobile ? '1.2rem' : '1.5rem', border: '2.5px solid white', boxShadow: 'var(--shadow-md)' }}>
                                                         {(child.lastName?.[0] || child.firstName?.[0] || '?').toUpperCase()}
                                                     </div>
                                                 )}
 
-                                                <div style={{ position: 'absolute', bottom: '-4px', right: '-4px', display: 'flex', gap: '4px' }}>
+                                                <div style={{ position: 'absolute', bottom: isMobile ? '-4px' : '-6px', right: isMobile ? '-4px' : '-6px', display: 'flex', gap: '4px', zIndex: 10 }}>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setSelectedParticipantId(child.id); setIsCameraOpen(true); }}
-                                                        style={{ width: '26px', height: '26px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', transition: 'all 0.2s' }}
-                                                        onMouseOver={(e) => e.currentTarget.style.color = '#4f46e5'}
-                                                        onMouseOut={(e) => e.currentTarget.style.color = '#64748b'}
-                                                        title="Prendre une photo">
-                                                        <Camera size={14} />
+                                                        style={{ width: isMobile ? '24px' : '28px', height: isMobile ? '24px' : '28px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.08)' }}
+                                                        title="Photo Caméra">
+                                                        <Camera size={isMobile ? 12 : 14} strokeWidth={2.5} />
                                                     </button>
-                                                    <label
-                                                        style={{ width: '26px', height: '26px', background: 'white', border: '1px solid #e2e8f0', borderRadius: '8px', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.1)', transition: 'all 0.2s' }}
-                                                        onMouseOver={(e) => e.currentTarget.style.color = '#4f46e5'}
-                                                        onMouseOut={(e) => e.currentTarget.style.color = '#64748b'}
-                                                        title="Importer une photo">
-                                                        <ImageIcon size={14} />
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            onChange={(e) => handlePhotoUpload(e, child.id)}
-                                                            style={{ display: 'none' }}
-                                                        />
-                                                    </label>
+                                                    {!isMobile && (
+                                                        <label
+                                                            onClick={(e) => e.stopPropagation()}
+                                                            style={{ width: '28px', height: '28px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.08)' }}
+                                                            title="Upload Photo">
+                                                            <ImageIcon size={14} strokeWidth={2.5} />
+                                                            <input type="file" accept="image/*" onChange={(e) => handlePhotoUpload(e, child.id)} style={{ display: 'none' }} />
+                                                        </label>
+                                                    )}
                                                 </div>
                                             </div>
 
-                                            {/* Info */}
-                                            <div>
-                                                <div style={{ fontWeight: '800', color: '#1e293b', fontSize: '1rem', marginBottom: '2px' }}>
+                                            {/* Info Area */}
+                                            <div style={{ minWidth: 0 }}>
+                                                <div style={{ fontWeight: '950', color: 'var(--text-main)', fontSize: isMobile ? '0.9rem' : '1rem', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                                     {child.lastName?.toUpperCase()}
                                                 </div>
-                                                <div style={{ fontWeight: '600', color: '#64748b', fontSize: '0.9rem', marginBottom: '4px' }}>
+                                                <div style={{ fontWeight: '800', color: 'var(--text-muted)', fontSize: isMobile ? '0.8rem' : '0.9rem', marginBottom: isMobile ? '2px' : '6px' }}>
                                                     {child.firstName}
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                     {group && (
-                                                        <span style={{ fontSize: '0.65rem', padding: '2px 8px', background: `${group.color}15`, color: group.color, borderRadius: '6px', fontWeight: '800', letterSpacing: '0.02em' }}>
+                                                        <span style={{ fontSize: '9px', padding: '1px 6px', background: `oklch(from ${group.color} 98% calc(c / 8) h / 0.1)`, color: group.color, borderRadius: '4px', fontWeight: '950', border: '1px solid oklch(from ${group.color} l c h / 0.15)' }}>
                                                             {group.name}
                                                         </span>
                                                     )}
-                                                    {child.isPresent && (
-                                                        <span style={{ fontSize: '0.6rem', color: '#10b981', fontWeight: '800', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: '2px' }}>
-                                                            <CheckCircle2 size={10} /> Présent
-                                                        </span>
+                                                    {child.isPresent && !isMobile && (
+                                                        <div style={{ fontSize: '10px', color: 'var(--success-color)', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--success-color)', boxShadow: '0 0 6px var(--success-color)' }} /> PRÉSENT
+                                                        </div>
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* Toggle Checkbox */}
-                                        <div
-                                            onClick={() => togglePresence(child.id)}
-                                            style={{
-                                                width: '48px', height: '48px', borderRadius: '16px',
-                                                background: child.isPresent ? '#10b981' : '#f8fafc',
-                                                color: child.isPresent ? 'white' : '#e2e8f0',
-                                                border: `2px solid ${child.isPresent ? '#10b981' : '#f1f5f9'}`,
-                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                                boxShadow: child.isPresent ? '0 4px 12px rgba(16,185,129,0.2)' : 'none',
-                                                cursor: 'pointer'
-                                            }}>
-                                            {child.isPresent ? <CheckCircle2 size={28} strokeWidth={2.5} /> : <Circle size={28} strokeWidth={2.5} />}
+                                        {/* Presence Toggle */}
+                                        <div style={{ 
+                                            width: isMobile ? '40px' : '52px', 
+                                            height: isMobile ? '40px' : '52px', 
+                                            borderRadius: isMobile ? '14px' : '18px',
+                                            background: child.isPresent ? 'var(--success-color)' : 'white',
+                                            color: child.isPresent ? 'white' : 'var(--glass-border)',
+                                            border: `2px solid ${child.isPresent ? 'var(--success-color)' : 'var(--glass-border)'}`,
+                                            display: 'flex', 
+                                            alignItems: 'center', 
+                                            justifyContent: 'center',
+                                            transition: 'all 0.4s var(--ease-out-expo)',
+                                            boxShadow: child.isPresent ? '0 8px 20px oklch(62% 0.18 145 / 0.3)' : 'none'
+                                        }}>
+                                            {child.isPresent ? <Check size={isMobile ? 24 : 32} strokeWidth={4} /> : <div style={{ width: isMobile ? '8px' : '12px', height: isMobile ? '8px' : '12px', borderRadius: '50%', background: 'var(--glass-border)' }} />}
                                         </div>
                                     </div>
                                 );
@@ -410,19 +437,21 @@ export default function Attendance({ participants, setParticipants, groups }) {
 
             <style>{`
                 .attendance-card:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 12px 24px -8px rgba(0,0,0,0.1) !important;
-                    border-color: #cbd5e1 !important;
+                    transform: translateY(-4px) scale(1.02);
+                    background: white !important;
+                    box-shadow: 0 20px 40px oklch(0% 0 0 / 0.08) !important;
+                    border-color: var(--primary-color) !important;
                 }
                 .attendance-card:active {
                     transform: scale(0.98);
                 }
-                @media (max-width: 768px) {
+                @media (max-width: 1024px) {
                     .hide-mobile {
                         display: none !important;
                     }
                 }
             `}</style>
+            </div>
         </div>
     );
 }

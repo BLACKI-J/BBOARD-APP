@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Search } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Search, Plus, Trash2, Download, Upload, Filter, LayoutGrid, LayoutList, Users } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { useUi } from '../ui/UiProvider';
 
 // Components
 import DirectoryHeader from './directory/DirectoryHeader';
@@ -11,10 +12,8 @@ import ParticipantDetails from './directory/ParticipantDetails';
 import ParticipantForm from './directory/ParticipantForm';
 import GroupManager from './directory/GroupManager';
 
-// --- Main Component ---
-
-export default function Directory({ participants = [], setParticipants, groups = [], setGroups }) {
-    // Ensure props are safe
+export default function Directory({ participants = [], setParticipants, groups = [], setGroups, canEdit = true }) {
+    const ui = useUi();
     const safeParticipants = Array.isArray(participants) ? participants : [];
     const safeGroups = Array.isArray(groups) ? groups : [];
 
@@ -34,63 +33,67 @@ export default function Directory({ participants = [], setParticipants, groups =
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
-        firstName: '',
-        lastName: '',
-        birthDate: '',
-        allergies: '',
-        constraints: '',
-        photo: '',
-        role: 'child',
-        group: '',
-        healthDocProvided: false,
-        // Animator specific fields
-        training: '',
-        phone: '',
-        address: '',
-        emergencyContact: ''
+        firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '', healthDocProvided: false,
+        training: '', phone: '', address: '', emergencyContact: '',
+        pocketMoney: { initial: 0, current: 0, history: [] }
     });
 
     // Group Management State
     const [isGroupManagerOpen, setIsGroupManagerOpen] = useState(false);
     const [newGroupData, setNewGroupData] = useState({ name: '', color: '#3b82f6' });
 
-    // --- Actions ---
-
     const toggleSelection = (id) => {
-        if (selectedParticipants.includes(id)) {
-            setSelectedParticipants(selectedParticipants.filter(pId => pId !== id));
-        } else {
-            setSelectedParticipants([...selectedParticipants, id]);
+        if (!canEdit) {
+            ui.toast('Droits de modification insuffisants.', { type: 'error' });
+            return;
         }
+        setSelectedParticipants(prev => prev.includes(id) ? prev.filter(pId => pId !== id) : [...prev, id]);
     };
 
     const toggleSelectAll = () => {
-        if (selectedParticipants.length === sortedParticipants.length) {
-            setSelectedParticipants([]);
-        } else {
-            setSelectedParticipants(sortedParticipants.map(p => p.id));
-        }
+        if (!canEdit) return;
+        setSelectedParticipants(selectedParticipants.length === sortedParticipants.length ? [] : sortedParticipants.map(p => p.id));
     };
 
-    const handleBulkDelete = () => {
-        if (confirm(`Supprimer ces ${selectedParticipants.length} participants ?`)) {
+    const handleBulkDelete = async () => {
+        if (!canEdit) {
+            ui.toast('Droits de suppression insuffisants.', { type: 'error' });
+            return;
+        }
+        const ok = await ui.confirm({
+            title: 'Supprimer la sélection',
+            message: `Voulez-vous vraiment supprimer ces ${selectedParticipants.length} participants ?`,
+            confirmText: 'Supprimer Tout',
+            danger: true
+        });
+        if (ok) {
             setParticipants(safeParticipants.filter(p => !selectedParticipants.includes(p.id)));
             setSelectedParticipants([]);
+            ui.toast('Participants supprimés.', { type: 'success' });
         }
     };
 
     const handleAddGroup = (e) => {
         e.preventDefault();
+        if (!canEdit) return;
         if (newGroupData.name) {
             setGroups([...safeGroups, { id: uuidv4(), ...newGroupData }]);
             setNewGroupData({ name: '', color: '#3b82f6' });
         }
     };
 
-    const handleDeleteGroup = (groupId) => {
-        if (confirm("Supprimer ce groupe ? Les participants assignés n'auront plus de groupe.")) {
+    const handleDeleteGroup = async (groupId) => {
+        if (!canEdit) return;
+        const ok = await ui.confirm({
+            title: 'Supprimer le groupe',
+            message: "Supprimer ce groupe ? Les membres seront dissociés.",
+            confirmText: 'Supprimer',
+            danger: true
+        });
+        if (ok) {
             setGroups(safeGroups.filter(g => g.id !== groupId));
             setParticipants(safeParticipants.map(p => p.group === groupId ? { ...p, group: '' } : p));
+            ui.toast('Groupe supprimé.', { type: 'success' });
         }
     };
 
@@ -100,45 +103,66 @@ export default function Directory({ participants = [], setParticipants, groups =
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `colo-participants-${new Date().toISOString().split('T')[0]}.json`;
+        link.download = `bboard-export-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
     };
 
     const handleImport = (event) => {
+        if (!canEdit) {
+            ui.toast('Import bloqué: droits insuffisants.', { type: 'error' });
+            return;
+        }
         const file = event.target.files[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const imported = JSON.parse(e.target.result);
                 if (Array.isArray(imported)) {
-                    if (confirm(`Voulez-vous remplacer la liste actuelle (${safeParticipants.length}) par ${imported.length} participants importés ?`)) {
+                    const ok = await ui.confirm({
+                        title: 'Importer les participants',
+                        message: `Remplacer la liste actuelle (${safeParticipants.length}) par ${imported.length} participants importés ?`,
+                        confirmText: 'Importer Tout'
+                    });
+                    if (ok) {
                         setParticipants(imported);
+                        ui.toast('Import terminé.', { type: 'success' });
                     }
                 } else {
-                    alert("Format JSON invalide : doit être une liste de participants.");
+                    ui.alert({ title: 'Import invalide', message: 'Le fichier doit contenir un tableau JSON.' });
                 }
             } catch (err) {
-                alert("Erreur lors de la lecture du fichier JSON.");
+                ui.alert({ title: 'Erreur', message: 'Erreur lors de la lecture du JSON.' });
             }
         };
         reader.readAsText(file);
+        event.target.value = '';
     };
 
     const resetForm = () => {
         setFormData({
             firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '', healthDocProvided: false,
-            training: '', phone: '', address: '', emergencyContact: ''
+            training: '', phone: '', address: '', emergencyContact: '',
+            pocketMoney: { initial: 0, current: 0, history: [] }
         });
         setEditingId(null);
         setIsFormOpen(false);
     };
 
+    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+    useEffect(() => {
+        const handleResize = () => setWindowWidth(window.innerWidth);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const isMobile = windowWidth < 1024;
+
     const handleEdit = (participant) => {
-        if (!participant) return;
+        if (!canEdit) return;
         setFormData({
             ...participant,
             role: participant.role || 'child',
@@ -159,17 +183,24 @@ export default function Directory({ participants = [], setParticipants, groups =
         setIsFormOpen(true);
     };
 
-    const handleDelete = (id) => {
-        if (confirm("Voulez-vous vraiment supprimer ce participant ?")) {
+    const handleDelete = async (id) => {
+        if (!canEdit) return;
+        const ok = await ui.confirm({
+            title: 'Supprimer',
+            message: 'Voulez-vous vraiment supprimer ce membre ?',
+            confirmText: 'Supprimer',
+            danger: true
+        });
+        if (ok) {
             setParticipants(safeParticipants.filter(p => p.id !== id));
-            if (viewingParticipant && viewingParticipant.id === id) {
-                setViewingParticipant(null);
-            }
+            if (viewingParticipant && viewingParticipant.id === id) setViewingParticipant(null);
+            ui.toast('Membre supprimé.', { type: 'success' });
         }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!canEdit) return;
         if (editingId) {
             setParticipants(safeParticipants.map(p => p.id === editingId ? { ...formData, id: editingId } : p));
         } else {
@@ -180,13 +211,9 @@ export default function Directory({ participants = [], setParticipants, groups =
 
     const requestSort = (key) => {
         let direction = 'ascending';
-        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-            direction = 'descending';
-        }
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') direction = 'descending';
         setSortConfig({ key, direction });
     };
-
-    // --- Filtering & Sorting ---
 
     const filteredParticipants = useMemo(() => {
         return safeParticipants.filter(p => {
@@ -194,69 +221,36 @@ export default function Directory({ participants = [], setParticipants, groups =
             const lName = (p.lastName || '').toLowerCase();
             const role = (p.role || '').toLowerCase();
             const searchLower = searchTerm.toLowerCase();
-
             const matchesSearch = (fName + ' ' + lName).includes(searchLower) || role.includes(searchLower);
             const matchesRole = filterRole === 'all' || p.role === filterRole;
             const matchesGroup = filterGroup === 'all' || (filterGroup === 'none' ? !p.group : p.group === filterGroup);
-
             return matchesSearch && matchesRole && matchesGroup;
         });
     }, [safeParticipants, searchTerm, filterRole, filterGroup]);
 
     const sortedParticipants = useMemo(() => {
         let sortableItems = [...filteredParticipants];
-        if (sortConfig !== null) {
-            sortableItems.sort((a, b) => {
-                let aValue = a[sortConfig.key] || '';
-                let bValue = b[sortConfig.key] || '';
-
-                if (sortConfig.key === 'age') {
-                    aValue = a.birthDate || '';
-                    bValue = b.birthDate || '';
-                }
-
-                if (aValue < bValue) {
-                    return sortConfig.direction === 'ascending' ? -1 : 1;
-                }
-                if (aValue > bValue) {
-                    return sortConfig.direction === 'ascending' ? 1 : -1;
-                }
-                return 0;
-            });
-        }
+        sortableItems.sort((a, b) => {
+            let aValue = a[sortConfig.key] || '';
+            let bValue = b[sortConfig.key] || '';
+            if (sortConfig.key === 'age') { aValue = a.birthDate || ''; bValue = b.birthDate || ''; }
+            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
+            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
+            return 0;
+        });
         return sortableItems;
     }, [filteredParticipants, sortConfig]);
 
-    // --- Statistics ---
-    const stats = useMemo(() => {
-        return {
-            total: safeParticipants.length,
-            children: safeParticipants.filter(p => p.role === 'child').length,
-            animators: safeParticipants.filter(p => p.role === 'animator').length,
-            direction: safeParticipants.filter(p => p.role === 'direction').length
-        };
-    }, [safeParticipants]);
-
-    // --- Advanced Features ---
-    const handleViewDetails = (participant) => {
-        if (!participant) return;
-        // Deep copy with defaults to prevent any possible crash
-        const safeParticipant = {
-            id: participant.id,
-            firstName: participant.firstName || '',
-            lastName: participant.lastName || '',
-            role: participant.role || 'child',
-            group: participant.group || '',
-            birthDate: participant.birthDate || '',
-            allergies: participant.allergies || '',
-            constraints: participant.constraints || '',
-            photo: participant.photo || ''
-        };
-        setViewingParticipant(safeParticipant);
-    };
+    const stats = useMemo(() => ({
+        total: safeParticipants.length,
+        children: safeParticipants.filter(p => p.role === 'child').length,
+        animators: safeParticipants.filter(p => p.role === 'animator').length,
+        direction: safeParticipants.filter(p => p.role === 'direction').length
+    }), [safeParticipants]);
 
     return (
-        <div className="directory-container" style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--bg-main)', overflow: 'hidden', position: 'relative' }}>
+        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden', position: 'relative' }}>
+            <div style={{ maxWidth: '1600px', width: '96%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
             <DirectoryHeader
                 stats={stats}
@@ -264,9 +258,10 @@ export default function Directory({ participants = [], setParticipants, groups =
                 handleBulkDelete={handleBulkDelete}
                 openGroupManager={() => setIsGroupManagerOpen(true)}
                 openNewForm={() => { resetForm(); setIsFormOpen(true); }}
-                openAttendance={() => setIsAttendanceOpen(true)}
                 handleExport={handleExport}
                 handleImport={handleImport}
+                isMobile={isMobile}
+                canEdit={canEdit}
             />
 
             <DirectoryFilters
@@ -276,24 +271,46 @@ export default function Directory({ participants = [], setParticipants, groups =
                 setFilterRole={setFilterRole}
                 filterGroup={filterGroup}
                 setFilterGroup={setFilterGroup}
-                viewMode={viewMode}
+                viewMode={isMobile ? 'grid' : viewMode}
                 setViewMode={setViewMode}
                 groups={safeGroups}
+                isMobile={isMobile}
             />
 
-            {/* Main Content */}
-            <div className="directory-content" style={{ flex: 1, overflowY: 'auto', padding: '0' }}>
+            <div style={{ flex: 1, overflowY: 'auto' }} className="no-scrollbar">
+                <div style={{ padding: isMobile ? '1rem' : '1.5rem 2.5rem' }}>
                 {sortedParticipants.length === 0 ? (
-                    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                        <div style={{ background: '#f1f5f9', padding: '2rem', borderRadius: '50%', marginBottom: '1.5rem' }}>
-                            <Search size={48} color="#cbd5e1" />
+                    <div className="card-glass" style={{ textAlign: 'center', padding: '6rem 2rem', maxWidth: '600px', margin: '4rem auto', border: '2.5px dashed var(--glass-border)' }}>
+                        <div style={{ width: '90px', height: '90px', background: 'var(--bg-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+                            <Search size={44} style={{ opacity: 0.15 }} />
                         </div>
-                        <h3 style={{ fontSize: '1.25rem', marginBottom: '0.5rem', color: '#64748b' }}>Aucun résultat</h3>
-                        <p>Essayez de modifier vos filtres ou votre recherche.</p>
+                        <h3 style={{ color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: '950', marginBottom: '0.75rem', letterSpacing: '-0.03em' }}>Aucun résultat</h3>
+                        <p style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '600' }}>Modifiez vos filtres pour voir plus de membres.</p>
+                        {(searchTerm || filterGroup !== 'all' || filterRole !== 'all') && (
+                            <button onClick={() => { setSearchTerm(''); setFilterGroup('all'); setFilterRole('all'); }} className="btn btn-primary" style={{ marginTop: '2rem', padding: '0.85rem 2rem', fontWeight: '950' }}>Réinitialiser</button>
+                        )}
                     </div>
                 ) : (
                     <>
-                        {viewMode === 'table' ? (
+                        {(isMobile || viewMode === 'grid') ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem', paddingBottom: '4rem' }}>
+                                {sortedParticipants.map((p, idx) => (
+                                    <ParticipantCard
+                                        key={p.id}
+                                        participant={p}
+                                        index={idx}
+                                        isSelected={selectedParticipants.includes(p.id)}
+                                        toggleSelection={toggleSelection}
+                                        handleViewDetails={() => setViewingParticipant(p)}
+                                        handleEdit={handleEdit}
+                                        handleDelete={handleDelete}
+                                        groups={safeGroups}
+                                        isMobile={isMobile}
+                                        canEdit={canEdit}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
                             <ParticipantTable
                                 participants={sortedParticipants}
                                 selectedParticipants={selectedParticipants}
@@ -301,32 +318,27 @@ export default function Directory({ participants = [], setParticipants, groups =
                                 toggleSelectAll={toggleSelectAll}
                                 sortConfig={sortConfig}
                                 requestSort={requestSort}
-                                handleViewDetails={handleViewDetails}
+                                handleViewDetails={(p) => setViewingParticipant(p)}
                                 handleEdit={handleEdit}
                                 handleDelete={handleDelete}
                                 groups={safeGroups}
+                                canEdit={canEdit}
                             />
-                        ) : (
-                            <div style={{ padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem', alignContent: 'start' }}>
-                                {sortedParticipants.map(p => (
-                                    <ParticipantCard
-                                        key={p.id}
-                                        participant={p}
-                                        isSelected={selectedParticipants.includes(p.id)}
-                                        toggleSelection={toggleSelection}
-                                        handleViewDetails={handleViewDetails}
-                                        handleEdit={handleEdit}
-                                        handleDelete={handleDelete}
-                                        groups={safeGroups}
-                                    />
-                                ))}
-                            </div>
                         )}
                     </>
                 )}
+                </div>
             </div>
 
-            {/* --- Modals --- */}
+            {isMobile && !isFormOpen && canEdit && (
+                <button 
+                    onClick={() => { resetForm(); setIsFormOpen(true); }}
+                    className="btn btn-primary"
+                    style={{ position: 'fixed', bottom: '32px', right: '32px', width: '64px', height: '64px', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 32px oklch(58% 0.18 var(--brand-hue) / 0.4)', zIndex: 150 }}
+                >
+                    <Plus size={32} strokeWidth={3} />
+                </button>
+            )}
 
             <GroupManager
                 isOpen={isGroupManagerOpen}
@@ -339,6 +351,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 setNewGroupData={setNewGroupData}
                 onAddGroup={handleAddGroup}
                 onDeleteGroup={handleDeleteGroup}
+                canEdit={canEdit}
             />
 
             <ParticipantDetails
@@ -346,6 +359,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 setViewingParticipant={setViewingParticipant}
                 handleEdit={handleEdit}
                 groups={safeGroups}
+                canEdit={canEdit}
             />
 
             <ParticipantForm
@@ -356,258 +370,23 @@ export default function Directory({ participants = [], setParticipants, groups =
                 onSubmit={handleSubmit}
                 editingId={editingId}
                 groups={safeGroups}
+                canEdit={canEdit}
             />
 
-            {/* Styles injectés localement pour ce composant (et ses enfants) */}
             <style>{`
-                /* Badges */
-                .badge-stat {
-                    display: flex; align-items: center; gap: 0.6rem;
-                    padding: 0.4rem 0.8rem; border-radius: 8px;
-                    font-size: 0.9rem; font-weight: 600;
-                    background: #f1f5f9; color: #64748b;
+                .btn-icon-ref {
+                    width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center;
+                    background: white; border: 1.5px solid var(--glass-border); color: var(--text-muted); transition: all 0.2s; cursor: pointer;
                 }
-                
-                /* Buttons */
-                .btn-icon-only {
-                    padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border-color);
-                    background: white; color: var(--text-muted); cursor: pointer; transition: all 0.2s;
-                }
-                .btn-icon-only:hover { background: #f8fafc; color: var(--primary-color); border-color: var(--primary-color); }
+                .btn-icon-ref:hover { border-color: var(--primary-color); color: var(--primary-color); transform: translateY(-2px); }
+                .btn-icon-ref.danger:hover { border-color: var(--danger-color); color: var(--danger-color); background: oklch(62% 0.2 28 / 0.05); }
 
-                /* Filters */
-                .select-filter {
-                    padding: 0.6rem 2rem 0.6rem 1rem; border-radius: 8px;
-                    border: 1px solid var(--border-color); background: white;
-                    font-size: 0.9rem; color: #475569; cursor: pointer;
-                }
-                .view-toggle {
-                    border: none; background: transparent; padding: 0.4rem 0.6rem;
-                    border-radius: 6px; cursor: pointer; color: #94a3b8;
-                }
-                .view-toggle.active { background: #f1f5f9; color: var(--primary-color); box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-
-                /* Data Table — scrollable on mobile */
-                .data-table-wrapper {
-                    width: 100%;
-                    overflow-x: auto;
-                    -webkit-overflow-scrolling: touch;
-                }
-                .data-table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 600px; }
-                .data-table thead th {
-                    text-align: left; padding: 0.875rem 1rem; color: #64748b; font-weight: 600;
-                    border-bottom: 1px solid var(--border-color); cursor: pointer; user-select: none;
-                    position: sticky; top: 0; background: white; z-index: 10; white-space: nowrap;
-                }
-                .data-table thead th:hover { color: var(--primary-color); background: #f8fafc; }
-                .data-table tbody tr { transition: background 0.1s; }
-                .data-table tbody tr:hover { background: #f8fafc; }
-                .data-table tbody tr.selected { background: rgba(59, 130, 246, 0.05); }
-                .data-table td { padding: 1rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
-                
-                .action-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; opacity: 0.6; transition: opacity 0.2s; }
-                .data-table tr:hover .action-buttons { opacity: 1; }
-                .action-buttons button {
-                    background: none; border: none; cursor: pointer; padding: 6px;
-                    color: #94a3b8; border-radius: 6px;
-                }
-                .action-buttons button:hover { background: #e2e8f0; color: #475569; }
-                .action-buttons button.delete:hover { background: #fee2e2; color: #ef4444; }
-                .action-buttons .divider { width: 1px; background: #cbd5e1; margin: 0 4px; }
-
-                /* Cards Grid */
-                .participant-card {
-                    background: white; border-radius: 12px; border: 1px solid var(--border-color);
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.05); overflow: hidden;
-                    display: flex; flexDirection: column; transition: all 0.2s; cursor: pointer;
-                    position: relative;
-                }
-                .participant-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border-color: #cbd5e1; }
-                .participant-card.selected { border-color: var(--primary-color); ring: 2px var(--primary-color); }
-                
-                .card-role-strip { height: 6px; width: 100%; }
-                .card-role-strip.child { background: var(--primary-color); }
-                .card-role-strip.animator { background: var(--secondary-color); }
-                .card-role-strip.direction { background: #8b5cf6; }
-
-                .card-header { padding: 1rem; display: flex; gap: 1rem; align-items: center; }
-                .card-tags { padding: 0 1rem; display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
-                .card-info { padding: 0 1rem; margin-bottom: 1rem; min-height: 24px; }
-                
-                .card-actions {
-                    margin-top: auto; padding: 0.75rem 1rem; background: #f8fafc; border-top: 1px solid #f1f5f9;
-                    display: flex; gap: 0.5rem; align-items: center;
-                }
-                .card-actions button {
-                    background: white; border: 1px solid #e2e8f0; border-radius: 6px;
-                    padding: 6px; cursor: pointer; color: #64748b; transition: all 0.1s;
-                }
-                .card-actions button:hover { border-color: #cbd5e1; color: #334155; }
-                .card-actions button.danger:hover { border-color: #fecaca; color: #ef4444; background: #fef2f2; }
-
-                /* Modal & Form */
-                .modal-overlay {
-                    position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px);
-                    display: flex; justify-content: center; alignItems: center; z-index: 100;
-                }
-                .modal-content {
-                    background: white; border-radius: 16px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
-                    display: flex; flexDirection: column; max-height: 90vh;
-                }
-                .modal-header {
-                    padding: 1.5rem; border-bottom: 1px solid #e2e8f0;
-                    display: flex; justify-content: space-between; alignItems: center;
-                }
-                .modal-header h3 { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0; }
-                .close-btn { background: none; border: none; cursor: pointer; color: #94a3b8; }
-                .close-btn:hover { color: #475569; }
-
-                .modal-body { padding: 2rem; overflow-y: auto; }
-                .modal-footer {
-                    padding: 1.5rem; border-top: 1px solid #e2e8f0; background: #f8fafc;
-                    display: flex; justify-content: flex-end; gap: 1rem; border-radius: 0 0 16px 16px;
-                }
-
-                /* Form Layouts */
-                .form-row-aligned {
-                    display: grid;
-                    grid-template-columns: 100px 1fr 100px 1fr;
-                    align-items: center;
-                    gap: 1rem;
-                }
-                /* For rows with just one field */
-                .form-row-aligned > .role-selector,
-                .form-row-aligned > textarea,
-                .form-row-aligned > .input-field:only-of-type {
-                    grid-column: 2 / span 3;
-                }
-
-                .form-group label, .form-row-aligned label { 
-                    font-size: 0.9rem; font-weight: 600; color: #475569; text-align: right; 
-                }
-                .input-field {
-                    padding: 0.75rem 1rem; border: 1px solid #cbd5e1; border-radius: 8px;
-                    font-size: 1rem; transition: border-color 0.2s; width: 100%;
-                }
-                .input-field:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-
-                /* Custom Role Selector */
-                .role-selector {
-                    display: flex; background: #f1f5f9; padding: 4px; border-radius: 12px;
-                    width: 100%;
-                }
-                .role-option {
-                    flex: 1; text-align: center; padding: 0.5rem; border-radius: 8px;
-                    cursor: pointer; font-weight: 500; font-size: 0.9rem; color: #64748b;
-                    transition: all 0.2s;
-                }
-                .role-option.active {
-                    background: white; color: var(--primary-color); font-weight: 700;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-                }
-                
-                /* Medical Card */
-                .medical-card {
-                    background: #fff1f2; border: 1px solid #fecdd3; border-radius: 12px;
-                    overflow: hidden; margin-bottom: 1rem;
-                }
-                .medical-header {
-                    background: #ffe4e6; padding: 0.75rem 1rem;
-                    display: flex; alignItems: center; gap: 0.5rem;
-                    color: #be123c; font-weight: 600; font-size: 0.9rem;
-                }
-                .medical-item {
-                    padding: 1rem; border-bottom: 1px solid #ffe4e6;
-                }
-                .medical-item:last-child { border-bottom: none; }
-                .medical-item .label {
-                    display: block; font-size: 0.75rem; text-transform: uppercase;
-                    color: #9f1239; margin-bottom: 0.25rem; font-weight: 600;
-                }
-                .medical-item .value {
-                    color: #881337; font-weight: 500; line-height: 1.4;
-                }
-
-                .empty-state-card {
-                    border: 1px dashed #cbd5e1; border-radius: 12px;
-                    padding: 2rem; display: flex; flexDirection: column; alignItems: center;
-                    gap: 0.75rem; color: #94a3b8; font-weight: 500;
-                }
-
-                .drawer-footer {
-                    padding-top: 1.5rem; border-top: 1px solid #e2e8f0;
-                    display: flex; gap: 1rem; margin-top: 1rem;
-                }
-                .drawer-footer button { flex: 1; justify-content: center; }
-                
-                /* Info List - used in details */
-                .info-list {
-                    background: white; border-radius: 12px;
-                    border: 1px solid #f1f5f9; padding: 0.5rem;
-                    margin-bottom: 2rem;
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-                }
-                .info-item {
-                    display: flex; justify-content: space-between; align-items: center;
-                    padding: 0.75rem 1rem;
-                    border-bottom: 1px solid #f8fafc;
-                }
-                .info-item:last-child { border-bottom: none; }
-                .info-item .label {
-                    color: #94a3b8; font-size: 0.9rem; font-weight: 500;
-                }
-                .info-item .value {
-                    color: #334155; font-weight: 600; font-size: 0.95rem;
-                    text-align: right;
-                }
-                .info-item .sub {
-                    font-weight: 400; color: #94a3b8; font-size: 0.85rem; margin-left: 0.5rem;
-                }
-                .value-row {
-                    display: flex; alignItems: center; gap: 0.5rem; justify-content: flex-end;
-                }
-                .value-row .icon { color: #cbd5e1; }
-                
-                /* Profile Section */
-                .profile-section {
-                    display: flex; flexDirection: column; alignItems: center;
-                    margin-top: -55px; margin-bottom: 2rem;
-                }
-                .profile-avatar {
-                    border: 6px solid white; border-radius: 50%;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                    margin-bottom: 1rem; background: white;
-                }
-
-                /* ── MOBILE RESPONSIVE ── */
-                @media (max-width: 640px) {
-                    .directory-header, .directory-filters { padding-left: 1rem !important; padding-right: 1rem !important; }
-                    .modal-content { width: 95vw !important; }
-                    .modal-body { padding: 1rem !important; }
-                    .modal-footer { padding: 1rem !important; }
-                    .form-row-aligned {
-                        grid-template-columns: 1fr !important;
-                        gap: 0.5rem !important;
-                    }
-                    .form-row-aligned label { text-align: left !important; }
-                    /* Hide less important columns in table on mobile */
-                    .col-hide-mobile { display: none !important; }
-                }
-
-                /* Drawer full-screen on mobile */
-                @media (max-width: 768px) {
-                    .details-drawer {
-                        width: 100% !important;
-                        border-radius: 20px 20px 0 0 !important;
-                        top: auto !important;
-                        bottom: 0 !important;
-                        right: 0 !important;
-                        height: 85vh !important;
-                        max-height: 85vh !important;
-                    }
+                .badge-pill {
+                   padding: 0.5rem 1rem; border-radius: 30px; font-size: 0.8rem; fontWeight: 900;
+                   display: flex; align-items: center; gap: 0.625rem; background: white; border: 1.5px solid var(--glass-border);
                 }
             `}</style>
+            </div>
         </div>
     );
 }
