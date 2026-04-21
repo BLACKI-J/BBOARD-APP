@@ -310,7 +310,7 @@ export default function App() {
 
                 const data = await Promise.all(results.map(r => r.json()));
                 setGroups(data[0]); setParticipants(data[1]); setActivities(data[2]); setSavedViews(data[3]);
-                setCurrentViewName(data[4]); setAdminPin(data[5]); setAccessControl(mergeAccessControl(data[6]));
+                setCurrentViewName(data[4]); setAdminPin(data[5] || '1234'); setAccessControl(mergeAccessControl(data[6]));
                 setIncidentSheets(data[7] || []);
                 setExitSheets(data[8] || []);
                 setMeetingRecaps(data[9] || []);
