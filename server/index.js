@@ -211,6 +211,13 @@ async function initDb() {
         console.log('Migration complete.');
     }
 
+    // 4. Initialisez le PIN admin par défaut si nécessaire
+    const adminPinRow = await db.get('SELECT value FROM app_state WHERE key = "adminPin"');
+    if (!adminPinRow) {
+        console.log('Initializing default admin PIN (1234)...');
+        await db.run('INSERT INTO app_state (key, value) VALUES ("adminPin", ?)', JSON.stringify('1234'));
+    }
+
     return db;
 }
 
