@@ -47,7 +47,8 @@ const app = express();
 const httpServer = createServer(app);
 
 // Flexible CORS for local network and production
-const allowedOrigins = ["http://localhost:5173"];
+const envOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [];
+const allowedOrigins = ["http://localhost:5173", ...envOrigins];
 const corsOptions = {
     origin: (origin, callback) => {
         // Allow no-origin (like mobile apps or curl) or allowed list or any local IP
