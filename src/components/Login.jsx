@@ -114,11 +114,6 @@ export default function Login({ staffUsers, onLogin, adminPin, connectionStatus 
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1rem', fontWeight: '950', color: 'var(--text-main)' }}>{selectedUser.firstName}</div>
                             <div style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-muted)' }}>Code PIN requis</div>
-                            {adminPin === '1234' && selectedUser.id === 'director' && (
-                                <div style={{ fontSize: '0.7rem', color: 'var(--primary-color)', fontWeight: '950', marginTop: '4px', opacity: 0.8 }}>
-                                    Indice: {adminPin}
-                                </div>
-                            )}
                         </div>
 
                         {/* PIN View */}
