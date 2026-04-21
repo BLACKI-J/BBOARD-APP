@@ -21,6 +21,7 @@ usage() {
     echo "  setup    - Configuration initiale (Dépendances, .env, Docker)"
     echo "  dev      - Lancer l'environnement de développement local"
     echo "  up       - Déployer l'application via Docker Compose"
+    echo "  update   - Mettre à jour le projet (Git pull + Rebuild)"
     echo "  down     - Arrêter tous les services (Local et Docker)"
     echo "  logs     - Afficher les logs du backend"
     echo "  help     - Afficher cette aide"
@@ -51,6 +52,22 @@ case "$1" in
         echo -e "${BLUE}=== Déploiement Docker ===${NC}"
         docker compose up -d --build
         echo -e "${GREEN}Application déployée sur http://localhost:8080${NC}"
+        ;;
+
+    update)
+        echo -e "${BLUE}=== Mise à jour du Projet ===${NC}"
+        echo -e "${YELLOW}Récupération du code...${NC}"
+        git pull origin main
+        echo -e "${YELLOW}Mise à jour des dépendances...${NC}"
+        npm run install:all
+        
+        if [ -f "docker-compose.yml" ] && [ "$(docker ps -q -f name=bboard-backend)" ]; then
+            echo -e "${YELLOW}Redémarrage des conteneurs Docker...${NC}"
+            docker compose up -d --build
+        fi
+        
+        echo -e "${GREEN}Mise à jour terminée avec succès !${NC}"
+        echo -e "${YELLOW}Note: Vos données dans server/data/ ont été préservées.${NC}"
         ;;
 
     down)

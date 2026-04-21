@@ -51,6 +51,7 @@ Le script `bboard.sh` à la racine est votre seul outil de contrôle :
 | `setup` | Installe les dépendances, crée le `.env` et propose l'install de Docker. |
 | `dev` | Lance le Frontend (5173) et le Backend (3001) localement. |
 | `up` | Déploie l'application complète via Docker Compose (Port 8080). |
+| `update` | Récupère le dernier code et redémarre les services (Docker/Local). |
 | `down` | Arrête proprement tous les services (Docker et processus locaux). |
 | `logs` | Visualise les journaux d'activité du serveur. |
 
