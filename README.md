@@ -55,6 +55,27 @@ Par mesure de sécurité, le serveur backend rejette les requêtes provenant d'o
 
 ---
 
+## 🤖 Configuration de l'Intelligence Artificielle
+
+BBOARD utilise des services d'IA (Groq et HuggingFace) pour certaines fonctionnalités (aide à l'écriture, analyse, etc.).
+
+### Ajout des clés API
+Modifiez votre fichier `.env` pour y insérer vos clés personnelles :
+
+```env
+# API Groq (Recommandé pour la rapidité)
+GROQ_API_KEY=votre_cle_groq_ici
+GROQ_MODEL=llama-3.1-8b-instant
+
+# API HuggingFace (Optionnel)
+HUGGINGFACE_API_KEY=votre_cle_hf_ici
+```
+
+> [!NOTE]
+> Vous pouvez obtenir une clé gratuite sur [Groq Cloud](https://console.groq.com/) et [Hugging Face](https://huggingface.co/settings/tokens).
+
+---
+
 ## 💻 Déploiement Production (Docker)
 
 Méthode recommandée pour la stabilité et la facilité de mise à jour.
