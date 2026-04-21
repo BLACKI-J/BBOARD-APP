@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# ==============================================================================
+# BBOARD-APP : Script d'installation Docker UNIVERSEL
+# ==============================================================================
+# Supporte : Ubuntu (incluant 24.04), Debian, Kali Linux, CentOS, Fedora, RHEL
+# Optimisé pour : Bare Metal, VM, Proxmox LXC
+# ==============================================================================
+
+set -e
+
+echo "--------------------------------------------------------"
+echo "  Installation de Docker & Docker Compose"
+echo "--------------------------------------------------------"
+
+# 0. Vérification des permissions Docker initiales
+if [ -S /var/run/docker.sock ]; then
+    if [ ! -w /var/run/docker.sock ]; then
+        echo "⚠️  Attention : /var/run/docker.sock existe mais n'est pas accessible en écriture."
+        echo "   Tentative d'ajout de l'utilisateur au groupe docker..."
+        if ! getent group docker > /dev/null; then
+            sudo groupadd docker
+        fi
+        sudo usermod -aG docker "$USER"
+        echo "💡 IMPORTANT : Vous devez vous déconnecter et vous reconnecter pour que cela prenne effet."
+    fi
+fi
+
+# 1. Détection initiale du système
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_NAME=$NAME
+    OS_ID=$ID
+else
+    echo "Erreur : Impossible de détecter le système d'exploitation."
+    exit 1
+fi
+
+echo "Système détecté : $OS_NAME ($OS_ID)"
+
+# 2. Nettoyage préventif (Crucial pour Kali et Ubuntu)
+echo "Nettoyage des anciennes versions et conflits..."
+if [[ "$OS_ID" == "ubuntu" || "$OS_ID" == "debian" || "$OS_ID" == "kali" ]]; then
+    sudo rm -f /etc/apt/sources.list.d/docker.list || true
+    sudo apt-get update -qq || true
+    # Installation des outils de base indispensables
+    sudo apt-get install -y curl ca-certificates >/dev/null 2>&1 || true
+    # On supprime les paquets conflictuels rencontrés précédemment
+    for pkg in docker.io docker-doc docker-compose docker-buildx docker-compose-v2 podman-docker containerd runc; do 
+        sudo apt-get remove -y $pkg >/dev/null 2>&1 || true
+    done
+    sudo apt-get install -f -y >/dev/null 2>&1 || true
+fi
+
+# 3. Correctif de sécurité (Ubuntu 24.04 / AppArmor)
+# Ce correctif empêche l'erreur "permission denied" sur les nouvelles distros
+if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+    echo "Tentative d'application du correctif AppArmor..."
+    # On ignore l'erreur si le système de fichiers est en lecture seule (cas du LXC Proxmox)
+    (echo 0 | sudo tee /proc/sys/kernel/apparmor_restrict_unprivileged_userns > /dev/null 2>&1) || echo "Note : Impossible de modifier /proc (système de fichiers en lecture seule). Si vous êtes en LXC, ignorez ce message ou appliquez ce réglage sur l'HÔTE Proxmox."
+    
+    (echo "kernel.apparmor_restrict_unprivileged_userns = 0" | sudo tee /etc/sysctl.d/60-apparmor-docker.conf > /dev/null 2>&1) || true
+    sudo sysctl -p /etc/sysctl.d/60-apparmor-docker.conf >/dev/null 2>&1 || true
+fi
+
+# 4. Installation via le script officiel Docker (Méthode la plus stable et universelle)
+echo "Téléchargement et installation de Docker officiel..."
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh > /dev/null
+rm get-docker.sh
+
+# 5. Installation du plugin Docker Compose V2 (si non présent via get.docker.com)
+if ! docker compose version >/dev/null 2>&1; then
+    echo "Installation manuelle du plugin Docker Compose..."
+    if [[ "$OS_ID" == "ubuntu" || "$OS_ID" == "debian" || "$OS_ID" == "kali" ]]; then
+        sudo apt-get update -qq
+        sudo apt-get install -y docker-compose-plugin > /dev/null
+    fi
+fi
+
+# 6. Optimisation spécifique pour BBOARD (Base de données et Proxmox)
+echo "Préparation des répertoires de données..."
+mkdir -p server/data
+chmod 777 server/data
+echo "Répertoire server/data prêt (Permissions 777 pour compatibilité LXC)."
+
+# 7. Détection LXC et conseils spécifiques
+if [ -f /run/systemd/container ] || grep -q "lxc" /proc/1/environ 2>/dev/null; then
+    echo "Environnement de conteneur (LXC/Docker) détecté."
+    echo "Astuce Proxmox : Assurez-vous que 'Nesting' est coché dans Options > Features."
+fi
+
+# 8. Configuration finale des permissions
+echo "Configuration finale des permissions..."
+if ! getent group docker > /dev/null; then
+    sudo groupadd docker
+fi
+sudo usermod -aG docker "$USER" || true
+
+
+# 9. Finalisation
+echo "--------------------------------------------------------"
+echo "Installation terminée !"
+echo "--------------------------------------------------------"
+echo "⚠️  SI C'EST VOTRE PREMIÈRE INSTALLATION :"
+echo "   Vous devez vous DÉCONNECTER et vous RECONNECTER (ou redémarrer)"
+echo "   pour pouvoir utiliser Docker sans 'sudo'."
+echo "--------------------------------------------------------"
+echo "Pour lancer le projet (Port 8080) :"
+echo "   docker compose up -d --build"
+echo "--------------------------------------------------------"

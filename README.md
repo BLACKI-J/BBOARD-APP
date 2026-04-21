@@ -24,33 +24,26 @@ BBOARD-APP est une solution métier de pointe dédiée à la **gestion complète
 
 ---
 
-## 🚀 Installation Express
+## 🚀 Installation & Lancement
 
-La méthode la plus simple pour démarrer le projet localement :
+La méthode la plus simple pour démarrer le projet :
 
 ```bash
 # 1. Cloner le projet
 git clone https://github.com/BLACKI-J/BBOARD-APP.git
 cd BBOARD-APP
 
-# 2. Lancer la configuration automatique
-bash setup.sh
+# 2. Lancer la configuration automatique (installe tout)
+bash bboard.sh setup
 
 # 3. Lancer l'environnement de développement
-bash dev.sh
+bash bboard.sh dev
+# OU Déployer via Docker
+bash bboard.sh up
 ```
 
-## 📦 Déploiement Production (Docker)
-
-Recommandé pour un déploiement stable sur serveur ou VPS :
-
-```bash
-# Installer Docker si nécessaire
-bash install_docker.sh
-
-# Lancer la pile applicative
-docker compose up -d --build
-```
+> [!TIP]
+> Le script `bboard.sh` est votre outil central. Il gère l'installation (`setup`), le développement (`dev`), le déploiement (`up`), et l'arrêt (`down`) du projet.
 
 L'application sera accessible par défaut sur le port **8080**.
 
