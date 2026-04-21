@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserCircle, Lock, ChevronRight, AlertCircle, Zap, ShieldCheck } from 'lucide-react';
 
-export default function Login({ staffUsers, onLogin, adminPin }) {
+export default function Login({ staffUsers, onLogin, adminPin, connectionStatus }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [pin, setPin] = useState('');
     const [error, setError] = useState(false);
@@ -114,6 +114,11 @@ export default function Login({ staffUsers, onLogin, adminPin }) {
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1rem', fontWeight: '950', color: 'var(--text-main)' }}>{selectedUser.firstName}</div>
                             <div style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-muted)' }}>Code PIN requis</div>
+                            {adminPin === '1234' && selectedUser.id === 'director' && (
+                                <div style={{ fontSize: '0.7rem', color: 'var(--primary-color)', fontWeight: '950', marginTop: '4px', opacity: 0.8 }}>
+                                    Indice: {adminPin}
+                                </div>
+                            )}
                         </div>
 
                         {/* PIN View */}
@@ -156,7 +161,38 @@ export default function Login({ staffUsers, onLogin, adminPin }) {
                 </footer>
             </div>
 
+            {/* Backend Connection Indicator */}
+            <div style={{
+                position: 'fixed', bottom: '2rem', left: '2rem',
+                zIndex: 1100, display: 'flex', alignItems: 'center', gap: '0.75rem',
+                padding: '0.75rem 1.25rem', borderRadius: '100px',
+                background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)',
+                border: '1.5px solid var(--glass-border)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
+                transition: 'all 0.3s ease'
+            }} className="animate-fade-in">
+                <div style={{
+                    width: '10px', height: '10px', borderRadius: '50%',
+                    background: connectionStatus === 'connected' ? '#22c55e' : '#ef4444',
+                    boxShadow: connectionStatus === 'connected' ? '0 0 12px rgba(34, 197, 94, 0.5)' : '0 0 12px rgba(239, 68, 68, 0.5)',
+                    animation: connectionStatus === 'connected' ? 'pulse-green 2s infinite' : 'pulse-red 2s infinite'
+                }} />
+                <span style={{ fontSize: '0.8rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+                    Serveur Backend : {connectionStatus === 'connected' ? 'Connecté' : 'Non disponible'}
+                </span>
+            </div>
+
             <style>{`
+                @keyframes pulse-green {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.2); opacity: 0.7; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes pulse-red {
+                    0% { transform: scale(1); opacity: 1; }
+                    50% { transform: scale(1.2); opacity: 0.7; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
                 .numpad-btn {
                     height: 60px;
                     background: white;

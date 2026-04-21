@@ -169,6 +169,8 @@ export default function App() {
     const [isAttendanceEnabled, setIsAttendanceEnabled] = useState(() => localStorage.getItem('colo-attendance-enabled') === 'true');
     const [adminPin, setAdminPin] = useState(() => localStorage.getItem('colo-admin-pin') || '1234');
     const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
+    const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'error'
+    const [retryCount, setRetryCount] = useState(0);
 
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
     const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('colo-authenticated') === 'true');
@@ -282,7 +284,11 @@ export default function App() {
     }, [activeTab, canAccessSection, prefetchTab]);
 
     useEffect(() => {
-        const socket = io();
+        const socket = io({
+            reconnectionAttempts: 10,
+            reconnectionDelay: 2000,
+        });
+
         const refreshData = async (payload) => {
             if (ignoreNextSocketUpdate.current) {
                 ignoreNextSocketUpdate.current = false;
@@ -297,6 +303,11 @@ export default function App() {
                     fetch(`${API_URL}/exit-sheets`), fetch(`${API_URL}/meeting-recaps`),
                     fetch(`${API_URL}/inventory/items`)
                 ]);
+                
+                // Check for any non-ok response
+                const failed = results.find(r => !r.ok);
+                if (failed) throw new Error(`Server returned ${failed.status}`);
+
                 const data = await Promise.all(results.map(r => r.json()));
                 setGroups(data[0]); setParticipants(data[1]); setActivities(data[2]); setSavedViews(data[3]);
                 setCurrentViewName(data[4]); setAdminPin(data[5]); setAccessControl(mergeAccessControl(data[6]));
@@ -304,14 +315,60 @@ export default function App() {
                 setExitSheets(data[8] || []);
                 setMeetingRecaps(data[9] || []);
                 setInventoryItems(data[10] || []);
+                
                 isDataLoaded.current = true;
-            } catch (err) { console.error('Sync failed:', err); }
+                setConnectionStatus('connected');
+                setRetryCount(0);
+            } catch (err) { 
+                console.error('Sync failed:', err);
+                setConnectionStatus('error');
+                // Auto-retry after a delay
+                if (retryCount < 5) {
+                    setTimeout(() => setRetryCount(prev => prev + 1), 3000);
+                }
+            }
         };
+
         refreshData();
+
+        socket.on('connect', () => {
+            console.log('Socket connected');
+            setConnectionStatus('connected');
+            if (!isDataLoaded.current) refreshData();
+        });
+
+        socket.on('disconnect', () => {
+            console.warn('Socket disconnected');
+            setConnectionStatus('error');
+        });
+
+        socket.on('connect_error', () => {
+            setConnectionStatus('error');
+        });
+
         socket.on('data_updated', refreshData);
         window._refreshBboardData = refreshData;
-        return () => socket.disconnect();
-    }, []);
+        
+        // 10-second health check polling
+        const healthCheck = setInterval(async () => {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                if (response.ok) {
+                    setConnectionStatus('connected');
+                } else {
+                    setConnectionStatus('error');
+                }
+            } catch (err) {
+                setConnectionStatus('error');
+            }
+        }, 10000);
+
+        return () => {
+            socket.off('data_updated', refreshData);
+            socket.disconnect();
+            clearInterval(healthCheck);
+        };
+    }, [retryCount]);
 
     const mutateCollection = useCallback(async (endpoint, setter, update, currentValue) => {
         const finalValue = typeof update === 'function' ? update(currentValue) : update;
@@ -339,7 +396,27 @@ export default function App() {
     );
 
     if (!isAuthenticated) {
-        return <Login staffUsers={staffUsers} onLogin={handleLogin} adminPin={adminPin} />;
+        return <Login staffUsers={staffUsers} onLogin={handleLogin} adminPin={adminPin} connectionStatus={connectionStatus} />;
+    }
+
+    if (connectionStatus === 'error' && !isDataLoaded.current) {
+        return (
+            <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', padding: '2rem' }}>
+                <div className="card-glass animate-scale-in" style={{ padding: '3rem', background: 'white', borderRadius: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', border: '2px solid var(--danger-color)', maxWidth: '400px', textAlign: 'center' }}>
+                    <div style={{ width: '64px', height: '64px', background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger-color)' }}>
+                        <AlertCircle size={32} strokeWidth={3} />
+                    </div>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '950', color: 'var(--text-main)', margin: 0 }}>Serveur injoignable</h2>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '850', lineHeight: 1.5 }}>
+                        Impossible de se connecter au backend. Vérifiez que le serveur est lancé et que vous êtes sur le bon réseau.
+                    </p>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--primary-color)', fontWeight: '950' }}>
+                        {retryCount > 0 ? `Tentative de reconnexion #${retryCount}...` : 'En attente de connexion...'}
+                    </div>
+                    <button onClick={() => window.location.reload()} className="btn btn-primary" style={{ marginTop: '1rem', width: '100%' }}>Réessayer manuellement</button>
+                </div>
+            </div>
+        );
     }
 
     return (
@@ -399,6 +476,19 @@ export default function App() {
             <main style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
                 <div className="morph-blob" style={{ top: '-10%', right: '-5%' }} />
                 <div className="morph-blob-2" style={{ bottom: '-5%', left: '5%' }} />
+
+                {connectionStatus === 'error' && isDataLoaded.current && (
+                    <div style={{
+                        position: 'absolute', top: '100px', left: '50%', transform: 'translateX(-50%)',
+                        zIndex: 1000, background: 'var(--danger-color)', color: 'white',
+                        padding: '0.75rem 1.5rem', borderRadius: '100px', fontSize: '0.85rem',
+                        fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                        boxShadow: '0 12px 32px rgba(220, 38, 38, 0.4)', pointerEvents: 'none'
+                    }} className="animate-fade-in">
+                        <AlertCircle size={16} strokeWidth={3} />
+                        Mode Hors-ligne (Serveur déconnecté)
+                    </div>
+                )}
 
                 {/* Topbar Header */}
                 <header style={{ 

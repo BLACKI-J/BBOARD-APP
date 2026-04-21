@@ -33,6 +33,10 @@ loadEnvFile(join(__dirname, '.env'));
 loadEnvFile(join(__dirname, '..', '.env'));
 // Database path — prioritized by environment variable for Docker flexibility
 const dbPath = process.env.DATABASE_PATH || join(__dirname, 'data', 'database.sqlite');
+const dbDir = dirname(dbPath);
+if (!fs.existsSync(dbDir)) {
+    fs.mkdirSync(dbDir, { recursive: true });
+}
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 const FEI_REWRITE_MAX_CHARS = 5000;
@@ -371,6 +375,10 @@ app.use((req, res, next) => {
         });
     });
     next();
+});
+
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 app.get('/api/participants', async (req, res) => {
