@@ -1,123 +1,99 @@
-# BBOARD 🚀
+# BBOARD-APP 🚀
 
-BBOARD est une application web métier moderne conçue pour la gestion complète des **Centres de Vacances et Séjours**. Elle centralise le suivi des participants, la planification des activités, la logistique et la sécurité des mineurs.
+BBOARD-APP est une solution métier de pointe dédiée à la **gestion complète des Centres de Vacances et Séjours (Colonies)**. Conçue pour offrir une fluidité opérationnelle maximale, l'application centralise les données critiques, la planification et la sécurité, même en conditions de réseau dégradées.
+
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/version-1.1.0-green.svg)](package.json)
+[![Tech](https://img.shields.io/badge/stack-React%20%7C%20Node%20%7C%20SQLite-indigo.svg)](https://react.dev)
+
+## ✨ Caractéristiques Principales
+
+-   📊 **Dashboard de Santé** : Surveillance en temps réel de la connexion backend/client.
+-   🔒 **Sécurité par Profil** : Authentification individuelle par Code PIN à 4 chiffres.
+-   🔄 **Synchronisation en Temps Réel** : Mise à jour instantanée des données sur tous les écrans via Socket.io.
+-   ⚡ **Mode Résilience** : Gestion intelligente des déconnexions pour un usage fluide sur le terrain.
+-   🤖 **Assistance IA** : Intégration de modèles de langage (Groq/HuggingFace) pour l'aide à la saisie et l'analyse.
+-   📅 **Gestion Multisectorielle** : Participants, Plannings, Inventaire, FEI (Fiches d'Incident) et Transports.
+
+## 🛠️ Stack Technique
+
+-   **Frontend** : React 18, Vite, Tailwind CSS, Lucide Icons.
+-   **Backend** : Node.js, Express.
+-   **Base de Données** : SQLite avec synchronisation temps réel.
+-   **Infrastructure** : Docker & Docker Compose.
 
 ---
 
-## 🛠️ Architecture & Fonctionnement
+## 🚀 Installation Express
 
-L'application repose sur une stack robuste et légère :
-
-1.  **Frontend (React/Vite)** : Interface réactive avec mode "Résilience" (gestion avancée des déconnexions).
-2.  **Backend (Node.js/Express)** : Serveur API gérant la logique métier et la synchronisation en temps réel via Socket.io.
-3.  **Persistance (SQLite)** : Base de données locale située dans `server/data/database.sqlite`. Sa portabilité permet des sauvegardes simplifiées par copier-coller.
-
-### 🔒 Sécurité & Authentification
-L'accès est protégé par un système de profils avec **Code PIN à 4 chiffres**.
-- **Profil "Direction Générale"** : Créé par défaut au premier lancement.
-- **Code PIN par défaut** : `1234` (pour la Direction et les nouveaux profils).
-- **Modification** : Les codes PIN et les autorisations se gèrent dans l'onglet **Paramètres > Sécurité**.
-
----
-
-## 🚀 Installation Rapide (Setup)
-
-Pour une installation automatisée et sans erreur, utilisez le script de configuration :
+La méthode la plus simple pour démarrer le projet localement :
 
 ```bash
-# 1. Cloner le dépôt
+# 1. Cloner le projet
 git clone https://github.com/BLACKI-J/BBOARD-APP.git
 cd BBOARD-APP
 
-# 2. Lancer l'assistant de configuration
+# 2. Lancer la configuration automatique
 bash setup.sh
+
+# 3. Lancer l'environnement de développement
+bash dev.sh
 ```
 
-> [!TIP]
-> Le script `setup.sh` se charge d'installer les dépendances, de créer votre fichier `.env` et de préparer les répertoires nécessaires.
+## 📦 Déploiement Production (Docker)
 
----
+Recommandé pour un déploiement stable sur serveur ou VPS :
 
-## 🌍 Exposition & Domaines Personnalisés
-
-Si vous déployez BBOARD sur un serveur exposé via un **domaine personnalisé** ou un **tunnel (Cloudflare Tunnel, Ngrok, etc.)**, vous devez configurer la politique CORS pour éviter les blocages.
-
-### Configuration du `.env`
-Modifiez la variable `ALLOWED_ORIGINS` dans votre fichier `.env` :
-
-```env
-# Séparez les URLs par des virgules sans espaces
-ALLOWED_ORIGINS=https://votre-domaine.com,https://bboard.monreseau.fr
-```
-
-### Pourquoi est-ce nécessaire ?
-Par mesure de sécurité, le serveur backend rejette les requêtes provenant d'origines inconnues. Sans cette configuration, vous pourriez voir des erreurs "CORS Blocked" ou un indicateur de serveur "Non disponible" sur la page de connexion.
-
----
-
-## 🤖 Configuration de l'Intelligence Artificielle
-
-BBOARD utilise des services d'IA (Groq et HuggingFace) pour certaines fonctionnalités (aide à l'écriture, analyse, etc.).
-
-### Ajout des clés API
-Modifiez votre fichier `.env` pour y insérer vos clés personnelles :
-
-```env
-# API Groq (Recommandé pour la rapidité)
-GROQ_API_KEY=votre_cle_groq_ici
-GROQ_MODEL=llama-3.1-8b-instant
-
-# API HuggingFace (Optionnel)
-HUGGINGFACE_API_KEY=votre_cle_hf_ici
-```
-
-> [!NOTE]
-> Vous pouvez obtenir une clé gratuite sur [Groq Cloud](https://console.groq.com/) et [Hugging Face](https://huggingface.co/settings/tokens).
-
----
-
-## 💻 Déploiement Production (Docker)
-
-Méthode recommandée pour la stabilité et la facilité de mise à jour.
-
-1. **Installer Docker** (si besoin via notre script) :
-   ```bash
-   bash install_docker.sh
-   ```
-2. **Lancer l'application** (Port par défaut : 8080) :
-   ```bash
-   docker compose up -d --build
-   ```
-
-### 🔄 Mises à jour
-Pour récupérer les dernières fonctionnalités sans perdre vos données :
 ```bash
-git pull origin main
+# Installer Docker si nécessaire
+bash install_docker.sh
+
+# Lancer la pile applicative
 docker compose up -d --build
 ```
 
----
-
-## 👨‍💻 Environnement de Développement (Local)
-
-Pour travailler sur le code source localement :
-
-1. Assurez-vous d'avoir Node.js installé.
-2. Lancez l'environnement de développement :
-   ```bash
-   bash dev.sh
-   ```
-- **Client** : `http://localhost:5173`
-- **Serveur API** : `http://localhost:3001`
+L'application sera accessible par défaut sur le port **8080**.
 
 ---
 
-## 🎨 Personnalisation du Logo
+## ⚙️ Configuration & Environnement
 
-1. Remplacez le fichier `public/logo/logo.png` par votre propre logo PNG.
-2. Reconstruisez l'application (Docker ou local) pour appliquer le changement sur tous les supports.
+Le projet utilise un fichier `.env` pour sa configuration. Utilisez `.env.example` comme base.
+
+### 🌐 Exposition & CORS
+Si vous utilisez un domaine personnalisé ou un tunnel (Cloudflare, Ngrok) :
+```env
+# Liste des origines autorisées (séparées par des virgules)
+ALLOWED_ORIGINS=https://votre-domaine.com,http://localhost:5173
+```
+
+### 🤖 Clés API Intelligence Artificielle
+Pour activer les fonctionnalités IA, insérez vos clés dans le `.env` :
+```env
+# Plateforme Groq (Llama 3.1)
+GROQ_API_KEY=votre_cle_ici
+
+# Hugging Face
+HUGGINGFACE_API_KEY=votre_cle_ici
+```
 
 ---
+
+## 👨‍💻 Développement
+
+Pour lancer manuellement les services en mode développement (sans Docker) :
+
+-   **Frontend** : `npm run dev` (Port 5173)
+-   **Backend** : `npm run dev --prefix server` (Port 3001)
 
 > [!IMPORTANT]
-> **Dashboard de Santé** : Un indicateur visuel en bas à gauche de l'écran de connexion vous permet de vérifier en temps réel si le client communique correctement avec le serveur backend.
+> **Identifiant par défaut** : Le profil "Direction Générale" est protégé par le code PIN `1234`.
+
+---
+
+## 📄 Licence & Crédits
+
+Ce projet est sous licence MIT. Développé par la communauté BBOARD pour l'excellence opérationnelle des colonies de vacances.
+
+---
+*Généré avec ❤️ via le skill readme-generator.*
