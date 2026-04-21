@@ -14,10 +14,26 @@ L'application est divisée en deux parties :
 **Authentification :**
 L'application utilise un système de profil avec **Code PIN à 4 chiffres**. 
 - Vous sélectionnez votre prénom dans la liste et entrez votre code.
-- Par défaut, si vous venez de créer un profil depuis l'administration et n'avez pas mis de code, le système utilise `1234`.
-- Le profil "Direction Générale" est créé d'office et protégé par le code global.
+- **Code PIN par défaut :** `1234` (pour le profil "Direction Générale" et les nouveaux animateurs sans PIN).
+- Le profil "Direction Générale" est créé d'office. Vous pouvez changer son PIN dans les réglages de sécurité.
 
 ---
+
+## 🚀 Installation & Configuration (Setup)
+
+Pour une installation propre, utilisez le script de configuration automatique :
+
+```bash
+# 1. Cloner le repository
+git clone https://github.com/BLACKI-J/BBOARD-APP.git
+cd BBOARD-APP
+
+# 2. Lancer la configuration (Installe dépendances + crée .env)
+bash setup.sh
+```
+
+Cette étape est nécessaire avant de lancer l'application pour la première fois.
+
 
 ## 💻 Déploiement en Production (Serveur / VPS)
 
@@ -82,6 +98,6 @@ Pour tester BBOARD localement sans Docker sur votre ordinateur :
    ```
 3. Exécutez le script de démarrage local :
    ```bash
-   ./dev.sh
+   bash dev.sh
    ```
 Le client (React) tournera sur `localhost:5173` et l'API sur `localhost:3001`.

@@ -13,6 +13,19 @@ echo "--------------------------------------------------------"
 echo "  Installation de Docker & Docker Compose"
 echo "--------------------------------------------------------"
 
+# 0. Vérification des permissions Docker initiales
+if [ -S /var/run/docker.sock ]; then
+    if [ ! -w /var/run/docker.sock ]; then
+        echo "⚠️  Attention : /var/run/docker.sock existe mais n'est pas accessible en écriture."
+        echo "   Tentative d'ajout de l'utilisateur au groupe docker..."
+        if ! getent group docker > /dev/null; then
+            sudo groupadd docker
+        fi
+        sudo usermod -aG docker "$USER"
+        echo "💡 IMPORTANT : Vous devez vous déconnecter et vous reconnecter pour que cela prenne effet."
+    fi
+fi
+
 # 1. Détection initiale du système
 if [ -f /etc/os-release ]; then
     . /etc/os-release
@@ -77,15 +90,21 @@ if [ -f /run/systemd/container ] || grep -q "lxc" /proc/1/environ 2>/dev/null; t
     echo "Astuce Proxmox : Assurez-vous que 'Nesting' est coché dans Options > Features."
 fi
 
-# 8. Configuration des permissions (Groupe Docker)
+# 8. Configuration finale des permissions
+echo "Configuration finale des permissions..."
 if ! getent group docker > /dev/null; then
     sudo groupadd docker
 fi
-sudo usermod -aG docker $USER
+sudo usermod -aG docker "$USER" || true
+
 
 # 9. Finalisation
 echo "--------------------------------------------------------"
-echo "Installation réussie !"
+echo "Installation terminée !"
+echo "--------------------------------------------------------"
+echo "⚠️  SI C'EST VOTRE PREMIÈRE INSTALLATION :"
+echo "   Vous devez vous DÉCONNECTER et vous RECONNECTER (ou redémarrer)"
+echo "   pour pouvoir utiliser Docker sans 'sudo'."
 echo "--------------------------------------------------------"
 echo "Pour lancer le projet (Port 8080) :"
 echo "   docker compose up -d --build"
