@@ -26,9 +26,14 @@ if grep -q "your_api_key_here" .env; then
     echo "   Certaines fonctionnalités IA risquent de ne pas fonctionner."
 fi
 
-# 3. Installation des dépendances
-echo "📦 Installation des dépendances (Racine + Serveur)..."
-npm run install:all
+# 3. Installation des dépendances (Optionnel sur l'hôte)
+if command -v npm >/dev/null 2>&1; then
+    echo "📦 Installation des dépendances (Racine + Serveur)..."
+    npm run install:all
+else
+    echo "⚠️  Note: npm non trouvé sur l'hôte. L'installation locale est sautée."
+    echo "   Cela n'est pas gênant si vous utilisez Docker pour faire tourner le projet."
+fi
 
 # 4. Préparation du dossier de données
 echo "📁 Vérification du dossier de données..."
