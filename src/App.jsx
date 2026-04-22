@@ -13,6 +13,7 @@ const loadExitSheet = () => import('./components/ExitSheet');
 const loadAttendance = () => import('./components/Attendance');
 const loadIncidentSheet = () => import('./components/IncidentSheet');
 const loadInventory = () => import('./components/Inventory');
+const loadHome = () => import('./components/Home');
 
 const SeatMap = React.lazy(loadSeatMap);
 const Schedule = React.lazy(loadSchedule);
@@ -23,6 +24,7 @@ const ExitSheet = React.lazy(loadExitSheet);
 const Attendance = React.lazy(loadAttendance);
 const IncidentSheet = React.lazy(loadIncidentSheet);
 const Inventory = React.lazy(loadInventory);
+const Home = React.lazy(loadHome);
 
 const API_URL = '/api';
 
@@ -47,6 +49,7 @@ const Logo = () => (
 );
 
 const TAB_TITLES = {
+    home: 'Tableau de bord',
     seatmap: 'Transports',
     schedule: 'Planning',
     exitsheet: 'Fiche de sortie',
@@ -139,7 +142,7 @@ class ErrorBoundary extends React.Component {
 export default function App() {
     const isDataLoaded = useRef(false);
     const ignoreNextSocketUpdate = useRef(false);
-    const [activeTab, setActiveTab] = useState(() => localStorage.getItem('colo-active-tab') || 'schedule');
+    const [activeTab, setActiveTab] = useState(() => localStorage.getItem('colo-active-tab') || 'home');
     const [groups, setGroups] = useState(() => {
         const saved = localStorage.getItem('colo-groups');
         try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
@@ -221,6 +224,7 @@ export default function App() {
 
     const navItems = useMemo(() => {
         const all = [
+            { id: 'home', label: 'Aujourd\'hui', icon: <Utensils size={22} strokeWidth={2.5} /> },
             { id: 'schedule', label: 'Planning', icon: <Calendar size={22} strokeWidth={2.5} /> },
             { id: 'exitsheet', label: 'Fiche de sortie', icon: <FileText size={22} strokeWidth={2.5} /> },
             { id: 'incident', label: 'FEI', icon: <AlertTriangle size={22} strokeWidth={2.5} /> },
@@ -581,22 +585,25 @@ export default function App() {
                 {/* Workspace Area */}
                 <div style={{ flex: 1, padding: isMobile ? 'var(--space-sm)' : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }} className="no-scrollbar">
                     <Suspense fallback={loadingShell}>
-                        <ErrorBoundary>
-                            {activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} isMobile={isMobile} />
-                            : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
-                            : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
-                            : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={window._refreshBboardData} isMobile={isMobile} />
-                            : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)} canEdit={permissions.editDirectory} isMobile={isMobile} />
-                            : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
-                            : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} setInventoryItems={(v) => mutateCollection(`${API_URL}/inventory/items`, setInventoryItems, v, inventoryItems)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
-                            : activeTab === 'settings' ? <Settings
-                                participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)}
-                                activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
-                                isAdminMode={isAdminMode} setIsAdminMode={setIsAdminMode} isAttendanceEnabled={isAttendanceEnabled}
-                                setIsAttendanceEnabled={setIsAttendanceEnabled} adminPin={adminPin} setAdminPin={(v) => mutateCollection(`${API_URL}/state/adminPin`, setAdminPin, v, adminPin)}
-                                accessControl={accessControl} setAccessControl={(v) => mutateCollection(`${API_URL}/state/accessControl`, setAccessControl, v, accessControl)}
-                                actorHeaders={actorHeaders} currentUser={activeUser} permissions={permissions} isMobile={isMobile}
-                            /> : null}
+                        <ErrorBoundary key={activeTab}>
+                            <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} />
+                                : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} isMobile={isMobile} />
+                                : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                                : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                                : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                                : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)} canEdit={permissions.editDirectory} isMobile={isMobile} />
+                                : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
+                                : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} setInventoryItems={(v) => mutateCollection(`${API_URL}/inventory/items`, setInventoryItems, v, inventoryItems)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                                : activeTab === 'settings' ? <Settings
+                                    participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)}
+                                    activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
+                                    isAdminMode={isAdminMode} setIsAdminMode={setIsAdminMode} isAttendanceEnabled={isAttendanceEnabled}
+                                    setIsAttendanceEnabled={setIsAttendanceEnabled} adminPin={adminPin} setAdminPin={(v) => mutateCollection(`${API_URL}/state/adminPin`, setAdminPin, v, adminPin)}
+                                    accessControl={accessControl} setAccessControl={(v) => mutateCollection(`${API_URL}/state/accessControl`, setAccessControl, v, accessControl)}
+                                    actorHeaders={actorHeaders} currentUser={activeUser} permissions={permissions} isMobile={isMobile}
+                                /> : null}
+                            </div>
                         </ErrorBoundary>
                     </Suspense>
                 </div>
