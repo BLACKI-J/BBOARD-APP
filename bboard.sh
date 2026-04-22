@@ -59,7 +59,11 @@ case "$1" in
         echo -e "${YELLOW}Récupération du code...${NC}"
         git pull origin main
         echo -e "${YELLOW}Mise à jour des dépendances...${NC}"
-        npm run install:all
+        if command -v npm >/dev/null 2>&1; then
+            npm run install:all
+        else
+            echo -e "${YELLOW}Note: npm non trouvé sur l'hôte, saut de l'installation des dépendances locales.${NC}"
+        fi
         
         if [ -f "docker-compose.yml" ] && [ "$(docker ps -q -f name=bboard-backend)" ]; then
             echo -e "${YELLOW}Redémarrage des conteneurs Docker...${NC}"
