@@ -36,3 +36,4 @@ server/data/*.sqlite
 .agent/
 .agents/
 .gemini/
+public/logo/logo.png
