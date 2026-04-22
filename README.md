@@ -78,6 +78,15 @@ GROQ_MODEL=llama-3.1-8b-instant
 HUGGINGFACE_API_KEY=votre_cle_ici
 ```
 
+### 🎨 Personnalisation du Logo
+Pour utiliser votre propre logo dans l'application :
+1.  Préparez une image au format **PNG** (recommandé : fond transparent).
+2.  Remplacez le fichier suivant par le vôtre : `public/logo/logo.png`.
+3.  Le logo sera automatiquement mis à jour sur la page de connexion et dans l'interface.
+
+> [!NOTE]
+> Le fichier `public/logo/logo.png` est ignoré par Git pour protéger votre identité visuelle personnelle lors des mises à jour.
+
 ---
 
 ## 📂 Structure du Projet
