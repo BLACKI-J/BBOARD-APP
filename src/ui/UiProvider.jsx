@@ -31,7 +31,7 @@ const Toast = ({ toast, onClose }) => {
                 {icon}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-                {toast.title && <div style={{ fontSize: '0.9rem', fontWeight: '950', color: 'var(--text-main)', marginBottom: '2px', fontFamily: 'Sora' }}>{toast.title}</div>}
+                {toast.title && <div style={{ fontSize: '0.9rem', fontWeight: '950', color: 'var(--text-main)', marginBottom: '2px', fontFamily: 'Bricolage Grotesque' }}>{toast.title}</div>}
                 <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.5', fontWeight: '850' }}>{toast.message}</div>
             </div>
             <button onClick={onClose} style={{ color: 'var(--text-muted)', opacity: 0.5, border: 'none', background: 'transparent', cursor: 'pointer', padding: '0.25rem', display: 'flex' }}>
@@ -135,7 +135,7 @@ export function UiProvider({ children }) {
                             <div style={{ background: dialog.danger ? 'oklch(62% 0.18 20 / 0.1)' : 'var(--primary-light)', padding: '0.625rem', borderRadius: '12px', color: dialog.danger ? 'var(--danger-color)' : 'var(--primary-color)', display: 'flex' }}>
                                 {dialog.danger ? <AlertTriangle size={20} strokeWidth={2.5} /> : <Sparkles size={20} strokeWidth={2.5} />}
                             </div>
-                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', color: 'var(--text-main)', fontFamily: 'Sora' }}>{dialog.title}</h3>
+                            <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', color: 'var(--text-main)', fontFamily: 'Bricolage Grotesque' }}>{dialog.title}</h3>
                         </div>
                         <p style={{ margin: '0', whiteSpace: 'pre-wrap', color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: '800', lineHeight: '1.6' }}>{dialog.message}</p>
                         

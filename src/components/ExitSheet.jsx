@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { 
-    MapPin, Calendar, Clock, Users, UserCheck, 
-    Save, Printer, Eye, Trash2, ArrowLeft, 
+import {
+    MapPin, Calendar, Clock, Users, UserCheck,
+    Save, Printer, Eye, Trash2, ArrowLeft,
     CheckSquare, Square, ChevronDown, FileText
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 
-function PrintContent({ date, destination, startTime, endTime, selectedChildren, selectedAnimatorList, referent, checklistItems }) {
+function PrintContent({ date, destination, startTime, endTime, selectedChildren, selectedAnimatorList, referent, checklistItems, isVanUsed, vanId, kmStart, kmEnd }) {
     return (
         <div style={{ color: 'black', fontFamily: 'serif', fontSize: '11pt' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid black', paddingBottom: '0.5cm', marginBottom: '0.5cm' }}>
@@ -68,12 +68,23 @@ function PrintContent({ date, destination, startTime, endTime, selectedChildren,
                 </div>
                 <div style={{ border: '0.5px solid #666', padding: '10px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <h4 style={{ margin: '0 0 5px', fontSize: '10pt', fontWeight: 'bold' }}>VISAS / SIGNATURES</h4>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', height: '2cm' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8pt', height: '1.5cm' }}>
                         <div>Signature Référent:</div>
                         <div>Visa Direction:</div>
                     </div>
                 </div>
             </div>
+
+            {isVanUsed && (
+                <div style={{ marginTop: '0.5cm', border: '1.5px solid black', padding: '10px' }}>
+                    <h3 style={{ margin: '0 0 8px', fontSize: '11pt', fontWeight: 'bold', textTransform: 'uppercase' }}>Logistique Transport (VAN)</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px' }}>
+                        <div>Véhicule: <strong>{vanId || '________________'}</strong></div>
+                        <div>KM Départ: <strong>{kmStart || '________________'}</strong></div>
+                        <div>KM Arrivée: <strong>{kmEnd || '________________'}</strong></div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -91,6 +102,12 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
     const [selectedAnimators, setSelectedAnimators] = useState([]);
     const [filterGroup, setFilterGroup] = useState('all');
     const [saveStatus, setSaveStatus] = useState(null); // null | 'saving' | 'saved' | 'error'
+
+    // Van Tracking State
+    const [isVanUsed, setIsVanUsed] = useState(false);
+    const [vanId, setVanId] = useState('');
+    const [kmStart, setKmStart] = useState('');
+    const [kmEnd, setKmEnd] = useState('');
 
     const history = exitSheets;
 
@@ -135,10 +152,14 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
         }
         if (!silent) setSaveStatus('saving');
         const sheetId = crypto?.randomUUID?.() ?? `sheet_${Date.now()}`;
-        const sheetData = { id: sheetId, destination, date, startTime, endTime, referent, fileName, selectedIds, selectedAnimators, timestamp: new Date().toISOString() };
-        
+        const sheetData = {
+            id: sheetId, destination, date, startTime, endTime, referent, fileName, selectedIds, selectedAnimators,
+            isVanUsed, vanId, kmStart, kmEnd,
+            timestamp: new Date().toISOString()
+        };
+
         setExitSheets([...exitSheets, sheetData]);
-        
+
         if (!silent) {
             setSaveStatus('saved');
             ui.toast('Fiche enregistrée et synchronisée.', { type: 'success' });
@@ -180,22 +201,26 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
         setFileName(sheet.fileName || '');
         setSelectedIds(sheet.selectedIds || []);
         setSelectedAnimators(sheet.selectedAnimators || []);
+        setIsVanUsed(!!sheet.isVanUsed);
+        setVanId(sheet.vanId || '');
+        setKmStart(sheet.kmStart || '');
+        setKmEnd(sheet.kmEnd || '');
         setShowPreview(true);
     };
 
     const filteredParticipants = getFilteredParticipants();
-    const animators = participants.filter(p => p.role === 'animator' || p.role === 'direction');
+    const animators = participants.filter(p => p.role !== 'child');
     const selectedChildren = participants
         .filter(p => selectedIds.includes(p.id))
         .sort((a, b) => (a.lastName || '').localeCompare(b.lastName || ''));
     const selectedAnimatorList = participants.filter(p => selectedAnimators.includes(p.id));
 
     // Style helpers
-    const glassCardStyle = { 
-        background: 'rgba(255, 255, 255, 0.45)', 
-        backdropFilter: 'blur(var(--glass-blur))', 
-        borderRadius: '24px', 
-        border: '1px solid var(--glass-border)', 
+    const glassCardStyle = {
+        background: 'rgba(255, 255, 255, 0.45)',
+        backdropFilter: 'blur(var(--glass-blur))',
+        borderRadius: '24px',
+        border: '1px solid var(--glass-border)',
         boxShadow: 'var(--shadow-md)',
         transition: 'all var(--transition-normal)'
     };
@@ -412,6 +437,47 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                                 <input type="time" className="input-field" value={endTime} onChange={e => setEndTime(e.target.value)} />
                                             </div>
                                         </div>
+
+                                        {/* Van Tracking Integrated */}
+                                        <div style={{ marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px dashed var(--glass-border)' }}>
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: isVanUsed ? '1rem' : '0' }}>
+                                                <div
+                                                    onClick={() => setIsVanUsed(!isVanUsed)}
+                                                    style={{
+                                                        width: '20px', height: '20px', borderRadius: '6px', border: '2px solid var(--primary-color)',
+                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                        background: isVanUsed ? 'var(--primary-color)' : 'transparent', transition: 'all 0.2s'
+                                                    }}
+                                                >
+                                                    {isVanUsed && <CheckSquare size={14} color="white" strokeWidth={3} />}
+                                                </div>
+                                                <span style={{ fontSize: '0.85rem', fontWeight: '900', color: isVanUsed ? 'var(--primary-color)' : 'var(--text-main)' }}>Utiliser un VAN / Véhicule</span>
+                                            </label>
+
+                                            {isVanUsed && (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', animation: 'fadeIn 0.3s' }}>
+                                                    <div>
+                                                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>VÉHICULE</label>
+                                                        <select className="input-field" value={vanId} onChange={e => setVanId(e.target.value)}>
+                                                            <option value="">Sélectionner...</option>
+                                                            <option value="Van Blanc (9 places)">Van Blanc (9 places)</option>
+                                                            <option value="Van Gris (9 places)">Van Gris (9 places)</option>
+                                                            <option value="Véhicule Particulier">Véhicule Particulier</option>
+                                                        </select>
+                                                    </div>
+                                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                                                        <div>
+                                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>KM DÉPART</label>
+                                                            <input type="number" className="input-field" value={kmStart} onChange={e => setKmStart(e.target.value)} placeholder="0" />
+                                                        </div>
+                                                        <div>
+                                                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '800', color: 'var(--text-muted)', marginBottom: '0.4rem' }}>KM ARRIVÉE</label>
+                                                            <input type="number" className="input-field" value={kmEnd} onChange={e => setKmEnd(e.target.value)} placeholder="0" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
@@ -498,6 +564,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                             date={date} destination={destination} startTime={startTime} endTime={endTime}
                             selectedChildren={selectedChildren} selectedAnimatorList={selectedAnimatorList}
                             referent={referent} checklistItems={checklistItems}
+                            isVanUsed={isVanUsed} vanId={vanId} kmStart={kmStart} kmEnd={kmEnd}
                         />
                     </div>
                 </div>
@@ -509,18 +576,19 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                     date={date} destination={destination} startTime={startTime} endTime={endTime}
                     selectedChildren={selectedChildren} selectedAnimatorList={selectedAnimatorList}
                     referent={referent} checklistItems={checklistItems}
+                    isVanUsed={isVanUsed} vanId={vanId} kmStart={kmStart} kmEnd={kmEnd}
                 />
             </div>
 
             <style>{`
                 .print-view { display: none; }
-                
+
                 .history-item-mini:hover {
                     border-color: var(--primary-color) !important;
                     background: white !important;
                     transform: translateX(4px);
                 }
-                
+
                 .delete-icon-hover:hover {
                     color: var(--error-color) !important;
                 }
@@ -543,7 +611,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                         grid-template-columns: 1fr !important;
                     }
                 }
-                
+
                 @media (max-width: 1024px) {
                     .es-main-grid {
                         grid-template-columns: 1fr !important;

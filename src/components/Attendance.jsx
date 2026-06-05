@@ -214,6 +214,16 @@ export default function Attendance({ participants, setParticipants, groups, canE
                             <option value="all">Tous Groupes</option>
                             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                         </select>
+                        {filterGroup !== 'all' && canEdit && (
+                            <button
+                                onClick={() => markGroupPresent(filterGroup)}
+                                className="btn btn-primary animate-fade-in"
+                                style={{ padding: '0.4rem 0.85rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900', gap: '0.4rem', flexShrink: 0 }}
+                                title={`Marquer tout le groupe présent`}
+                            >
+                                <UserCheck size={14} strokeWidth={2.5} /> Tout présent
+                            </button>
+                        )}
                         <button
                             onClick={() => setSortBy(sortBy === 'lastName' ? 'firstName' : 'lastName')}
                             style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.4rem 0.65rem', borderRadius: '10px', color: 'var(--primary-color)', fontWeight: '900', cursor: 'pointer', fontSize: '0.75rem', transition: 'all 0.2s', flex: isMobile ? 1 : 'none' }}

@@ -1,0 +1,20 @@
+{
+  "name": "BBOARD - Colo",
+  "short_name": "BBOARD",
+  "description": "Plateforme de gestion de colonie de vacances",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8f9ff",
+  "theme_color": "#6366f1",
+  "icons": [
+    {
+      "src": "/logo/logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "lang": "fr"
+}

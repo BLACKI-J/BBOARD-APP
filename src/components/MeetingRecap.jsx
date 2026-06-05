@@ -149,7 +149,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                             <ClipboardList size={28} strokeWidth={2.5} />
                         </div>
                         <div style={{ minWidth: 0 }}>
-                            <h1 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.04em', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            <h1 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.04em', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 Coordination
                             </h1>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '850', marginTop: '2px' }}>
@@ -183,7 +183,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                                     <div style={{ background: 'var(--bg-secondary)', padding: '8px', borderRadius: '10px', color: 'var(--text-main)', display: 'flex' }}>
                                         <FileText size={20} strokeWidth={2.5} />
                                     </div>
-                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, fontFamily: 'Sora, sans-serif' }}>Compte-rendu</h2>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, fontFamily: 'Bricolage Grotesque, sans-serif' }}>Compte-rendu</h2>
                                 </div>
                                 <button onClick={handleNoteSave} className="btn btn-primary" style={{ padding: isMobile ? '0.75rem' : '0.75rem 1.5rem', borderRadius: '14px', fontWeight: '950', flexShrink: 0 }}>
                                     {isSaving ? <Sparkles size={18} className="animate-spin" /> : <Save size={18} strokeWidth={2.5} />}
@@ -219,7 +219,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                                     <div style={{ background: 'var(--bg-secondary)', padding: '8px', borderRadius: '10px', color: 'var(--text-main)', display: 'flex' }}>
                                         <CheckSquare size={20} strokeWidth={2.5} />
                                     </div>
-                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, fontFamily: 'Sora, sans-serif' }}>Actions & Logistique</h2>
+                                    <h2 style={{ fontSize: '1.25rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, fontFamily: 'Bricolage Grotesque, sans-serif' }}>Actions & Logistique</h2>
                                 </div>
                                 <div style={{ fontSize: isMobile ? '9px' : '11px', fontWeight: '950', color: 'var(--primary-color)', background: 'var(--primary-light)', padding: '6px 12px', borderRadius: '100px', display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                                     <CheckCircle2 size={12} strokeWidth={3} /> {completedCount}/{filteredTodos.length} {isMobile ? 'VALIDÉES' : 'ACTIONS VALIDÉES'}
@@ -295,7 +295,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                         {/* Calendar Card */}
                         <div className="card-glass" style={{ background: 'white', borderRadius: '28px', padding: '1.75rem', border: '1.5px solid var(--glass-border)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, textTransform: 'capitalize', fontFamily: 'Sora, sans-serif' }}>
+                                <h3 style={{ fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, textTransform: 'capitalize', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                                     {monthName}
                                 </h3>
                                 <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -352,7 +352,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                                     <div>
                                         <div style={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', opacity: 0.8, letterSpacing: '0.1em' }}>Taux de réalisation</div>
-                                        <div style={{ fontSize: isMobile ? '1.75rem' : '2.5rem', fontWeight: '950', lineHeight: 1, marginTop: '4px', fontFamily: 'Sora, sans-serif' }}>{Math.round(progress)}%</div>
+                                        <div style={{ fontSize: isMobile ? '1.75rem' : '2.5rem', fontWeight: '950', lineHeight: 1, marginTop: '4px', fontFamily: 'Bricolage Grotesque, sans-serif' }}>{Math.round(progress)}%</div>
                                     </div>
                                     <div style={{ background: 'rgba(255,255,255,0.2)', padding: '0.75rem', borderRadius: '16px', backdropFilter: 'blur(10px)' }}>
                                         <TrendingUp size={24} strokeWidth={2.5} />

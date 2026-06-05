@@ -34,7 +34,7 @@ export default function Directory({ participants = [], setParticipants, groups =
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
         firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '', healthDocProvided: false,
-        training: '', phone: '', address: '', emergencyContact: '',
+        training: '', phone: '', address: '', emergencyContact: '', pin: '',
         pocketMoney: { initial: 0, current: 0, history: [] }
     });
 
@@ -109,6 +109,101 @@ export default function Directory({ participants = [], setParticipants, groups =
         document.body.removeChild(link);
     };
 
+    const handleExportCsv = () => {
+        const groupName = (id) => safeGroups.find(g => g.id === id)?.name || '';
+        const roleLabel = (r) => ({ child: 'Enfant', animator: 'Animateur', direction: 'Direction' }[r] || r);
+        const escape = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
+        const headers = ['Prénom', 'Nom', 'Rôle', 'Groupe', 'Date de naissance', 'Allergies', 'Régime', 'Contraintes', 'Fiche sanitaire', 'Téléphone', 'Contact urgence'];
+        const rows = safeParticipants.map(p => [
+            escape(p.firstName), escape(p.lastName), escape(roleLabel(p.role)),
+            escape(groupName(p.group)), escape(p.birthDate), escape(p.allergies),
+            escape(p.diet), escape(p.constraints),
+            p.healthDocProvided ? 'OUI' : 'NON',
+            escape(p.phone), escape(p.emergencyContact)
+        ].join(','));
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `participants-${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    const handleImportCsv = (event) => {
+        if (!canEdit) { ui.toast('Import bloqué : droits insuffisants.', { type: 'error' }); return; }
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const text = e.target.result.replace(/^﻿/, '');
+                const sep = text.includes(';') ? ';' : ',';
+                const lines = text.split(/\r?\n/).filter(l => l.trim());
+                if (lines.length < 2) { ui.alert({ title: 'Fichier vide', message: 'Le CSV doit contenir au moins un en-tête et une ligne.' }); return; }
+
+                const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
+                const col = (aliases) => aliases.reduce((found, a) => found !== -1 ? found : headers.indexOf(a), -1);
+
+                const iPrenom   = col(['prenom', 'firstname', 'first_name', 'first name', 'nom de l enfant', 'nom enfant']);
+                const iNom      = col(['nom', 'lastname', 'last_name', 'last name', 'famille']);
+                const iRole     = col(['role', 'rôle', 'statut', 'type']);
+                const iGroupe   = col(['groupe', 'group', 'team', 'equipe', 'équipe']);
+                const iNaissance = col(['date de naissance', 'naissance', 'birthdate', 'birth_date', 'dob', 'date naissance']);
+                const iAllergies = col(['allergies', 'allergie', 'allergy']);
+                const iRegime   = col(['regime', 'régime', 'diet', 'alimentation']);
+                const iConstraintes = col(['contraintes', 'constraint', 'constraints', 'notes sante', 'notes santé']);
+
+                if (iPrenom === -1 && iNom === -1) {
+                    ui.alert({ title: 'Colonnes introuvables', message: 'Le CSV doit avoir au minimum une colonne "Prénom" et/ou "Nom".' });
+                    return;
+                }
+
+                const parseCell = (cells, idx) => idx !== -1 ? (cells[idx] || '').replace(/^"|"$/g, '').trim() : '';
+                const parseRole = (raw) => {
+                    const r = raw.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+                    if (r.includes('anim')) return 'animator';
+                    if (r.includes('direct') || r.includes('resp') || r.includes('chef')) return 'direction';
+                    return 'child';
+                };
+
+                const newParticipants = lines.slice(1).map(line => {
+                    const cells = line.split(sep);
+                    const groupRaw = parseCell(cells, iGroupe);
+                    const matchedGroup = safeGroups.find(g => g.name.toLowerCase() === groupRaw.toLowerCase());
+                    return {
+                        id: crypto.randomUUID(),
+                        firstName: parseCell(cells, iPrenom),
+                        lastName: parseCell(cells, iNom),
+                        role: iRole !== -1 ? parseRole(parseCell(cells, iRole)) : 'child',
+                        group: matchedGroup ? matchedGroup.id : '',
+                        birthDate: parseCell(cells, iNaissance),
+                        allergies: parseCell(cells, iAllergies),
+                        diet: parseCell(cells, iRegime),
+                        constraints: parseCell(cells, iConstraintes),
+                        photo: '', healthDocProvided: false,
+                        pocketMoney: { initial: 0, current: 0, history: [] }
+                    };
+                }).filter(p => p.firstName || p.lastName);
+
+                const ok = await ui.confirm({
+                    title: 'Import CSV',
+                    message: `${newParticipants.length} participant(s) détecté(s). Ajouter à la liste existante (${safeParticipants.length}) ?`,
+                    confirmText: 'Ajouter'
+                });
+                if (ok) {
+                    setParticipants([...safeParticipants, ...newParticipants]);
+                    ui.toast(`${newParticipants.length} participant(s) importé(s).`, { type: 'success' });
+                }
+            } catch (err) {
+                ui.alert({ title: 'Erreur', message: 'Impossible de lire le fichier CSV.' });
+            }
+        };
+        reader.readAsText(file, 'utf-8');
+        event.target.value = '';
+    };
+
     const handleImport = (event) => {
         if (!canEdit) {
             ui.toast('Import bloqué: droits insuffisants.', { type: 'error' });
@@ -145,7 +240,7 @@ export default function Directory({ participants = [], setParticipants, groups =
     const resetForm = () => {
         setFormData({
             firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '', healthDocProvided: false,
-            training: '', phone: '', address: '', emergencyContact: '',
+            training: '', phone: '', address: '', emergencyContact: '', pin: '',
             pocketMoney: { initial: 0, current: 0, history: [] }
         });
         setEditingId(null);
@@ -177,7 +272,8 @@ export default function Directory({ participants = [], setParticipants, groups =
             training: participant.training || '',
             phone: participant.phone || '',
             address: participant.address || '',
-            emergencyContact: participant.emergencyContact || ''
+            emergencyContact: participant.emergencyContact || '',
+            pin: ''
         });
         setEditingId(participant.id);
         setIsFormOpen(true);
@@ -259,7 +355,9 @@ export default function Directory({ participants = [], setParticipants, groups =
                 openGroupManager={() => setIsGroupManagerOpen(true)}
                 openNewForm={() => { resetForm(); setIsFormOpen(true); }}
                 handleExport={handleExport}
+                handleExportCsv={handleExportCsv}
                 handleImport={handleImport}
+                handleImportCsv={handleImportCsv}
                 isMobile={isMobile}
                 canEdit={canEdit}
             />

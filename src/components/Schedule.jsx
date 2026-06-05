@@ -56,11 +56,19 @@ const getDuration = (start, end) => {
 
 // ─── ActivityCard ─────────────────────────────────────────────────────────────
 
-const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobile, canEdit }) => {
+const WATER_KEYWORDS = ['baignade', 'piscine', 'natation', 'aquatique', 'mer', 'lac', 'rivière', 'plage', 'snorkeling'];
+
+const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobile, canEdit, participants = [] }) => {
     const color = activity.color || DEFAULT_COLOR.value;
     const timeSlot = getTimeSlotLabel(activity.startTime);
     const duration = getDuration(activity.startTime, activity.endTime);
     const isDone = activity.done;
+
+    const combined = `${activity.title} ${activity.description || ''}`.toLowerCase();
+    const isWaterActivity = WATER_KEYWORDS.some(kw => combined.includes(kw));
+    const nonTestedCount = isWaterActivity
+        ? participants.filter(p => p.role === 'child' && !p.swimTest).length
+        : 0;
 
     return (
         <div className="sc-activity-item animate-fade-in"
@@ -115,7 +123,7 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
                     borderColor: isDone ? 'var(--glass-border)' : color,
                     color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                     fontWeight: '950',
-                    fontFamily: 'Sora, sans-serif',
+                    fontFamily: 'Bricolage Grotesque, sans-serif',
                     fontSize: isMobile ? '0.85rem' : '1rem',
                     lineHeight: 1,
                     textAlign: 'center',
@@ -156,7 +164,7 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
                         margin: 0,
                         fontSize: isMobile ? '1.1rem' : '1.25rem',
                         fontWeight: '950',
-                        fontFamily: 'Sora, sans-serif',
+                        fontFamily: 'Bricolage Grotesque, sans-serif',
                         color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                         lineHeight: '1.2',
                         letterSpacing: '-0.04em',
@@ -185,6 +193,16 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
                         {activity.participants && activity.participants.length > 0 && (
                             <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontWeight: '750' }}>
                                 <Users size={12} strokeWidth={2.5} style={{ color: 'var(--secondary-color)' }} /> {activity.participants.length}
+                            </span>
+                        )}
+                        {isWaterActivity && nonTestedCount > 0 && (
+                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'oklch(55% 0.2 45)', background: 'oklch(97% 0.06 45)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.12 45)' }}>
+                                {nonTestedCount} non-testé{nonTestedCount > 1 ? 's' : ''}
+                            </span>
+                        )}
+                        {isWaterActivity && nonTestedCount === 0 && participants.filter(p => p.role === 'child').length > 0 && (
+                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'oklch(45% 0.18 145)', background: 'oklch(97% 0.04 145)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.10 145)' }}>
+                                Tous testés
                             </span>
                         )}
                     </div>
@@ -222,7 +240,7 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function Schedule({ activities, setActivities, participants, groups, canEdit = true }) {
+export default function Schedule({ activities, setActivities, participants, groups, canEdit = true, menus = {}, setMenus }) {
     const ui = useUi();
     const [viewMode, setViewMode] = useState('activities');
     const [currentDate, setCurrentDate] = useState(new Date());
@@ -481,7 +499,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                 boxShadow: '0 15px 40px oklch(0% 0 0 / 0.05)'
                             }}>
                                 <div>
-                                    <h2 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
+                                    <h2 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
                                         {currentDateLabel}
                                     </h2>
                                     {dayActivities.length > 0 && (
@@ -513,14 +531,15 @@ export default function Schedule({ activities, setActivities, participants, grou
                                 <div style={{ paddingLeft: '20px' }}>
                                     {dayActivities.map((activity, idx) => (
                                         <ActivityCard key={activity.id} activity={activity} index={idx}
-                                            onEdit={handleEdit} onDelete={handleDelete} onToggleDone={handleToggleDone} isMobile={isMobile} canEdit={canEdit} />
+                                            onEdit={handleEdit} onDelete={handleDelete} onToggleDone={handleToggleDone}
+                                            isMobile={isMobile} canEdit={canEdit} participants={participants} />
                                     ))}
                                 </div>
                             )}
                         </div>
                     ) : (
                          <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto' }}>
-                           <Menus participants={participants} currentDate={currentDate} isMobile={isMobile} />
+                           <Menus participants={participants} currentDate={currentDate} isMobile={isMobile} menus={menus} setMenus={setMenus} />
                          </div>
                     )}
                 </div>

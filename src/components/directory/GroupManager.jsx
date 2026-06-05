@@ -32,7 +32,7 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                         <div style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                             <LayoutGrid size={20} strokeWidth={2.5} />
                         </div>
-                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>Gestion des Groupes</h3>
+                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.02em' }}>Gestion des Groupes</h3>
                     </div>
                     <button 
                         onClick={onClose}

@@ -43,7 +43,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                         <div style={{ border: '6px solid white', borderRadius: '32px', boxShadow: '0 12px 30px oklch(0% 0 0 / 0.15)', background: 'white', marginBottom: '1.25rem' }}>
                             <Avatar participant={viewingParticipant} size={110} />
                         </div>
-                        <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)', margin: '0 0 0.5rem 0', fontWeight: '950', fontFamily: 'Sora, sans-serif', textAlign: 'center', letterSpacing: '-0.03em' }}>
+                        <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)', margin: '0 0 0.5rem 0', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', textAlign: 'center', letterSpacing: '-0.03em' }}>
                             {viewingParticipant.firstName} <span style={{ textTransform: 'uppercase' }}>{viewingParticipant.lastName}</span>
                         </h2>
                         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -96,7 +96,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                         )}
 
                         {/* Professional Info (Staff Only) */}
-                        {(viewingParticipant.role === 'animator' || viewingParticipant.role === 'direction') && (
+                        {viewingParticipant.role !== 'child' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <h3 style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0.5rem 0 0 0' }}>Informations Professionnelles</h3>
                                 <div className="card-glass" style={{ background: 'white', padding: '1.5rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

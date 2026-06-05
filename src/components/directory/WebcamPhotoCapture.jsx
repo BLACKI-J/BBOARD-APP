@@ -78,7 +78,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                         <div style={{ background: 'var(--primary-gradient)', borderRadius: '12px', padding: '8px', color: 'white', display: 'flex' }}>
                             <Camera size={20} strokeWidth={2.5} />
                         </div>
-                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Capture Photo</h3>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Capture Photo</h3>
                     </div>
                     <button onClick={() => { stopCamera(); onClose(); }} style={{ background: 'var(--bg-secondary)', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', borderRadius: '12px', padding: '8px', display: 'flex' }}>
                         <X size={20} strokeWidth={2.5} />

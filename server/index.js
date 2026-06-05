@@ -7,6 +7,7 @@ import cors from 'cors';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -42,9 +43,43 @@ const GROQ_MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 const FEI_REWRITE_MAX_CHARS = 5000;
 const HF_API_URL = process.env.HF_API_URL || 'https://api-inference.huggingface.co/models/openai/clip-vit-base-patch32';
 const HF_API_KEY = process.env.HUGGINGFACE_API_KEY || '';
+const SESSION_COOKIE_NAME = 'bboard_session';
+const SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const ADMIN_VERIFICATION_TTL_MS = 5 * 60 * 1000;
+const sessions = new Map();
+
+const defaultAccessControl = {
+    hiddenSections: {
+        today: false, schedule: false, exitsheet: false, incident: false,
+        recap: false, attendance: false, inventory: false, directory: false, health: false
+    },
+    rolePermissions: {
+        direction: {
+            viewSchedule: true, editSchedule: true,
+            viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
+            viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
+            viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
+            viewHealth: true, editHealth: true,
+            searchInventoryAI: true, viewSettings: true, manageUsers: true, manageAccess: true, viewLogs: true
+        },
+        animator: {
+            viewSchedule: true, editSchedule: true,
+            viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
+            viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
+            viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
+            viewHealth: true, editHealth: true,
+            searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
+        }
+    },
+    userPermissions: {},
+    disabledUsers: {},
+    incidentAiDefaultMode: 'detaille'
+};
+
 
 const app = express();
 const httpServer = createServer(app);
+app.set('trust proxy', 'loopback');
 
 // Flexible CORS for local network and production
 const envOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [];
@@ -71,7 +106,9 @@ app.use(express.json({ strict: false, limit: '15mb' }));
 app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);
     if (req.method === 'POST') {
-        if (req.url === '/api/ai/rewrite-fei') {
+        if (req.url.startsWith('/api/auth/') || /^\/api\/users\/[^/]+\/pin$/.test(req.url)) {
+            console.log('Body: { credentials: [REDACTED] }');
+        } else if (req.url === '/api/ai/rewrite-fei') {
             const textLength = typeof req.body?.text === 'string' ? req.body.text.length : 0;
             console.log(`Body: { textLength: ${textLength}, mode: ${req.body?.mode || 'detaille'} }`);
         } else if (req.url.startsWith('/api/inventory/items/') && req.url.endsWith('/photos')) {
@@ -81,11 +118,243 @@ app.use((req, res, next) => {
             const imageLength = typeof req.body?.imageBase64 === 'string' ? req.body.imageBase64.length : 0;
             console.log(`Body: { imageLength: ${imageLength}, topK: ${req.body?.topK || 5} }`);
         } else {
-            console.log('Body:', JSON.stringify(req.body).substring(0, 100));
+            const summary = Array.isArray(req.body)
+                ? { type: 'array', items: req.body.length }
+                : { type: typeof req.body, keys: Object.keys(req.body || {}) };
+            console.log('Body summary:', summary);
         }
     }
     next();
 });
+
+function parseCookies(header = '') {
+    return header.split(';').reduce((cookies, part) => {
+        const separator = part.indexOf('=');
+        if (separator === -1) return cookies;
+        const key = part.slice(0, separator).trim();
+        const value = part.slice(separator + 1).trim();
+        if (key) cookies[key] = decodeURIComponent(value);
+        return cookies;
+    }, {});
+}
+
+function parseJsonValue(value, fallback = null) {
+    try {
+        return value == null ? fallback : JSON.parse(value);
+    } catch (err) {
+        return fallback;
+    }
+}
+
+function isValidPin(pin) {
+    return typeof pin === 'string' && /^\d{4}$/.test(pin);
+}
+
+function hashPin(pin) {
+    const salt = randomBytes(16).toString('hex');
+    const hash = scryptSync(pin, salt, 64).toString('hex');
+    return `scrypt$${salt}$${hash}`;
+}
+
+function isPinHash(value) {
+    return typeof value === 'string' && /^scrypt\$[a-f0-9]{32}\$[a-f0-9]{128}$/.test(value);
+}
+
+function verifyPin(pin, storedHash) {
+    if (!isValidPin(pin) || !isPinHash(storedHash)) return false;
+    const [, salt, expectedHex] = storedHash.split('$');
+    const actual = scryptSync(pin, salt, 64);
+    const expected = Buffer.from(expectedHex, 'hex');
+    return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+
+function sanitizeParticipant(participant) {
+    if (!participant || typeof participant !== 'object') return participant;
+    const clean = { ...participant };
+    delete clean.pin;
+    delete clean.pinHash;
+    delete clean.pin_hash;
+    delete clean.password;
+    delete clean.data;
+    return clean;
+}
+
+function mergeAccessControl(raw) {
+    const source = raw && typeof raw === 'object' ? raw : {};
+    return {
+        ...defaultAccessControl,
+        ...source,
+        hiddenSections: { ...defaultAccessControl.hiddenSections, ...(source.hiddenSections || {}) },
+        rolePermissions: {
+            direction: { ...defaultAccessControl.rolePermissions.direction, ...(source.rolePermissions?.direction || {}) },
+            animator: { ...defaultAccessControl.rolePermissions.animator, ...(source.rolePermissions?.animator || {}) }
+        },
+        userPermissions: { ...defaultAccessControl.userPermissions, ...(source.userPermissions || {}) },
+        disabledUsers: { ...defaultAccessControl.disabledUsers, ...(source.disabledUsers || {}) }
+    };
+}
+
+async function getStateValue(database, key, fallback = null) {
+    const row = await database.get('SELECT value FROM app_state WHERE key = ?', key);
+    return row ? parseJsonValue(row.value, fallback) : fallback;
+}
+
+async function setStateValue(database, key, value) {
+    await database.run('INSERT OR REPLACE INTO app_state (key, value) VALUES (?, ?)', key, JSON.stringify(value));
+}
+
+async function ensureAdminPin(database) {
+    const existingHash = await getStateValue(database, 'adminPinHash');
+    if (isPinHash(existingHash)) {
+        await database.run('DELETE FROM app_state WHERE key = ?', 'adminPin');
+        return;
+    }
+
+    const legacyPin = await getStateValue(database, 'adminPin');
+    const configuredPin = process.env.INITIAL_ADMIN_PIN?.trim();
+    let initialPin = legacyPin;
+
+    if (!isValidPin(initialPin) || initialPin === '1234') {
+        if (!isValidPin(configuredPin)) {
+            throw new Error('INITIAL_ADMIN_PIN must contain exactly 4 digits before the first start or migration from the legacy default PIN');
+        }
+        initialPin = configuredPin;
+        console.log('Initial admin PIN loaded from INITIAL_ADMIN_PIN.');
+    }
+
+    await setStateValue(database, 'adminPinHash', hashPin(initialPin));
+    await database.run('DELETE FROM app_state WHERE key = ?', 'adminPin');
+}
+
+function createSession(userId) {
+    const token = randomBytes(32).toString('hex');
+    sessions.set(token, { userId, expiresAt: Date.now() + SESSION_TTL_MS, adminVerifiedUntil: 0 });
+    return token;
+}
+
+function getSession(token) {
+    const session = token ? sessions.get(token) : null;
+    if (!session) return null;
+    if (session.expiresAt <= Date.now()) {
+        sessions.delete(token);
+        return null;
+    }
+    session.expiresAt = Date.now() + SESSION_TTL_MS;
+    return session;
+}
+
+setInterval(() => {
+    const now = Date.now();
+    for (const [token, session] of sessions.entries()) {
+        if (session.expiresAt <= now) sessions.delete(token);
+    }
+}, 60 * 60 * 1000).unref();
+
+function setSessionCookie(res, token) {
+    res.cookie(SESSION_COOKIE_NAME, token, {
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: process.env.COOKIE_SECURE === 'true',
+        maxAge: SESSION_TTL_MS,
+        path: '/'
+    });
+}
+
+function clearSessionCookie(res) {
+    res.clearCookie(SESSION_COOKIE_NAME, {
+        httpOnly: true,
+        sameSite: 'strict',
+        secure: process.env.COOKIE_SECURE === 'true',
+        path: '/'
+    });
+}
+
+async function getAccessControl() {
+    return mergeAccessControl(await getStateValue(db, 'accessControl', {}));
+}
+
+async function getActor(userId) {
+    let actor;
+    if (userId === 'director') {
+        actor = { id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction' };
+    } else {
+        const row = await db.get('SELECT data FROM participants WHERE id = ?', userId);
+        const participant = sanitizeParticipant(parseJsonValue(row?.data, null));
+        if (!participant || participant.role === 'child') return null;
+        actor = participant;
+    }
+
+    const accessControl = await getAccessControl();
+    const isDisabled = !!accessControl.disabledUsers?.[actor.id];
+    const role = actor.role;
+    const rolePermissions = accessControl.rolePermissions?.[role] || {};
+    const userPermissions = accessControl.userPermissions?.[actor.id] || {};
+    const permissions = isDisabled
+        ? Object.fromEntries(Object.keys(rolePermissions).map((key) => [key, false]))
+        : { ...rolePermissions, ...userPermissions };
+
+    return { ...actor, permissions, disabled: isDisabled };
+}
+
+function publicActor(actor) {
+    if (!actor) return null;
+    return {
+        id: actor.id,
+        firstName: actor.firstName,
+        lastName: actor.lastName,
+        role: actor.role,
+        permissions: actor.permissions
+    };
+}
+
+async function authenticateRequest(req, res, next) {
+    try {
+        const token = parseCookies(req.headers.cookie)[SESSION_COOKIE_NAME];
+        const session = getSession(token);
+        const actor = session ? await getActor(session.userId) : null;
+        if (!session || !actor) {
+            if (token) sessions.delete(token);
+            clearSessionCookie(res);
+            return res.status(401).json({ error: 'Authentication required' });
+        }
+        if (actor.disabled) {
+            sessions.delete(token);
+            clearSessionCookie(res);
+            return res.status(403).json({ error: 'Account disabled' });
+        }
+        req.sessionToken = token;
+        req.session = session;
+        req.actor = actor;
+        next();
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+}
+
+function requireAnyPermission(...permissionKeys) {
+    return (req, res, next) => {
+        if (permissionKeys.some((key) => req.actor?.permissions?.[key])) return next();
+        return res.status(403).json({ error: 'Permission denied' });
+    };
+}
+
+function createRateLimiter({ windowMs, max }) {
+    const attempts = new Map();
+    return (req, res, next) => {
+        const now = Date.now();
+        const key = req.ip || req.socket.remoteAddress || 'unknown';
+        const record = attempts.get(key);
+        if (!record || record.resetAt <= now) {
+            attempts.set(key, { count: 1, resetAt: now + windowMs });
+            return next();
+        }
+        if (record.count >= max) {
+            return res.status(429).json({ error: 'Too many requests, try again later' });
+        }
+        record.count += 1;
+        next();
+    };
+}
 
 // Initialize Database
 async function initDb() {
@@ -104,6 +373,7 @@ async function initDb() {
             groupId TEXT,
             allergies TEXT,
             constraints TEXT,
+            pin_hash TEXT,
             data TEXT
         );
         CREATE TABLE IF NOT EXISTS groups (
@@ -177,7 +447,7 @@ async function initDb() {
     // 2. Migration: Add missing columns if table already existed (v1 -> v2)
     const columns = await db.all("PRAGMA table_info(participants)");
     const columnNames = columns.map(c => c.name);
-    const requiredColumns = ['firstName', 'lastName', 'role', 'groupId', 'allergies', 'constraints'];
+    const requiredColumns = ['firstName', 'lastName', 'role', 'groupId', 'allergies', 'constraints', 'pin_hash'];
 
     for (const col of requiredColumns) {
         if (!columnNames.includes(col)) {
@@ -211,12 +481,24 @@ async function initDb() {
         console.log('Migration complete.');
     }
 
-    // 4. Initialisez le PIN admin par défaut si nécessaire
-    const adminPinRow = await db.get('SELECT value FROM app_state WHERE key = "adminPin"');
-    if (!adminPinRow) {
-        console.log('Initializing default admin PIN (1234)...');
-        await db.run('INSERT INTO app_state (key, value) VALUES ("adminPin", ?)', JSON.stringify('1234'));
+    // 4. Migrate participant PINs out of the JSON payload.
+    const credentialRows = await db.all('SELECT id, data, pin_hash FROM participants');
+    for (const row of credentialRows) {
+        const participant = parseJsonValue(row.data, {});
+        const cleanParticipant = sanitizeParticipant(participant);
+        const migratedHash = row.pin_hash || (isValidPin(participant.pin) ? hashPin(participant.pin) : null);
+        if (JSON.stringify(cleanParticipant) !== row.data || migratedHash !== row.pin_hash) {
+            await db.run(
+                'UPDATE participants SET data = ?, pin_hash = ? WHERE id = ?',
+                JSON.stringify(cleanParticipant),
+                migratedHash,
+                row.id
+            );
+        }
     }
+
+    // 5. Store the admin credential as a hash and remove the legacy plaintext state.
+    await ensureAdminPin(db);
 
     return db;
 }
@@ -348,7 +630,7 @@ async function startServer() {
         db = await initDb();
         console.log('Database initialized and synchronized');
 
-        const PORT = 3001;
+        const PORT = Number(process.env.PORT) || 3001;
         httpServer.listen(PORT, '0.0.0.0', () => {
             console.log(`Backend server running on http://0.0.0.0:${PORT}`);
         });
@@ -360,6 +642,101 @@ async function startServer() {
 
 startServer();
 
+const loginRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
+const adminRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
+const aiRateLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 10 });
+
+io.use(async (socket, next) => {
+    try {
+        const token = parseCookies(socket.handshake.headers.cookie)[SESSION_COOKIE_NAME];
+        const session = getSession(token);
+        const actor = session ? await getActor(session.userId) : null;
+        if (!session || !actor || actor.disabled) return next(new Error('Authentication required'));
+        socket.actor = actor;
+        next();
+    } catch (err) {
+        next(new Error('Authentication required'));
+    }
+});
+
+app.get('/api/auth/profiles', async (req, res) => {
+    try {
+        const rows = await db.all("SELECT data FROM participants WHERE role != 'child'");
+        const accessControl = await getAccessControl();
+        const profiles = rows
+            .map((row) => sanitizeParticipant(parseJsonValue(row.data, null)))
+            .filter((participant) => participant && !accessControl.disabledUsers?.[participant.id])
+            .map(({ id, firstName, lastName, role }) => ({ id, firstName, lastName, role }));
+        res.json([{ id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction' }, ...profiles]);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
+    try {
+        const { userId, pin } = req.body || {};
+        let storedHash;
+        if (userId === 'director') {
+            storedHash = await getStateValue(db, 'adminPinHash');
+        } else {
+            const row = await db.get("SELECT pin_hash FROM participants WHERE id = ? AND role != 'child'", userId);
+            storedHash = row?.pin_hash;
+        }
+
+        const accessControl = await getAccessControl();
+        if (!verifyPin(String(pin || ''), storedHash) || accessControl.disabledUsers?.[userId]) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+
+        const actor = await getActor(userId);
+        if (!actor) return res.status(401).json({ error: 'Invalid credentials' });
+        const token = createSession(userId);
+        setSessionCookie(res, token);
+        res.json({ user: publicActor(actor), accessControl });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get('/api/auth/session', authenticateRequest, async (req, res) => {
+    res.json({ user: publicActor(req.actor), accessControl: await getAccessControl() });
+});
+
+app.post('/api/auth/logout', (req, res) => {
+    const token = parseCookies(req.headers.cookie)[SESSION_COOKIE_NAME];
+    if (token) sessions.delete(token);
+    clearSessionCookie(res);
+    res.json({ success: true });
+});
+
+app.post('/api/auth/verify-admin-pin', authenticateRequest, requireAnyPermission('viewSettings'), adminRateLimiter, async (req, res) => {
+    const storedHash = await getStateValue(db, 'adminPinHash');
+    if (!verifyPin(String(req.body?.pin || ''), storedHash)) {
+        return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    req.session.adminVerifiedUntil = Date.now() + ADMIN_VERIFICATION_TTL_MS;
+    res.json({ success: true });
+});
+
+app.post('/api/auth/admin-pin', authenticateRequest, requireAnyPermission('manageAccess'), async (req, res) => {
+    const newPin = String(req.body?.newPin || '');
+    if (req.session.adminVerifiedUntil < Date.now()) {
+        return res.status(401).json({ error: 'Admin verification required' });
+    }
+    if (!isValidPin(newPin)) {
+        return res.status(400).json({ error: 'PIN must contain exactly 4 digits' });
+    }
+    await setStateValue(db, 'adminPinHash', hashPin(newPin));
+    req.session.adminVerifiedUntil = 0;
+    res.json({ success: true });
+});
+
+app.use('/api', (req, res, next) => {
+    if (req.path === '/health' || req.path.startsWith('/auth/')) return next();
+    return authenticateRequest(req, res, next);
+});
+
 app.use((req, res, next) => {
     if (!req.url.startsWith('/api/')) return next();
     if (req.method === 'GET') return next();
@@ -367,9 +744,9 @@ app.use((req, res, next) => {
 
     const startedAt = Date.now();
     res.on('finish', () => {
-        const actorId = req.headers['x-actor-id'];
-        const actorName = req.headers['x-actor-name'];
-        const actorRole = req.headers['x-actor-role'];
+        const actorId = req.actor?.id;
+        const actorName = `${req.actor?.firstName || ''} ${req.actor?.lastName || ''}`.trim();
+        const actorRole = req.actor?.role;
         insertActionLog({
             actorId,
             actorName,
@@ -389,34 +766,43 @@ app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-app.get('/api/participants', async (req, res) => {
+app.get('/api/participants', requireAnyPermission('viewDirectory', 'viewAttendance', 'viewHealth', 'manageUsers'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM participants');
-        res.json(rows.map(r => JSON.parse(r.data)));
+        res.json(rows.map((row) => sanitizeParticipant(JSON.parse(row.data))));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
-app.post('/api/participants', async (req, res) => {
+app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttendance', 'editHealth', 'manageUsers'), async (req, res) => {
     try {
         const participants = req.body || [];
-        const stmt = await db.prepare('INSERT INTO participants (id, firstName, lastName, role, groupId, allergies, constraints, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+        if (!Array.isArray(participants)) return res.status(400).json({ error: 'Participants must be an array' });
+        const existingRows = await db.all('SELECT id, pin_hash FROM participants');
+        const existingPinHashes = new Map(existingRows.map((row) => [row.id, row.pin_hash]));
+        const stmt = await db.prepare('INSERT INTO participants (id, firstName, lastName, role, groupId, allergies, constraints, pin_hash, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
         try {
             await replaceCollection({
                 table: 'participants',
                 rows: participants,
                 insertOne: async (p) => {
                     if (!p || !p.id) return;
+                    const cleanParticipant = sanitizeParticipant(p);
+                    const pinHash = isValidPin(p.pin) ? hashPin(p.pin) : existingPinHashes.get(p.id) || null;
+                    if (cleanParticipant.role !== 'child' && !pinHash) {
+                        throw new Error(`A PIN is required for staff member ${cleanParticipant.id}`);
+                    }
                     await stmt.run(
-                        p.id,
-                        p.firstName || '',
-                        p.lastName || '',
-                        p.role || '',
-                        p.groupId || p.group || '',
-                        p.allergies || '',
-                        p.constraints || '',
-                        JSON.stringify(p)
+                        cleanParticipant.id,
+                        cleanParticipant.firstName || '',
+                        cleanParticipant.lastName || '',
+                        cleanParticipant.role || '',
+                        cleanParticipant.groupId || cleanParticipant.group || '',
+                        cleanParticipant.allergies || '',
+                        cleanParticipant.constraints || '',
+                        pinHash,
+                        JSON.stringify(cleanParticipant)
                     );
                 }
             });
@@ -430,8 +816,26 @@ app.post('/api/participants', async (req, res) => {
     }
 });
 
+app.post('/api/users/:id/pin', requireAnyPermission('manageUsers'), async (req, res) => {
+    try {
+        const newPin = String(req.body?.newPin || '');
+        if (!isValidPin(newPin)) {
+            return res.status(400).json({ error: 'PIN must contain exactly 4 digits' });
+        }
+        const result = await db.run(
+            "UPDATE participants SET pin_hash = ? WHERE id = ? AND role != 'child'",
+            hashPin(newPin),
+            req.params.id
+        );
+        if (!result.changes) return res.status(404).json({ error: 'Staff member not found' });
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Groups API
-app.get('/api/groups', async (req, res) => {
+app.get('/api/groups', requireAnyPermission('viewDirectory', 'viewAttendance'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM groups');
         res.json(rows.map(r => JSON.parse(r.data)));
@@ -440,7 +844,7 @@ app.get('/api/groups', async (req, res) => {
     }
 });
 
-app.post('/api/groups', async (req, res) => {
+app.post('/api/groups', requireAnyPermission('editDirectory'), async (req, res) => {
     try {
         const groups = req.body || [];
         const stmt = await db.prepare('INSERT INTO groups (id, data) VALUES (?, ?)');
@@ -463,7 +867,7 @@ app.post('/api/groups', async (req, res) => {
 });
 
 // Activities API
-app.get('/api/activities', async (req, res) => {
+app.get('/api/activities', requireAnyPermission('viewSchedule'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM activities');
         res.json(rows.map(r => JSON.parse(r.data)));
@@ -472,7 +876,7 @@ app.get('/api/activities', async (req, res) => {
     }
 });
 
-app.post('/api/activities', async (req, res) => {
+app.post('/api/activities', requireAnyPermission('editSchedule'), async (req, res) => {
     try {
         const activities = req.body || [];
         const stmt = await db.prepare('INSERT INTO activities (id, data) VALUES (?, ?)');
@@ -495,8 +899,11 @@ app.post('/api/activities', async (req, res) => {
 });
 
 // Generic App State
-app.get('/api/state/:key', async (req, res) => {
+app.get('/api/state/:key', requireAnyPermission('viewSchedule', 'viewSettings', 'manageAccess'), async (req, res) => {
     try {
+        if (!['accessControl', 'menus'].includes(req.params.key)) {
+            return res.status(404).json({ error: 'State key not found' });
+        }
         const row = await db.get('SELECT value FROM app_state WHERE key = ?', req.params.key);
         res.json(row ? JSON.parse(row.value) : null);
     } catch (err) {
@@ -506,6 +913,13 @@ app.get('/api/state/:key', async (req, res) => {
 
 app.post('/api/state/:key', async (req, res) => {
     try {
+        const permissionByKey = {
+            menus: 'editSchedule',
+            accessControl: 'manageAccess'
+        };
+        const permission = permissionByKey[req.params.key];
+        if (!permission) return res.status(404).json({ error: 'State key not found' });
+        if (!req.actor?.permissions?.[permission]) return res.status(403).json({ error: 'Permission denied' });
         const value = req.body;
         await db.run('INSERT OR REPLACE INTO app_state (key, value) VALUES (?, ?)', req.params.key, JSON.stringify(value));
         io.emit('data_updated', { type: 'state', key: req.params.key });
@@ -516,7 +930,7 @@ app.post('/api/state/:key', async (req, res) => {
 });
 
 // Exit Sheets API
-app.get('/api/exit-sheets', async (req, res) => {
+app.get('/api/exit-sheets', requireAnyPermission('viewExitSheet'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM exit_sheets ORDER BY created_at DESC');
         res.json(rows.map(r => JSON.parse(r.data)));
@@ -525,7 +939,7 @@ app.get('/api/exit-sheets', async (req, res) => {
     }
 });
 
-app.post('/api/exit-sheets', async (req, res) => {
+app.post('/api/exit-sheets', requireAnyPermission('editExitSheet'), async (req, res) => {
     try {
         const sheets = req.body || [];
         const stmt = await db.prepare('INSERT INTO exit_sheets (id, data) VALUES (?, ?)');
@@ -547,7 +961,7 @@ app.post('/api/exit-sheets', async (req, res) => {
     }
 });
 
-app.delete('/api/exit-sheets/:id', async (req, res) => {
+app.delete('/api/exit-sheets/:id', requireAnyPermission('editExitSheet'), async (req, res) => {
     try {
         const { id } = req.params;
         const result = await db.run('DELETE FROM exit_sheets WHERE id = ?', id);
@@ -563,7 +977,7 @@ app.delete('/api/exit-sheets/:id', async (req, res) => {
 });
 
 // Incident Sheets API (FEI)
-app.get('/api/incident-sheets', async (req, res) => {
+app.get('/api/incident-sheets', requireAnyPermission('viewIncident'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM incident_sheets ORDER BY created_at DESC');
         res.json(rows.map(r => JSON.parse(r.data)));
@@ -572,7 +986,7 @@ app.get('/api/incident-sheets', async (req, res) => {
     }
 });
 
-app.post('/api/incident-sheets', async (req, res) => {
+app.post('/api/incident-sheets', requireAnyPermission('editIncident'), async (req, res) => {
     try {
         const sheets = req.body || [];
         const stmt = await db.prepare('INSERT INTO incident_sheets (id, data) VALUES (?, ?)');
@@ -594,7 +1008,7 @@ app.post('/api/incident-sheets', async (req, res) => {
     }
 });
 
-app.delete('/api/incident-sheets/:id', async (req, res) => {
+app.delete('/api/incident-sheets/:id', requireAnyPermission('editIncident'), async (req, res) => {
     try {
         const { id } = req.params;
         const result = await db.run('DELETE FROM incident_sheets WHERE id = ?', id);
@@ -610,7 +1024,7 @@ app.delete('/api/incident-sheets/:id', async (req, res) => {
 });
 
 // Meeting Recaps API (Coordination/CR)
-app.get('/api/meeting-recaps', async (req, res) => {
+app.get('/api/meeting-recaps', requireAnyPermission('viewRecap'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM meeting_recaps ORDER BY created_at DESC');
         res.json(rows.map(r => JSON.parse(r.data)));
@@ -619,7 +1033,7 @@ app.get('/api/meeting-recaps', async (req, res) => {
     }
 });
 
-app.post('/api/meeting-recaps', async (req, res) => {
+app.post('/api/meeting-recaps', requireAnyPermission('editRecap'), async (req, res) => {
     try {
         const recaps = req.body || [];
         const stmt = await db.prepare('INSERT INTO meeting_recaps (id, data) VALUES (?, ?)');
@@ -641,7 +1055,7 @@ app.post('/api/meeting-recaps', async (req, res) => {
     }
 });
 
-app.delete('/api/meeting-recaps/:id', async (req, res) => {
+app.delete('/api/meeting-recaps/:id', requireAnyPermission('editRecap'), async (req, res) => {
     try {
         const { id } = req.params;
         const result = await db.run('DELETE FROM meeting_recaps WHERE id = ?', id);
@@ -657,7 +1071,7 @@ app.delete('/api/meeting-recaps/:id', async (req, res) => {
 });
 
 // Inventory API
-app.get('/api/inventory/items', async (req, res) => {
+app.get('/api/inventory/items', requireAnyPermission('viewInventory'), async (req, res) => {
     try {
         const { participantId } = req.query;
         const params = [];
@@ -687,7 +1101,7 @@ app.get('/api/inventory/items', async (req, res) => {
     }
 });
 
-app.post('/api/inventory/items', async (req, res) => {
+app.post('/api/inventory/items', requireAnyPermission('editInventory'), async (req, res) => {
     try {
         const item = req.body || {};
         const pId = item.participant_id || 'unassigned_stock';
@@ -716,7 +1130,7 @@ app.post('/api/inventory/items', async (req, res) => {
     }
 });
 
-app.delete('/api/inventory/items/:id', async (req, res) => {
+app.delete('/api/inventory/items/:id', requireAnyPermission('editInventory'), async (req, res) => {
     try {
         const { id } = req.params;
         await db.run('DELETE FROM inventory_photos WHERE item_id = ?', id);
@@ -729,7 +1143,7 @@ app.delete('/api/inventory/items/:id', async (req, res) => {
     }
 });
 
-app.post('/api/inventory/items/:id/photos', async (req, res) => {
+app.post('/api/inventory/items/:id/photos', requireAnyPermission('editInventory'), async (req, res) => {
     try {
         const { id } = req.params;
         const { participantId, imageBase64 } = req.body || {};
@@ -762,7 +1176,7 @@ app.post('/api/inventory/items/:id/photos', async (req, res) => {
     }
 });
 
-app.delete('/api/inventory/photos/:photoId', async (req, res) => {
+app.delete('/api/inventory/photos/:photoId', requireAnyPermission('editInventory'), async (req, res) => {
     try {
         const { photoId } = req.params;
         const photo = await db.get('SELECT item_id FROM inventory_photos WHERE id = ?', photoId);
@@ -776,7 +1190,7 @@ app.delete('/api/inventory/photos/:photoId', async (req, res) => {
     }
 });
 
-app.post('/api/inventory/search', async (req, res) => {
+app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), async (req, res) => {
     try {
         const { imageBase64, topK = 5 } = req.body || {};
         if (!imageBase64) return res.status(400).json({ error: 'imageBase64 is required' });
@@ -828,7 +1242,7 @@ app.post('/api/inventory/search', async (req, res) => {
     }
 });
 
-app.post('/api/inventory/matches/:id/validate', async (req, res) => {
+app.post('/api/inventory/matches/:id/validate', requireAnyPermission('searchInventoryAI'), async (req, res) => {
     try {
         const { id } = req.params;
         const { itemId, validatedBy } = req.body || {};
@@ -839,7 +1253,7 @@ app.post('/api/inventory/matches/:id/validate', async (req, res) => {
     }
 });
 
-app.post('/api/ai/rewrite-fei', async (req, res) => {
+app.post('/api/ai/rewrite-fei', requireAnyPermission('editIncident'), aiRateLimiter, async (req, res) => {
     try {
         const { text, mode = 'detaille' } = req.body || {};
         const baseText = typeof text === 'string' ? text.trim() : '';
@@ -920,7 +1334,7 @@ app.post('/api/ai/rewrite-fei', async (req, res) => {
     }
 });
 
-app.get('/api/action-logs', async (req, res) => {
+app.get('/api/action-logs', requireAnyPermission('viewLogs'), async (req, res) => {
     try {
         const requestedLimit = Number.parseInt(req.query.limit, 10);
         const limit = Number.isFinite(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 500) : 200;
@@ -936,7 +1350,7 @@ app.get('/api/action-logs', async (req, res) => {
     }
 });
 
-app.delete('/api/action-logs', async (req, res) => {
+app.delete('/api/action-logs', requireAnyPermission('manageAccess'), async (req, res) => {
     try {
         await db.run('DELETE FROM action_logs');
         res.json({ success: true });

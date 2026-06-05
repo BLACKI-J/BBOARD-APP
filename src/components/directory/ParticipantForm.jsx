@@ -1,10 +1,36 @@
-import React, { useState } from 'react';
-import { X, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Sunrise, Sun, Apple, Moon, X, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check, Lock } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../../ui/UiProvider';
+import { useUnsavedGuard } from '../../utils/unsavedGuard';
 
 const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, editingId, groups, canEdit }) => {
     const ui = useUi();
+    const [newMed, setNewMed] = useState('');
+    const [newPrn, setNewPrn] = useState('');
+
+    // Snapshot the form when it opens so we can detect unsaved edits on close.
+    const initialSnapshot = useRef('');
+    useEffect(() => {
+        if (isOpen) initialSnapshot.current = JSON.stringify(formData);
+    }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+    const isDirty = isOpen && JSON.stringify(formData) !== initialSnapshot.current;
+    useUnsavedGuard('participant-form', isDirty);
+
+    const requestClose = async () => {
+        if (isDirty) {
+            const ok = await ui.confirm({
+                title: 'Modifications non enregistrées',
+                message: 'Quitter sans enregistrer ? Les modifications seront perdues.',
+                confirmText: 'Quitter',
+                cancelText: "Continuer l'édition",
+                danger: true
+            });
+            if (!ok) return;
+        }
+        onClose();
+    };
+
     if (!isOpen) return null;
 
     const pocketMoney = formData.pocketMoney || { initial: 0, current: 0, history: [] };
@@ -56,34 +82,34 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
     const roleColor = formData.role === 'animator' ? 'var(--secondary-color)' : (formData.role === 'direction' ? 'var(--accent-color)' : 'var(--primary-color)');
 
     return (
-        <div className="modal-overlay animate-fade-in" onClick={(e) => e.target === e.currentTarget && onClose()} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', zIndex: 1000 }}>
-            <div className="modal-content animate-scale-in" style={{ 
-                maxWidth: '940px', 
-                width: '100%', 
-                borderRadius: '32px', 
-                background: 'white', 
-                overflow: 'hidden', 
-                display: 'flex', 
+        <div className="modal-overlay animate-fade-in" onClick={(e) => e.target === e.currentTarget && requestClose()} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', zIndex: 1000 }}>
+            <div className="modal-content animate-scale-in" style={{
+                maxWidth: '940px',
+                width: '100%',
+                borderRadius: '32px',
+                background: 'white',
+                overflow: 'hidden',
+                display: 'flex',
                 flexDirection: 'row',
                 boxShadow: '0 25px 80px oklch(0% 0 0 / 0.25)',
                 border: '1.5px solid var(--glass-border)'
             }}>
 
                 {/* Sidebar Context */}
-                <div style={{ 
-                    width: '320px', 
-                    background: `linear-gradient(180deg, ${roleColor} 0%, oklch(from ${roleColor} 80% 0.1 h) 100%)`, 
-                    padding: '3rem 2.5rem', 
-                    color: 'white', 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    gap: '2rem' 
+                <div style={{
+                    width: '320px',
+                    background: `linear-gradient(180deg, ${roleColor} 0%, oklch(from ${roleColor} 80% 0.1 h) 100%)`,
+                    padding: '3rem 2.5rem',
+                    color: 'white',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '2rem'
                 }} className="hide-mobile">
                     <div style={{ width: '64px', height: '64px', background: 'rgba(255,255,255,0.2)', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {editingId ? <Edit2 size={32} strokeWidth={2.5} /> : <Plus size={32} strokeWidth={2.5} />}
                     </div>
                     <div>
-                        <h3 style={{ fontSize: '2rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', lineHeight: '1.1', letterSpacing: '-0.04em', margin: 0 }}>
+                        <h3 style={{ fontSize: '2rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', lineHeight: '1.1', letterSpacing: '-0.04em', margin: 0 }}>
                             {editingId ? 'Modifier le membre' : 'Nouveau membre'}
                         </h3>
                         <p style={{ marginTop: '1rem', fontSize: '1rem', fontWeight: '700', color: 'rgba(255,255,255,0.8)', lineHeight: '1.5' }}>
@@ -104,7 +130,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                 {/* Scrollable Form */}
                 <div style={{ flex: 1, maxHeight: '90vh', overflowY: 'auto', padding: '3rem' }} className="no-scrollbar">
                     <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                        
+
                         {/* Role Selection */}
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <label className="form-label">Rôle au sein de la structure</label>
@@ -114,11 +140,11 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                     { id: 'animator', label: 'Anim.', icon: <Users size={18} /> },
                                     { id: 'direction', label: 'Dir.', icon: <Shield size={18} /> }
                                 ].map(r => (
-                                    <button 
+                                    <button
                                         key={r.id}
-                                        type="button" 
+                                        type="button"
                                         onClick={() => setFormData({ ...formData, role: r.id })}
-                                        style={{ 
+                                        style={{
                                             display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.625rem',
                                             padding: '0.75rem', borderRadius: '14px', border: 'none', cursor: 'pointer',
                                             fontWeight: '950', fontSize: '0.85rem', transition: 'all 0.3s',
@@ -136,12 +162,12 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label className="form-label">Prénom</label>
-                                <input type="text" required value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })} 
+                                <input type="text" required value={formData.firstName} onChange={e => setFormData({ ...formData, firstName: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label className="form-label">Nom</label>
-                                <input type="text" required value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })} 
+                                <input type="text" required value={formData.lastName} onChange={e => setFormData({ ...formData, lastName: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                             </div>
                         </div>
@@ -149,7 +175,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '1.25rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label className="form-label">Date de Naissance</label>
-                                <input type="date" value={formData.birthDate || ''} onChange={e => setFormData({ ...formData, birthDate: e.target.value })} 
+                                <input type="date" value={formData.birthDate || ''} onChange={e => setFormData({ ...formData, birthDate: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -163,53 +189,313 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                         </div>
 
                         {formData.role === 'child' && (
-                             <div 
-                                onClick={() => setFormData({ ...formData, healthDocProvided: !formData.healthDocProvided })}
-                                style={{ 
-                                    background: formData.healthDocProvided ? 'oklch(62% 0.18 145 / 0.08)' : 'var(--bg-secondary)', 
-                                    padding: '1.25rem', borderRadius: '20px', border: '1.5px solid', 
-                                    borderColor: formData.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)',
-                                    display: 'flex', alignItems: 'center', gap: '1.25rem', cursor: 'pointer', transition: 'all 0.3s'
-                                }}>
-                                <div style={{ 
-                                    width: '32px', height: '32px', borderRadius: '10px', 
-                                    background: formData.healthDocProvided ? 'var(--success-color)' : 'white',
-                                    color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    border: '1.5px solid', borderColor: formData.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)'
-                                }}>
-                                    {formData.healthDocProvided && <Check size={20} strokeWidth={3} />}
+                            <>
+                                <div
+                                    onClick={() => setFormData({ ...formData, healthDocProvided: !formData.healthDocProvided })}
+                                    style={{
+                                        background: formData.healthDocProvided ? 'oklch(62% 0.18 145 / 0.08)' : 'var(--bg-secondary)',
+                                        padding: '1.25rem', borderRadius: '20px', border: '1.5px solid',
+                                        borderColor: formData.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)',
+                                        display: 'flex', alignItems: 'center', gap: '1.25rem', cursor: 'pointer', transition: 'all 0.3s'
+                                    }}>
+                                    <div style={{
+                                        width: '32px', height: '32px', borderRadius: '10px',
+                                        background: formData.healthDocProvided ? 'var(--success-color)' : 'white',
+                                        color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        border: '1.5px solid', borderColor: formData.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)'
+                                    }}>
+                                        {formData.healthDocProvided && <Check size={20} strokeWidth={3} />}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: '950', fontSize: '0.95rem', color: formData.healthDocProvided ? 'var(--success-color)' : 'var(--text-main)' }}>Dossier Sanitaire Reçu</div>
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700' }}>Cochez si la fiche médicale signée est en votre possession.</div>
+                                    </div>
                                 </div>
-                                <div>
-                                    <div style={{ fontWeight: '950', fontSize: '0.95rem', color: formData.healthDocProvided ? 'var(--success-color)' : 'var(--text-main)' }}>Dossier Sanitaire Reçu</div>
-                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '700' }}>Cochez si la fiche médicale signée est en votre possession.</div>
+
+                                {/* Medication Section */}
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem', background: 'oklch(62% 0.18 232 / 0.04)', borderRadius: '24px', border: '1.5px solid oklch(62% 0.18 232 / 0.15)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                        <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'oklch(62% 0.18 232 / 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'oklch(55% 0.18 232)' }}>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m10.5 20.5 10-10a4.95 4.95 0 1 0-7-7l-10 10a4.95 4.95 0 1 0 7 7Z"/><path d="m8.5 8.5 7 7"/></svg>
+                                        </div>
+                                        <div>
+                                            <div style={{ fontWeight: '950', fontSize: '0.9rem', color: 'oklch(45% 0.18 232)' }}>Traitement Médical</div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700' }}>Renseignez le traitement et les horaires de prise</div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <label className="form-label">Médicament(s) Quotidien(s)</label>
+                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="Ex: Ventoline 100μg..."
+                                                value={newMed}
+                                                onChange={e => setNewMed(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (newMed.trim()) {
+                                                            const currentMeds = formData.medications || (formData.dailyMeds ? formData.dailyMeds.split(/,|\n/).map(s => s.trim()).filter(Boolean).map(name => ({name, slots: formData.medSlots || ['Matin', 'Midi', 'Goûter', 'Soir']})) : []);
+                                                            setFormData({ ...formData, medications: [...currentMeds, { name: newMed.trim(), slots: [] }] });
+                                                            setNewMed('');
+                                                        }
+                                                    }
+                                                }}
+                                                className="glass-input"
+                                                style={{ flex: 1, background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }}
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    if (newMed.trim()) {
+                                                        const currentMeds = formData.medications || (formData.dailyMeds ? formData.dailyMeds.split(/,|\n/).map(s => s.trim()).filter(Boolean).map(name => ({name, slots: formData.medSlots || ['Matin', 'Midi', 'Goûter', 'Soir']})) : []);
+                                                        setFormData({ ...formData, medications: [...currentMeds, { name: newMed.trim(), slots: [] }] });
+                                                        setNewMed('');
+                                                    }
+                                                }}
+                                                style={{ 
+                                                    background: 'oklch(55% 0.18 232)', color: 'white', border: 'none', 
+                                                    borderRadius: '16px', padding: '0 1.5rem', fontWeight: '950', 
+                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' 
+                                                }}
+                                            >
+                                                <Plus size={18} strokeWidth={3} /> Ajouter
+                                            </button>
+                                        </div>
+                                        
+                                        {(() => {
+                                            const currentMeds = formData.medications || (formData.dailyMeds ? formData.dailyMeds.split(/,|\n/).map(s => s.trim()).filter(Boolean).map(name => ({name, slots: formData.medSlots || ['Matin', 'Midi', 'Goûter', 'Soir']})) : []);
+                                            if (currentMeds.length === 0) return null;
+                                            
+                                            return (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                    {currentMeds.map((med, idx) => (
+                                                        <div key={idx} style={{ 
+                                                            display: 'flex', flexDirection: 'column', gap: '0.5rem',
+                                                            background: 'white', padding: '1rem', borderRadius: '16px',
+                                                            border: '1.5px solid var(--glass-border)'
+                                                        }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                <span style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)' }}>{med.name}</span>
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const list = [...currentMeds];
+                                                                        list.splice(idx, 1);
+                                                                        setFormData({ ...formData, medications: list });
+                                                                    }}
+                                                                    style={{ 
+                                                                        background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)', 
+                                                                        border: 'none', borderRadius: '8px', width: '28px', height: '28px',
+                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                                                                    }}
+                                                                >
+                                                                    <Trash2 size={14} strokeWidth={2.5} />
+                                                                </button>
+                                                            </div>
+                                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                                {['Matin', 'Midi', 'Goûter', 'Soir'].map(slotId => {
+                                                                    const isActive = med.slots.includes(slotId);
+                                                                    return (
+                                                                        <button
+                                                                            key={slotId}
+                                                                            type="button"
+                                                                            onClick={() => {
+                                                                                const list = [...currentMeds];
+                                                                                const m = list[idx];
+                                                                                if (isActive) {
+                                                                                    m.slots = m.slots.filter(s => s !== slotId);
+                                                                                } else {
+                                                                                    m.slots = [...m.slots, slotId];
+                                                                                }
+                                                                                setFormData({ ...formData, medications: list });
+                                                                            }}
+                                                                            style={{
+                                                                                padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800',
+                                                                                border: `1.5px solid ${isActive ? 'oklch(55% 0.18 232)' : 'var(--glass-border)'}`,
+                                                                                background: isActive ? 'oklch(55% 0.18 232)' : 'transparent',
+                                                                                color: isActive ? 'white' : 'var(--text-muted)',
+                                                                                cursor: 'pointer', transition: 'all 0.2s',
+                                                                                display: 'flex', alignItems: 'center', gap: '4px'
+                                                                            }}
+                                                                        >
+                                                                            {isActive && <Check size={12} strokeWidth={4} />}
+                                                                            {slotId}
+                                                                        </button>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+
+                                    {/* Si Besoin Section */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--glass-border)' }}>
+                                        <label className="form-label" style={{ color: 'oklch(52% 0.22 145)' }}>Traitement "Si Besoin" (PRN)</label>
+                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="Ex: Spasfon si douleurs..."
+                                                value={newPrn}
+                                                onChange={e => setNewPrn(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        e.preventDefault();
+                                                        if (newPrn.trim()) {
+                                                            const current = formData.sibesoin ? formData.sibesoin.trim() : '';
+                                                            setFormData({ ...formData, sibesoin: current ? `${current}\n${newPrn.trim()}` : newPrn.trim() });
+                                                            setNewPrn('');
+                                                        }
+                                                    }
+                                                }}
+                                                className="glass-input"
+                                                style={{ flex: 1, background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }}
+                                            />
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    if (newPrn.trim()) {
+                                                        const current = formData.sibesoin ? formData.sibesoin.trim() : '';
+                                                        setFormData({ ...formData, sibesoin: current ? `${current}\n${newPrn.trim()}` : newPrn.trim() });
+                                                        setNewPrn('');
+                                                    }
+                                                }}
+                                                style={{ 
+                                                    background: 'oklch(62% 0.22 145)', color: 'white', border: 'none', 
+                                                    borderRadius: '16px', padding: '0 1.5rem', fontWeight: '950', 
+                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' 
+                                                }}
+                                            >
+                                                <Plus size={18} strokeWidth={3} /> Ajouter
+                                            </button>
+                                        </div>
+                                        
+                                        {formData.sibesoin && formData.sibesoin.trim() !== '' && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                                {formData.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean).map((med, idx) => (
+                                                    <div key={idx} style={{ 
+                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                        background: 'white', padding: '0.75rem 1rem', borderRadius: '12px',
+                                                        border: '1.5px solid oklch(62% 0.22 145 / 0.3)'
+                                                    }}>
+                                                        <span style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--text-main)' }}>{med}</span>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => {
+                                                                const list = formData.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+                                                                list.splice(idx, 1);
+                                                                setFormData({ ...formData, sibesoin: list.join('\n') });
+                                                            }}
+                                                            style={{ 
+                                                                background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)', 
+                                                                border: 'none', borderRadius: '8px', width: '28px', height: '28px',
+                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            <Trash2 size={14} strokeWidth={2.5} />
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                        <label className="form-label">Créneaux de prise</label>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
+                                            {[
+                                                { id: 'Matin', label: 'Matin', icon: <Sunrise size={16} /> },
+                                                { id: 'Midi', label: 'Midi', icon: <Sun size={16} /> },
+                                                { id: 'Goûter', label: 'Goûter', icon: <Apple size={16} /> },
+                                                { id: 'Soir', label: 'Soir', icon: <Moon size={16} /> }
+                                            ].map(slot => {
+                                                const slots = formData.medSlots || [];
+                                                const isActive = slots.includes(slot.id);
+                                                return (
+                                                    <button
+                                                        key={slot.id}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            const current = formData.medSlots || [];
+                                                            const next = isActive
+                                                                ? current.filter(s => s !== slot.id)
+                                                                : [...current, slot.id];
+                                                            setFormData({ ...formData, medSlots: next });
+                                                        }}
+                                                        style={{
+                                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                                                            padding: '0.85rem 0.5rem', borderRadius: '16px', border: '2px solid',
+                                                            cursor: 'pointer', transition: 'all 0.2s', fontWeight: '950', fontSize: '0.75rem',
+                                                            borderColor: isActive ? 'oklch(55% 0.18 232)' : 'var(--glass-border)',
+                                                            background: isActive ? 'oklch(55% 0.18 232)' : 'white',
+                                                            color: isActive ? 'white' : 'var(--text-muted)',
+                                                            boxShadow: isActive ? '0 4px 16px oklch(55% 0.18 232 / 0.3)' : 'none',
+                                                            transform: isActive ? 'translateY(-2px)' : 'none'
+                                                        }}
+                                                    >
+                                                        <span style={{ fontSize: '1.25rem' }}>{slot.icon}</span>
+                                                        {slot.label}
+                                                        {isActive && <Check size={12} strokeWidth={3} />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                        {(formData.medSlots || []).length === 0 && (formData.dailyMeds || '').trim() !== '' && (
+                                            <div style={{ fontSize: '0.75rem', color: 'oklch(55% 0.18 45)', fontWeight: '800', padding: '0.5rem 1rem', background: 'oklch(62% 0.18 45 / 0.08)', borderRadius: '10px' }}>
+                                                Sélectionnez au moins un créneau pour que le traitement apparaisse dans le suivi.
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
+                            </>
                         )}
 
                         {/* Animator / Director Sections */}
-                        {(formData.role === 'animator' || formData.role === 'direction') && (
+                        {formData.role !== 'child' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1.75rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                         <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><GraduationCap size={14} /> Formation</label>
-                                        <input type="text" placeholder="BAFA, BAFD..." value={formData.training || ''} onChange={e => setFormData({ ...formData, training: e.target.value })} 
+                                        <input type="text" placeholder="BAFA, BAFD..." value={formData.training || ''} onChange={e => setFormData({ ...formData, training: e.target.value })}
                                             className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                         <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Phone size={14} /> Contact</label>
-                                        <input type="tel" placeholder="06..." value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })} 
+                                        <input type="tel" placeholder="06..." value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                             className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={14} /> Adresse Résidentielle</label>
-                                    <input type="text" placeholder="Rue, Ville, Code Postal..." value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })} 
+                                    <input type="text" placeholder="Rue, Ville, Code Postal..." value={formData.address || ''} onChange={e => setFormData({ ...formData, address: e.target.value })}
                                         className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><ShieldAlert size={14} /> Contact d'Urgence (Nom/Tél)</label>
-                                    <input type="text" placeholder="Prénom Nom - 06..." value={formData.emergencyContact || ''} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })} 
+                                    <input type="text" placeholder="Prénom Nom - 06..." value={formData.emergencyContact || ''} onChange={e => setFormData({ ...formData, emergencyContact: e.target.value })}
                                         className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Lock size={14} /> Code PIN de connexion (4 chiffres)</label>
+                                    <input 
+                                        type="password" 
+                                        pattern="[0-9]{4}"
+                                        maxLength={4}
+                                        inputMode="numeric"
+                                        placeholder={editingId ? "Laisser vide pour conserver le PIN existant" : "Ex: 1234"}
+                                        required={!editingId}
+                                        value={formData.pin || ''} 
+                                        onChange={e => {
+                                            const val = e.target.value.replace(/\D/g, '');
+                                            setFormData({ ...formData, pin: val });
+                                        }}
+                                        className="glass-input" 
+                                        style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} 
+                                    />
                                 </div>
                             </div>
                         )}
@@ -217,12 +503,12 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label className="form-label">Allergies Connues</label>
-                                <textarea rows="2" placeholder="Aucune allergie..." value={formData.allergies || ''} onChange={e => setFormData({ ...formData, allergies: e.target.value })} 
+                                <textarea rows="2" placeholder="Aucune allergie..." value={formData.allergies || ''} onChange={e => setFormData({ ...formData, allergies: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label className="form-label">Remarques / Régime</label>
-                                <textarea rows="2" placeholder="Notes diverses..." value={formData.constraints || ''} onChange={e => setFormData({ ...formData, constraints: e.target.value })} 
+                                <textarea rows="2" placeholder="Notes diverses..." value={formData.constraints || ''} onChange={e => setFormData({ ...formData, constraints: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
                             </div>
                         </div>
@@ -242,7 +528,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
                                     <div style={{ flex: 1 }}>
                                         <label className="form-label" style={{ marginBottom: '8px' }}>Dépôt Initial (€)</label>
-                                        <input type="number" step="0.5" value={pocketMoney.initial} onChange={handleInitialMoneyUpdate} 
+                                        <input type="number" step="0.5" value={pocketMoney.initial} onChange={handleInitialMoneyUpdate}
                                             className="glass-input" style={{ width: '100%', background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.75rem 1rem', borderRadius: '14px', fontWeight: '800' }} />
                                     </div>
                                     <button type="button" onClick={addPocketExpense} className="btn btn-primary" style={{ marginTop: 'auto', padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '950', gap: '0.5rem', background: 'var(--success-color)', boxShadow: 'none' }}>
@@ -272,7 +558,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                         )}
 
                         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '1rem', marginTop: '1rem', paddingTop: '2.5rem', borderTop: '1.5px solid var(--glass-border)' }}>
-                            <button type="button" onClick={onClose} className="btn btn-secondary" style={{ padding: '1rem 2rem', fontWeight: '900', borderRadius: '16px' }}>Annuler</button>
+                            <button type="button" onClick={requestClose} className="btn btn-secondary" style={{ padding: '1rem 2rem', fontWeight: '900', borderRadius: '16px' }}>Annuler</button>
                             <button type="submit" className="btn btn-primary" style={{ padding: '1rem 3rem', fontWeight: '950', borderRadius: '16px', fontSize: '1rem' }}>{editingId ? 'Mettre à jour la fiche' : 'Créer le membre'}</button>
                         </div>
                     </form>

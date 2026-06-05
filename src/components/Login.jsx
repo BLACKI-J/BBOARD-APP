@@ -1,27 +1,26 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { UserCircle, Lock, ChevronRight, AlertCircle, Zap, ShieldCheck } from 'lucide-react';
 
-export default function Login({ staffUsers, onLogin, adminPin, connectionStatus }) {
+export default function Login({ staffUsers, onLogin, connectionStatus }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [pin, setPin] = useState('');
     const [error, setError] = useState(false);
     const [showPinEntry, setShowPinEntry] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handlePinChange = (digit) => {
-        if (pin.length < 4) {
+        if (!isSubmitting && pin.length < 4) {
             const newPin = pin + digit;
             setPin(newPin);
             if (newPin.length === 4) {
-                const targetPin = selectedUser?.pin || adminPin;
-                if (newPin === targetPin) {
-                    onLogin(selectedUser);
-                } else {
+                setIsSubmitting(true);
+                onLogin(selectedUser, newPin).catch(() => {
                     setError(true);
                     setTimeout(() => {
                         setPin('');
                         setError(false);
                     }, 800);
-                }
+                }).finally(() => setIsSubmitting(false));
             }
         }
     };
@@ -68,7 +67,7 @@ export default function Login({ staffUsers, onLogin, adminPin, connectionStatus 
                         <div style={{ fontSize: '0.8rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>
                             Choisir un profil
                         </div>
-                        <div style={{ 
+                        <div style={{
                             maxHeight: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem',
                             paddingRight: '0.5rem'
                         }} className="no-scrollbar">
@@ -104,13 +103,13 @@ export default function Login({ staffUsers, onLogin, adminPin, connectionStatus 
                     </div>
                 ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center' }} className="animate-fade-in">
-                        <button 
-                            onClick={() => { setShowPinEntry(false); setPin(''); setError(false); }}
+                        <button
+                            onClick={() => { setShowPinEntry(false); setPin(''); setError(false); setIsSubmitting(false); }}
                             style={{ alignSelf: 'flex-start', fontSize: '0.75rem', fontWeight: '950', color: 'var(--primary-color)', cursor: 'pointer' }}
                         >
                             ← Retour aux profils
                         </button>
-                        
+
                         <div style={{ textAlign: 'center' }}>
                             <div style={{ fontSize: '1rem', fontWeight: '950', color: 'var(--text-main)' }}>{selectedUser.firstName}</div>
                             <div style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-muted)' }}>Code PIN requis</div>

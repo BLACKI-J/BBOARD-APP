@@ -536,7 +536,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         <div style={{ width: '40px', height: '5px', background: 'var(--bg-secondary)', borderRadius: '10px', margin: '1rem auto', opacity: 0.5 }} />
                         <div style={{ padding: '0 2rem 2rem 2rem' }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', fontFamily: 'Sora, sans-serif' }}>Scan & Ajout</h3>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Scan & Ajout</h3>
                                 <button className="btn-icon-ref" onClick={() => setIsControlHubOpen(false)}><X size={24} /></button>
                             </div>
                             <ControlHub 

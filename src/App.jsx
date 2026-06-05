@@ -1,10 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
-import { Users, Calendar, Map as MapIcon, Contact, Settings as SettingsIcon, Menu, ClipboardList, FileText, Bell, ClipboardCheck, AlertCircle, AlertTriangle, Package, Utensils, Zap, Sparkles, ChevronDown, UserCircle } from 'lucide-react';
+import { Calendar, Contact, Settings as SettingsIcon, Menu, ClipboardList, FileText, Bell, ClipboardCheck, AlertCircle, AlertTriangle, Package, Utensils, Zap, Sparkles, ChevronDown, Activity, LayoutDashboard } from 'lucide-react';
 import { io } from 'socket.io-client';
-import Sidebar from './components/Sidebar';
 import Login from './components/Login';
+import { useUi } from './ui/UiProvider';
+import { hasUnsavedChanges } from './utils/unsavedGuard';
+import PullToRefresh from './components/common/PullToRefresh';
+import SyncStatus from './components/common/SyncStatus';
+import useAppStore from './store/useAppStore';
 
-const loadSeatMap = () => import('./components/SeatMap');
+const loadToday = () => import('./components/Today');
 const loadSchedule = () => import('./components/Schedule');
 const loadDirectory = () => import('./components/Directory');
 const loadSettings = () => import('./components/Settings');
@@ -13,8 +17,9 @@ const loadExitSheet = () => import('./components/ExitSheet');
 const loadAttendance = () => import('./components/Attendance');
 const loadIncidentSheet = () => import('./components/IncidentSheet');
 const loadInventory = () => import('./components/Inventory');
+const loadHealthCenter = () => import('./components/HealthCenter');
 
-const SeatMap = React.lazy(loadSeatMap);
+const Today = React.lazy(loadToday);
 const Schedule = React.lazy(loadSchedule);
 const Directory = React.lazy(loadDirectory);
 const Settings = React.lazy(loadSettings);
@@ -23,14 +28,15 @@ const ExitSheet = React.lazy(loadExitSheet);
 const Attendance = React.lazy(loadAttendance);
 const IncidentSheet = React.lazy(loadIncidentSheet);
 const Inventory = React.lazy(loadInventory);
+const HealthCenter = React.lazy(loadHealthCenter);
 
 const API_URL = '/api';
 
 const Logo = () => (
     <div style={{ position: 'relative', width: '38px', height: '38px', flexShrink: 0 }}>
-        <img src="/logo/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px', background: 'white' }} 
+        <img src="/logo/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '12px', background: 'white' }}
              onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} />
-        
+
         <div style={{
             display: 'none', position: 'absolute', inset: 0,
             alignItems: 'center', justifyContent: 'center', background: 'var(--primary-gradient)',
@@ -47,7 +53,7 @@ const Logo = () => (
 );
 
 const TAB_TITLES = {
-    seatmap: 'Transports',
+    today: "Aujourd'hui",
     schedule: 'Planning',
     exitsheet: 'Fiche de sortie',
     incident: 'FEI',
@@ -55,27 +61,30 @@ const TAB_TITLES = {
     attendance: 'Pointage',
     inventory: 'Matériel',
     directory: 'Annuaire',
-    settings: 'Paramètres'
+    settings: 'Paramètres',
+    health: 'Santé'
 };
 
 const defaultAccessControl = {
     hiddenSections: {
-        seatmap: false, schedule: false, exitsheet: false, incident: false,
-        recap: false, attendance: false, inventory: false, directory: false
+        today: false, schedule: false, exitsheet: false, incident: false,
+        recap: false, attendance: false, inventory: false, directory: false, health: false
     },
     rolePermissions: {
         direction: {
-            viewSeatmap: true, editSeatmap: true, viewSchedule: true, editSchedule: true,
+            viewSchedule: true, editSchedule: true,
             viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
             viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
+            viewHealth: true, editHealth: true,
             searchInventoryAI: true, viewSettings: true, manageUsers: true, manageAccess: true, viewLogs: true
         },
         animator: {
-            viewSeatmap: true, editSeatmap: true, viewSchedule: true, editSchedule: true,
+            viewSchedule: true, editSchedule: true,
             viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
             viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
+            viewHealth: true, editHealth: true,
             searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
         }
     },
@@ -97,21 +106,21 @@ function mergeAccessControl(raw) {
 }
 
 const sectionPermissionMap = {
-    seatmap: 'viewSeatmap', schedule: 'viewSchedule', exitsheet: 'viewExitSheet',
+    schedule: 'viewSchedule', exitsheet: 'viewExitSheet',
     incident: 'viewIncident', recap: 'viewRecap', attendance: 'viewAttendance',
-    inventory: 'viewInventory', directory: 'viewDirectory'
+    inventory: 'viewInventory', directory: 'viewDirectory', health: 'viewHealth'
 };
 
 const tabPreloaders = {
-    seatmap: loadSeatMap, schedule: loadSchedule, exitsheet: loadExitSheet,
+    today: loadToday, schedule: loadSchedule, exitsheet: loadExitSheet,
     incident: loadIncidentSheet, recap: loadMeetingRecap, attendance: loadAttendance,
-    inventory: loadInventory, directory: loadDirectory, settings: loadSettings
+    inventory: loadInventory, directory: loadDirectory, settings: loadSettings, health: loadHealthCenter
 };
 
 const nextLikelyTab = {
-    seatmap: 'schedule', schedule: 'exitsheet', exitsheet: 'incident',
+    today: 'schedule', schedule: 'exitsheet', exitsheet: 'incident',
     incident: 'recap', recap: 'attendance', attendance: 'directory',
-    directory: 'inventory', inventory: 'seatmap'
+    directory: 'inventory', inventory: 'today'
 };
 
 class ErrorBoundary extends React.Component {
@@ -123,7 +132,7 @@ class ErrorBoundary extends React.Component {
             return (
                 <div style={{ padding: '3rem', background: 'var(--bg-secondary)', color: 'var(--danger-color)', height: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', alignItems: 'center', justifyContent: 'center' }}>
                     <AlertTriangle size={64} />
-                    <h2 style={{ fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Sora' }}>Interruption du service</h2>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque' }}>Interruption du service</h2>
                     <details style={{ whiteSpace: 'pre-wrap', fontFamily: 'monospace', background: 'white', padding: '1.5rem', border: '1.5px solid var(--glass-border)', borderRadius: '24px', maxWidth: '800px', width: '100%', maxHeight: '400px', overflow: 'auto' }}>
                         <summary style={{ cursor: 'pointer', fontWeight: '950' }}>{this.state.error?.toString()}</summary>
                         <div style={{ marginTop: '1rem', fontSize: '13px', lineHeight: '1.6', opacity: 0.7 }}>{this.state.info?.componentStack}</div>
@@ -137,43 +146,42 @@ class ErrorBoundary extends React.Component {
 }
 
 export default function App() {
+    const ui = useUi();
     const isDataLoaded = useRef(false);
-    const ignoreNextSocketUpdate = useRef(false);
-    const [activeTab, setActiveTab] = useState(() => localStorage.getItem('colo-active-tab') || 'schedule');
-    const [groups, setGroups] = useState(() => {
-        const saved = localStorage.getItem('colo-groups');
-        try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
-    });
-    const [participants, setParticipants] = useState(() => {
-        const saved = localStorage.getItem('colo-participants');
-        try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
-    });
-    const [activities, setActivities] = useState(() => {
-        const saved = localStorage.getItem('colo-activities');
-        try { return saved ? JSON.parse(saved) : []; } catch (e) { return []; }
-    });
-    const [incidentSheets, setIncidentSheets] = useState([]);
-    const [exitSheets, setExitSheets] = useState([]);
-    const [meetingRecaps, setMeetingRecaps] = useState([]);
-    const [inventoryItems, setInventoryItems] = useState([]);
-    const [savedViews, setSavedViews] = useState(() => {
-        const saved = localStorage.getItem('colo-saved-views');
-        if (saved) try { return JSON.parse(saved); } catch (e) { console.error(e); }
-        return {};
-    });
-    const [currentViewName, setCurrentViewName] = useState(() => localStorage.getItem('colo-current-view-name') || '');
+    const refreshDataRef = useRef(null);
+    const [activeTab, setActiveTab] = useState(() => localStorage.getItem('colo-active-tab') || 'today');
+    const groups = useAppStore(s => s.groups);
+    const setGroups = useAppStore(s => s.setGroups);
+    const participants = useAppStore(s => s.participants);
+    const setParticipants = useAppStore(s => s.setParticipants);
+    const activities = useAppStore(s => s.activities);
+    const setActivities = useAppStore(s => s.setActivities);
+    const incidentSheets = useAppStore(s => s.incidentSheets);
+    const setIncidentSheets = useAppStore(s => s.setIncidentSheets);
+    const exitSheets = useAppStore(s => s.exitSheets);
+    const setExitSheets = useAppStore(s => s.setExitSheets);
+    const meetingRecaps = useAppStore(s => s.meetingRecaps);
+    const setMeetingRecaps = useAppStore(s => s.setMeetingRecaps);
+    const inventoryItems = useAppStore(s => s.inventoryItems);
+    const setInventoryItems = useAppStore(s => s.setInventoryItems);
+    const menus = useAppStore(s => s.menus);
+    const setMenus = useAppStore(s => s.setMenus);
 
     const [isNavOpen, setIsNavOpen] = useState(false);
     const [isAlertsOpen, setIsAlertsOpen] = useState(false);
     const [isAdminMode, setIsAdminMode] = useState(() => localStorage.getItem('colo-admin-mode') === 'true');
     const [isAttendanceEnabled, setIsAttendanceEnabled] = useState(() => localStorage.getItem('colo-attendance-enabled') === 'true');
-    const [adminPin, setAdminPin] = useState(() => localStorage.getItem('colo-admin-pin') || '1234');
     const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'error'
     const [retryCount, setRetryCount] = useState(0);
+    const [lastSyncAt, setLastSyncAt] = useState(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [staffUsers, setStaffUsers] = useState([]);
+    const [sessionUser, setSessionUser] = useState(null);
+    const [authChecked, setAuthChecked] = useState(false);
 
     const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-    const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem('colo-authenticated') === 'true');
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const isMobile = windowWidth < 1024;
 
     useEffect(() => {
@@ -182,35 +190,22 @@ export default function App() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    const [accessControl, setAccessControl] = useState(() => {
-        const saved = localStorage.getItem('colo-access-control');
-        try { return saved ? mergeAccessControl(JSON.parse(saved)) : defaultAccessControl; } catch (e) { return defaultAccessControl; }
-    });
-    const [activeUserId, setActiveUserId] = useState(() => localStorage.getItem('colo-active-user-id') || 'director');
-
-    const staffUsers = useMemo(() => {
-        const staff = (participants || []).filter((p) => p && (p.role === 'animator' || p.role === 'direction'));
-        return [{ id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction', pin: adminPin }, ...staff];
-    }, [participants]);
+    const [accessControl, setAccessControl] = useState(defaultAccessControl);
+    const [activeUserId, setActiveUserId] = useState('');
 
     const activeUser = useMemo(() => {
-        return staffUsers.find((u) => u.id === activeUserId) || staffUsers[0] || { id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction' };
-    }, [staffUsers, activeUserId]);
+        return sessionUser || staffUsers.find((u) => u.id === activeUserId) || { id: '', firstName: '', lastName: '', role: 'animator' };
+    }, [staffUsers, activeUserId, sessionUser]);
 
     const permissions = useMemo(() => {
-        const role = activeUser?.role === 'direction' ? 'direction' : 'animator';
-        const base = { ...(accessControl.rolePermissions?.[role] || defaultAccessControl.rolePermissions[role]) };
+        const role = activeUser?.role || 'animator';
+        const base = { ...(accessControl.rolePermissions?.[role] || accessControl.rolePermissions?.['animator'] || defaultAccessControl.rolePermissions.animator) };
         const userOverride = accessControl.userPermissions?.[activeUser?.id] || {};
         if (!!accessControl.disabledUsers?.[activeUser?.id]) return Object.fromEntries(Object.keys(base).map((k) => [k, false]));
         return { ...base, ...userOverride };
     }, [activeUser, accessControl]);
 
-    const actorHeaders = useMemo(() => ({
-        'Content-Type': 'application/json',
-        'x-actor-id': activeUser?.id || 'unknown',
-        'x-actor-name': `${activeUser?.firstName || ''} ${activeUser?.lastName || ''}`.trim() || 'Unknown',
-        'x-actor-role': activeUser?.role || 'unknown'
-    }), [activeUser]);
+    const actorHeaders = useMemo(() => ({ 'Content-Type': 'application/json' }), []);
 
     const canAccessSection = useCallback((sectionId) => {
         if (accessControl.hiddenSections?.[sectionId]) return false;
@@ -221,8 +216,10 @@ export default function App() {
 
     const navItems = useMemo(() => {
         const all = [
+            { id: 'today', label: "Aujourd'hui", icon: <LayoutDashboard size={22} strokeWidth={2.5} /> },
             { id: 'schedule', label: 'Planning', icon: <Calendar size={22} strokeWidth={2.5} /> },
             { id: 'exitsheet', label: 'Fiche de sortie', icon: <FileText size={22} strokeWidth={2.5} /> },
+            { id: 'health', label: 'Santé', icon: <Activity size={22} strokeWidth={2.5} /> },
             { id: 'incident', label: 'FEI', icon: <AlertTriangle size={22} strokeWidth={2.5} /> },
             { id: 'recap', label: 'Coordination', icon: <ClipboardList size={22} strokeWidth={2.5} /> },
             { id: 'attendance', label: 'Pointage', icon: <ClipboardCheck size={22} strokeWidth={2.5} /> },
@@ -238,20 +235,86 @@ export default function App() {
     }, [activeTab, permissions.viewSettings, canAccessSection, navItems]);
 
     useEffect(() => { localStorage.setItem('colo-active-tab', activeTab); }, [activeTab]);
-    useEffect(() => { localStorage.setItem('colo-active-user-id', activeUserId); }, [activeUserId]);
-    useEffect(() => { localStorage.setItem('colo-access-control', JSON.stringify(accessControl)); }, [accessControl]);
-    useEffect(() => { localStorage.setItem('colo-authenticated', isAuthenticated); }, [isAuthenticated]);
 
-    const handleLogin = (user) => {
-        setActiveUserId(user.id);
+    const applyAuthenticatedSession = useCallback((payload) => {
+        setSessionUser(payload.user);
+        setActiveUserId(payload.user.id);
+        setAccessControl(mergeAccessControl(payload.accessControl));
         setIsAuthenticated(true);
-    };
+        setConnectionStatus('connected');
+    }, []);
 
-    const handleLogout = () => {
+    const clearAuthenticatedSession = useCallback(() => {
+        setSessionUser(null);
+        setActiveUserId('');
         setIsAuthenticated(false);
         setIsUserSwitcherOpen(false);
+        setParticipants([]);
+        setGroups([]);
+        setActivities([]);
+        setMenus({});
+        setIncidentSheets([]);
+        setExitSheets([]);
+        setMeetingRecaps([]);
+        setInventoryItems([]);
+        isDataLoaded.current = false;
+    }, []);
+
+    useEffect(() => {
+        localStorage.removeItem('colo-authenticated');
+        localStorage.removeItem('colo-admin-pin');
+        localStorage.removeItem('colo-active-user-id');
+        localStorage.removeItem('colo-participants');
+        localStorage.removeItem('colo-groups');
+        localStorage.removeItem('colo-activities');
+        localStorage.removeItem('colo-access-control');
+        localStorage.removeItem('colo-menus');
+        localStorage.removeItem('colo-van-config');
+
+        const bootstrapSession = async () => {
+            try {
+                const profilesResponse = await fetch(`${API_URL}/auth/profiles`);
+                if (!profilesResponse.ok) throw new Error(`Profiles returned ${profilesResponse.status}`);
+                setStaffUsers(await profilesResponse.json());
+
+                const sessionResponse = await fetch(`${API_URL}/auth/session`);
+                if (sessionResponse.ok) {
+                    applyAuthenticatedSession(await sessionResponse.json());
+                } else {
+                    clearAuthenticatedSession();
+                    setConnectionStatus('connected');
+                }
+            } catch (err) {
+                console.error('Session bootstrap failed:', err);
+                clearAuthenticatedSession();
+                setConnectionStatus('error');
+            } finally {
+                setAuthChecked(true);
+            }
+        };
+
+        bootstrapSession();
+    }, [applyAuthenticatedSession, clearAuthenticatedSession]);
+
+    const handleLogin = async (user, pin) => {
+        const response = await fetch(`${API_URL}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, pin })
+        });
+        if (!response.ok) throw new Error('Code PIN invalide');
+        applyAuthenticatedSession(await response.json());
     };
 
+    const handleLogout = useCallback(async () => {
+        try {
+            await fetch(`${API_URL}/auth/logout`, { method: 'POST' });
+        } catch (err) {
+            console.error('Logout failed:', err);
+        } finally {
+            clearAuthenticatedSession();
+        }
+    }, [clearAuthenticatedSession]);
     const healthAlerts = useMemo(() => {
         const alerts = [];
         const today = new Date();
@@ -271,6 +334,12 @@ export default function App() {
         return alerts;
     }, [participants]);
 
+    const navBadges = useMemo(() => {
+        const kids = (participants || []).filter((p) => p && p.role === 'child');
+        const absent = isAttendanceEnabled ? kids.filter((c) => !c.isPresent).length : 0;
+        return { health: healthAlerts.length, attendance: absent };
+    }, [participants, healthAlerts.length, isAttendanceEnabled]);
+
     const prefetchedTabs = useRef(new Set());
     const prefetchTab = useCallback((tabId) => {
         if (!tabId || prefetchedTabs.current.has(tabId)) return;
@@ -284,48 +353,71 @@ export default function App() {
     }, [activeTab, canAccessSection, prefetchTab]);
 
     useEffect(() => {
+        if (!isAuthenticated) return undefined;
+
         const socket = io({
             reconnectionAttempts: 10,
             reconnectionDelay: 2000,
         });
+        let retryTimer;
 
-        const refreshData = async (payload) => {
-            if (ignoreNextSocketUpdate.current) {
-                ignoreNextSocketUpdate.current = false;
-                return;
+        const fetchJson = async (url, fallback) => {
+            const response = await fetch(url);
+            if (response.status === 401) {
+                const error = new Error('Authentication expired');
+                error.status = 401;
+                throw error;
             }
-            try {
-                const results = await Promise.all([
-                    fetch(`${API_URL}/groups`), fetch(`${API_URL}/participants`),
-                    fetch(`${API_URL}/activities`), fetch(`${API_URL}/state/savedViews`),
-                    fetch(`${API_URL}/state/currentViewName`), fetch(`${API_URL}/state/adminPin`),
-                    fetch(`${API_URL}/state/accessControl`), fetch(`${API_URL}/incident-sheets`),
-                    fetch(`${API_URL}/exit-sheets`), fetch(`${API_URL}/meeting-recaps`),
-                    fetch(`${API_URL}/inventory/items`)
-                ]);
-                
-                // Check for any non-ok response
-                const failed = results.find(r => !r.ok);
-                if (failed) throw new Error(`Server returned ${failed.status}`);
+            if (response.status === 403 && fallback !== undefined) return fallback;
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            return response.json();
+        };
 
-                const data = await Promise.all(results.map(r => r.json()));
-                setGroups(data[0]); setParticipants(data[1]); setActivities(data[2]); setSavedViews(data[3]);
-                setCurrentViewName(data[4]); setAdminPin(data[5] || '1234'); setAccessControl(mergeAccessControl(data[6]));
-                setIncidentSheets(data[7] || []);
-                setExitSheets(data[8] || []);
-                setMeetingRecaps(data[9] || []);
-                setInventoryItems(data[10] || []);
-                
+        const refreshData = async () => {
+            setIsSyncing(true);
+            try {
+                const data = await Promise.all([
+                    fetchJson(`${API_URL}/groups`, []),
+                    fetchJson(`${API_URL}/participants`, []),
+                    fetchJson(`${API_URL}/activities`, []),
+                    fetchJson(`${API_URL}/state/accessControl`, {}),
+                    fetchJson(`${API_URL}/incident-sheets`, []),
+                    fetchJson(`${API_URL}/exit-sheets`, []),
+                    fetchJson(`${API_URL}/meeting-recaps`, []),
+                    fetchJson(`${API_URL}/inventory/items`, []),
+                    fetchJson(`${API_URL}/auth/profiles`, []),
+                    fetchJson(`${API_URL}/state/menus`, {})
+                ]);
+
+                const newGroups = data[0]; const newParticipants = data[1];
+                setGroups(newGroups); setParticipants(newParticipants); setActivities(data[2]);
+                setAccessControl(mergeAccessControl(data[3]));
+                setIncidentSheets(data[4] || []);
+                setExitSheets(data[5] || []);
+                setMeetingRecaps(data[6] || []);
+                setInventoryItems(data[7] || []);
+                setStaffUsers(data[8] || []);
+                setMenus(data[9] || {});
+                // Sync to global store
+                useAppStore.getState().setParticipants(newParticipants);
+                useAppStore.getState().setGroups(newGroups);
+
                 isDataLoaded.current = true;
                 setConnectionStatus('connected');
                 setRetryCount(0);
-            } catch (err) { 
+                setLastSyncAt(Date.now());
+            } catch (err) {
                 console.error('Sync failed:', err);
-                setConnectionStatus('error');
-                // Auto-retry after a delay
-                if (retryCount < 5) {
-                    setTimeout(() => setRetryCount(prev => prev + 1), 3000);
+                if (err.status === 401) {
+                    clearAuthenticatedSession();
+                    return;
                 }
+                setConnectionStatus('error');
+                if (retryCount < 5) {
+                    retryTimer = setTimeout(() => setRetryCount((prev) => prev + 1), 3000);
+                }
+            } finally {
+                setIsSyncing(false);
             }
         };
 
@@ -347,8 +439,8 @@ export default function App() {
         });
 
         socket.on('data_updated', refreshData);
-        window._refreshBboardData = refreshData;
-        
+        refreshDataRef.current = refreshData;
+
         // 10-second health check polling
         const healthCheck = setInterval(async () => {
             try {
@@ -367,24 +459,47 @@ export default function App() {
             socket.off('data_updated', refreshData);
             socket.disconnect();
             clearInterval(healthCheck);
+            clearTimeout(retryTimer);
+            if (refreshDataRef.current === refreshData) refreshDataRef.current = null;
         };
-    }, [retryCount]);
+    }, [clearAuthenticatedSession, isAuthenticated, retryCount]);
 
     const mutateCollection = useCallback(async (endpoint, setter, update, currentValue) => {
         const finalValue = typeof update === 'function' ? update(currentValue) : update;
         setter(finalValue);
-        ignoreNextSocketUpdate.current = true; 
         try {
-            await fetch(endpoint, {
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: actorHeaders,
                 body: JSON.stringify(finalValue)
             });
+            if (response.status === 401) clearAuthenticatedSession();
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
         } catch (err) {
             console.error(`Failed to sync ${endpoint}:`, err);
-            ignoreNextSocketUpdate.current = false;
+            setter(currentValue);
         }
-    }, [actorHeaders]);
+    }, [actorHeaders, clearAuthenticatedSession]);
+
+    const onRefresh = useCallback(() => refreshDataRef.current?.(), []);
+
+    // Blocks tab changes while a form holds unsaved edits (see useUnsavedGuard).
+    const guardedNavigate = useCallback(async (tab) => {
+        if (tab !== activeTab && hasUnsavedChanges()) {
+            const ok = await ui.confirm({
+                title: 'Modifications non enregistrées',
+                message: 'Vous avez des modifications non enregistrées. Quitter cette section ?',
+                confirmText: 'Quitter', cancelText: 'Rester', danger: true
+            });
+            if (!ok) return;
+        }
+        setActiveTab(tab);
+        setIsNavOpen(false);
+    }, [activeTab, ui]);
+
+    const setSyncedMenus = useCallback((v) => {
+        mutateCollection(`${API_URL}/state/menus`, setMenus, v, menus);
+    }, [mutateCollection, menus]);
 
     const loadingShell = (
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -395,8 +510,12 @@ export default function App() {
         </div>
     );
 
+    if (!authChecked) {
+        return <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)' }}><div className="spinner-large" /></div>;
+    }
+
     if (!isAuthenticated) {
-        return <Login staffUsers={staffUsers} onLogin={handleLogin} adminPin={adminPin} connectionStatus={connectionStatus} />;
+        return <Login staffUsers={staffUsers} onLogin={handleLogin} connectionStatus={connectionStatus} />;
     }
 
     if (connectionStatus === 'error' && !isDataLoaded.current) {
@@ -420,40 +539,53 @@ export default function App() {
     }
 
     return (
-        <div className="app-layout" style={{ background: 'var(--bg-main)', overflow: 'hidden', display: 'flex', width: '100vw', height: '100dvh' }}>
+        <div className="app-layout" style={{ background: 'transparent', overflow: 'hidden', display: 'flex', width: '100vw', height: '100dvh' }}>
             {/* Sidebar Navigation */}
             <aside className={`nav-sidebar ${isNavOpen ? 'open' : ''}`} style={{ borderRight: '1.5px solid var(--glass-border)', background: 'var(--glass-bg)', backdropFilter: 'blur(32px)', zIndex: 110, transition: 'all 0.4s var(--ease-out-expo)', flexShrink: 0, width: isMobile ? '100%' : '250px' }}>
                 <div style={{ padding: '1.75rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Logo />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontFamily: 'Sora, sans-serif', fontWeight: '950', fontSize: '1.4rem', color: 'var(--text-main)', letterSpacing: '-0.05em', lineHeight: 1 }}>BBOARD</span>
+                        <span style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontWeight: '950', fontSize: '1.4rem', color: 'var(--text-main)', letterSpacing: '-0.05em', lineHeight: 1 }}>BBOARD</span>
                         <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: '2px' }}>Plateforme Session</div>
                     </div>
                 </div>
 
                 <nav style={{ padding: '0 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
-                    {navItems.map((item) => (
+                    {navItems.map((item) => {
+                        const isActive = activeTab === item.id;
+                        const badge = navBadges[item.id] || 0;
+                        return (
                         <button
                             key={item.id}
-                            onClick={() => { setActiveTab(item.id); setIsNavOpen(false); }}
+                            onClick={() => guardedNavigate(item.id)}
                             onMouseEnter={() => prefetchTab(item.id)}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem',
-                                border: 'none', background: activeTab === item.id ? 'var(--primary-gradient)' : 'transparent',
-                                color: activeTab === item.id ? 'white' : 'var(--text-muted)',
+                                border: 'none', background: isActive ? 'var(--primary-gradient)' : 'transparent',
+                                color: isActive ? 'white' : 'var(--text-muted)',
                                 borderRadius: '16px', fontWeight: '950', cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)',
-                                textAlign: 'left', fontSize: '0.9rem', boxShadow: activeTab === item.id ? '0 8px 24px var(--shadow-color)' : 'none'
+                                textAlign: 'left', fontSize: '0.9rem', boxShadow: isActive ? '0 8px 24px var(--shadow-color)' : 'none'
                             }}
                         >
                             <span style={{ display: 'flex' }}>{item.icon}</span>
                             <span>{item.label}</span>
-                            {activeTab === item.id && <Sparkles size={14} style={{ marginLeft: 'auto', opacity: 0.8 }} />}
+                            {badge > 0 ? (
+                                <span style={{
+                                    marginLeft: 'auto', minWidth: '20px', height: '20px', padding: '0 6px',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    background: isActive ? 'rgba(255,255,255,0.28)' : 'var(--danger-color)',
+                                    color: 'white', fontSize: '10px', fontWeight: '950', borderRadius: '10px'
+                                }}>{badge > 99 ? '99+' : badge}</span>
+                            ) : isActive ? (
+                                <Sparkles size={14} style={{ marginLeft: 'auto', opacity: 0.8 }} />
+                            ) : null}
                         </button>
-                    ))}
-                    
+                        );
+                    })}
+
                     {permissions.viewSettings && (
                         <button
-                            onClick={() => { setActiveTab('settings'); setIsNavOpen(false); }}
+                            onClick={() => guardedNavigate('settings')}
                             style={{
                                 display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem', marginTop: 'auto', marginBottom: '1.5rem',
                                 border: 'none', background: activeTab === 'settings' ? 'var(--primary-gradient)' : 'transparent',
@@ -491,7 +623,7 @@ export default function App() {
                 )}
 
                 {/* Topbar Header */}
-                <header style={{ 
+                <header style={{
                     height: isMobile ? '70px' : '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: isMobile ? '0 0.75rem' : '0 2.5rem', background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(16px)',
                     borderBottom: '1.5px solid var(--glass-border)', zIndex: 100, transition: 'all 0.3s var(--ease-out-expo)'
@@ -502,19 +634,22 @@ export default function App() {
                                 <Menu size={20} strokeWidth={3} />
                             </button>
                         )}
-                        <h1 style={{ margin: 0, fontSize: isMobile ? '0.85rem' : '1.5rem', fontWeight: '950', fontFamily: 'Sora', color: 'var(--text-main)', letterSpacing: '-0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                        <h1 style={{ margin: 0, fontSize: isMobile ? '0.85rem' : '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque', color: 'var(--text-main)', letterSpacing: '-0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
                             {TAB_TITLES[activeTab] || activeTab}
                         </h1>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1.25rem' }}>
+                        {/* Sync status */}
+                        <SyncStatus status={connectionStatus} isSyncing={isSyncing} lastSyncAt={lastSyncAt} onRefresh={onRefresh} isMobile={isMobile} />
+
                         {/* Notification Bell */}
                         <div style={{ position: 'relative' }}>
                             <button onClick={() => setIsAlertsOpen(!isAlertsOpen)} className="btn-icon-ref" style={{ background: 'white', borderRadius: '14px', width: isMobile ? '40px' : '44px', height: isMobile ? '40px' : '44px', color: isAlertsOpen ? 'var(--primary-color)' : 'var(--text-muted)' }}>
                                 <Bell size={isMobile ? 20 : 22} strokeWidth={2.5} />
                                 {healthAlerts.length > 0 && <span style={{ position: 'absolute', top: isMobile ? '8px' : '10px', right: isMobile ? '8px' : '10px', width: '8px', height: '8px', background: 'var(--danger-color)', borderRadius: '50%', border: '2px solid white' }} />}
                             </button>
-                            
+
                             {isAlertsOpen && (
                                 <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: isMobile ? '50px' : '64px', right: 0, width: isMobile ? 'calc(100vw - 2rem)' : '360px', zIndex: 200, background: 'white', padding: 0, borderRadius: '24px', border: '1.5px solid var(--glass-border)', boxShadow: '0 40px 80px rgba(0,0,0,0.15)' }}>
                                     <div style={{ padding: '1.25rem', borderBottom: '1.5px solid var(--bg-secondary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -555,7 +690,7 @@ export default function App() {
                                     <div style={{ padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Profil actif</div>
                                     <div style={{ maxHeight: '250px', overflowY: 'auto' }} className="no-scrollbar">
                                         {staffUsers.map(u => (
-                                            <button key={u.id} onClick={() => { setActiveUserId(u.id); setIsUserSwitcherOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem', border: 'none', background: activeUserId === u.id ? 'var(--primary-light)' : 'transparent', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
+                                            <button key={u.id} onClick={() => { if (activeUserId === u.id) setIsUserSwitcherOpen(false); else handleLogout(); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem', border: 'none', background: activeUserId === u.id ? 'var(--primary-light)' : 'transparent', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
                                                 <div style={{ width: '28px', height: '28px', background: u.role === 'direction' ? 'var(--primary-gradient)' : 'oklch(62% 0.18 200)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '0.75rem' }}>{u.firstName[0]}</div>
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{u.firstName}</div>
@@ -579,27 +714,34 @@ export default function App() {
                 </header>
 
                 {/* Workspace Area */}
-                <div style={{ flex: 1, padding: isMobile ? 'var(--space-sm)' : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }} className="no-scrollbar">
+                <PullToRefresh
+                    onRefresh={onRefresh}
+                    disabled={!isMobile}
+                    className="no-scrollbar"
+                    style={{ flex: 1, padding: isMobile ? 'var(--space-sm)' : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }}
+                >
                     <Suspense fallback={loadingShell}>
                         <ErrorBoundary>
-                            {activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} isMobile={isMobile} />
-                            : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
-                            : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
-                            : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                            {activeTab === 'today' ? <Today activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} isMobile={isMobile} onNavigate={guardedNavigate} />
+                            : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} menus={menus} setMenus={setSyncedMenus} />
+                            : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
+                            : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
+                            : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={onRefresh} isMobile={isMobile} />
                             : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)} canEdit={permissions.editDirectory} isMobile={isMobile} />
                             : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
-                            : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} setInventoryItems={(v) => mutateCollection(`${API_URL}/inventory/items`, setInventoryItems, v, inventoryItems)} onRefresh={window._refreshBboardData} isMobile={isMobile} />
+                            : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} setInventoryItems={(v) => mutateCollection(`${API_URL}/inventory/items`, setInventoryItems, v, inventoryItems)} onRefresh={onRefresh} isMobile={isMobile} />
+                            : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editHealth} actorHeaders={actorHeaders} onRefresh={onRefresh} isMobile={isMobile} />
                             : activeTab === 'settings' ? <Settings
                                 participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)}
-                                activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
+                                activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)}
                                 isAdminMode={isAdminMode} setIsAdminMode={setIsAdminMode} isAttendanceEnabled={isAttendanceEnabled}
-                                setIsAttendanceEnabled={setIsAttendanceEnabled} adminPin={adminPin} setAdminPin={(v) => mutateCollection(`${API_URL}/state/adminPin`, setAdminPin, v, adminPin)}
+                                setIsAttendanceEnabled={setIsAttendanceEnabled}
                                 accessControl={accessControl} setAccessControl={(v) => mutateCollection(`${API_URL}/state/accessControl`, setAccessControl, v, accessControl)}
                                 actorHeaders={actorHeaders} currentUser={activeUser} permissions={permissions} isMobile={isMobile}
                             /> : null}
                         </ErrorBoundary>
                     </Suspense>
-                </div>
+                </PullToRefresh>
             </main>
 
             <style>{`

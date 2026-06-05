@@ -1,8 +1,8 @@
 import React from 'react';
-import { Users, User, Shield, Trash2, Plus, Download, Upload, Printer } from 'lucide-react';
+import { Users, User, Shield, Trash2, Plus, Download, Upload, Printer, FileSpreadsheet } from 'lucide-react';
 import { StatBadge } from '../common/Badges';
 
-const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleImport, isMobile, canEdit }) => {
+const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleExportCsv, handleImport, handleImportCsv, isMobile, canEdit }) => {
     return (
         <div className="directory-header dh-wrap" style={{
             padding: isMobile ? '0.75rem 1rem' : '1.25rem 2.5rem', 
@@ -60,15 +60,22 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                 {!isMobile && <div style={{ width: '1.5px', background: 'var(--glass-border)', height: '24px', margin: '0 0.5rem' }}></div>}
                 
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button className="btn-icon-ref" onClick={() => window.print()} title="Imprimer Liste (PDF)">
+                    <button className="btn-icon-ref" onClick={() => window.print()} title="Imprimer la liste (PDF)">
                         <Printer size={18} strokeWidth={2.5} />
                     </button>
                     {canEdit && !isMobile && (
                         <>
-                            <button className="btn-icon-ref" onClick={handleExport} title="Exporter les données (JSON)">
+                            <button className="btn-icon-ref" onClick={handleExportCsv} title="Exporter en CSV (Excel)">
+                                <FileSpreadsheet size={18} strokeWidth={2.5} />
+                            </button>
+                            <button className="btn-icon-ref" onClick={handleExport} title="Exporter en JSON (sauvegarde)">
                                 <Download size={18} strokeWidth={2.5} />
                             </button>
-                            <label className="btn-icon-ref" title="Importer des données (JSON)">
+                            <label className="btn-icon-ref" title="Importer depuis CSV">
+                                <FileSpreadsheet size={16} strokeWidth={2.5} style={{ color: 'var(--success-color)' }} />
+                                <input type="file" accept=".csv,.txt" onChange={handleImportCsv} style={{ display: 'none' }} />
+                            </label>
+                            <label className="btn-icon-ref" title="Importer depuis JSON (sauvegarde)">
                                 <Upload size={18} strokeWidth={2.5} />
                                 <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
                             </label>

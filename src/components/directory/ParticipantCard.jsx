@@ -50,7 +50,7 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
                 <Avatar participant={participant} size={84} />
                 
                 <div style={{ width: '100%' }}>
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '950', fontFamily: 'Sora, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.02em', textTransform: 'capitalize' }}>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '1.2rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.02em', textTransform: 'capitalize' }}>
                         {participant.firstName} <span style={{ textTransform: 'uppercase' }}>{participant.lastName}</span>
                     </h3>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '800', letterSpacing: '0.04em' }}>

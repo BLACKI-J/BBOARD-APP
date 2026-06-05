@@ -1,10 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, EyeOff, FileClock, Settings2, AlertCircle, Eye, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, Activity, Trash, History } from 'lucide-react';
+import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, EyeOff, FileClock, Settings2, AlertCircle, Eye, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, Activity, Trash, History, Plus, X } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
 
 const SECTION_LABELS = {
-    seatmap: 'Transports',
     schedule: 'Planning',
     exitsheet: 'Fiche de sortie',
     incident: 'FEI',
@@ -12,76 +11,44 @@ const SECTION_LABELS = {
     attendance: 'Pointage',
     inventory: 'Matériel',
     directory: 'Annuaire',
+    health: 'Santé',
     settings: 'Paramètres'
 };
 
-const ROLE_KEYS = ['direction', 'animator'];
-
-const PERMISSIONS = [
-    { key: 'viewSeatmap', label: 'Voir Transports' },
-    { key: 'editSeatmap', label: 'Modifier Transports' },
-    { key: 'viewSchedule', label: 'Voir Planning' },
-    { key: 'editSchedule', label: 'Modifier Planning' },
-    { key: 'viewExitSheet', label: 'Voir Fiche de sortie' },
-    { key: 'editExitSheet', label: 'Modifier Fiche de sortie' },
-    { key: 'viewIncident', label: 'Voir FEI' },
-    { key: 'editIncident', label: 'Modifier FEI' },
-    { key: 'viewDirectory', label: 'Voir Annuaire' },
-    { key: 'editDirectory', label: 'Modifier Annuaire' },
-    { key: 'viewAttendance', label: 'Voir Pointage' },
-    { key: 'editAttendance', label: 'Modifier Pointage' },
-    { key: 'viewInventory', label: 'Voir Matériel' },
-    { key: 'editInventory', label: 'Modifier Matériel' },
-    { key: 'searchInventoryAI', label: 'Recherche IA Matériel' },
-    { key: 'viewSettings', label: 'Accès Paramètres' },
-    { key: 'manageUsers', label: 'Gérer utilisateurs' },
-    { key: 'manageAccess', label: 'Gérer droits globaux' },
-    { key: 'viewLogs', label: 'Voir logs' }
+const SECTIONS_CONFIG = [
+    { id: 'schedule', label: 'Planning', viewKey: 'viewSchedule', editKey: 'editSchedule' },
+    { id: 'exitsheet', label: 'Fiches de sortie', viewKey: 'viewExitSheet', editKey: 'editExitSheet' },
+    { id: 'incident', label: 'Incidents (FEI)', viewKey: 'viewIncident', editKey: 'editIncident' },
+    { id: 'recap', label: 'Coordination', viewKey: 'viewRecap', editKey: 'editRecap' },
+    { id: 'attendance', label: 'Pointage', viewKey: 'viewAttendance', editKey: 'editAttendance' },
+    { id: 'inventory', label: 'Matériel', viewKey: 'viewInventory', editKey: 'editInventory', extra: { key: 'searchInventoryAI', label: 'Recherche IA' } },
+    { id: 'directory', label: 'Annuaire', viewKey: 'viewDirectory', editKey: 'editDirectory' },
+    { id: 'health', label: 'Pôle Santé', viewKey: 'viewHealth', editKey: 'editHealth' },
+    { id: 'settings', label: 'Paramètres', viewKey: 'viewSettings', extraKeys: [
+        { key: 'manageUsers', label: 'Gérer l\'équipe (utilisateurs & PIN)' },
+        { key: 'manageAccess', label: 'Gérer les accès globaux' },
+        { key: 'viewLogs', label: 'Consulter le journal (logs)' }
+    ]}
 ];
 
-const USER_PERMISSION_TEMPLATES = {
-    standard_anim: {
-        label: 'Anim standard',
-        permissions: {
-            editDirectory: true, editSchedule: true, editSeatmap: true, editIncident: true,
-            editAttendance: true, viewInventory: true, editInventory: true, searchInventoryAI: true,
-            viewSettings: false, viewLogs: false, manageUsers: false
-        }
-    },
-    pointage_only: {
-        label: 'Pointage uniquement',
-        permissions: {
-            editDirectory: false, editSchedule: false, editSeatmap: false, editIncident: false,
-            editAttendance: true, viewInventory: true, editInventory: false, searchInventoryAI: false,
-            viewSettings: false, viewLogs: false, manageUsers: false
-        }
-    },
-    read_only: {
-        label: 'Lecture seule',
-        permissions: {
-            editDirectory: false, editSchedule: false, editSeatmap: false, editIncident: false,
-            editAttendance: false, viewInventory: true, editInventory: false, searchInventoryAI: false,
-            viewSettings: false, viewLogs: false, manageUsers: false
-        }
-    },
-    coordo: {
-        label: 'Coordinateur',
-        permissions: {
-            editDirectory: true, editSchedule: true, editSeatmap: true, editIncident: true,
-            editAttendance: true, viewInventory: true, editInventory: true, searchInventoryAI: true,
-            viewSettings: true, viewLogs: true, manageUsers: false
-        }
-    }
-};
+const emptyPermissions = () => ({
+    viewSchedule: false, editSchedule: false,
+    viewExitSheet: false, editExitSheet: false,
+    viewIncident: false, editIncident: false,
+    viewDirectory: false, editDirectory: false,
+    viewAttendance: false, editAttendance: false,
+    viewInventory: false, editInventory: false,
+    viewHealth: false, editHealth: false,
+    searchInventoryAI: false, viewSettings: false,
+    manageUsers: false, manageAccess: false, viewLogs: false
+});
 
 export default function Settings({
     participants, setParticipants,
     groups, setGroups,
     activities, setActivities,
-    savedViews, setSavedViews,
     isAdminMode, setIsAdminMode,
     isAttendanceEnabled, setIsAttendanceEnabled,
-    adminPin, setAdminPin,
     accessControl, setAccessControl,
     actorHeaders,
     currentUser,
@@ -97,14 +64,19 @@ export default function Settings({
     const [confirmPin, setConfirmPin] = useState('');
     const [logs, setLogs] = useState([]);
     const [logsLoading, setLogsLoading] = useState(false);
-    const [activeTab, setActiveTab] = useState('overview'); 
+    const [activeTab, setActiveTab] = useState('overview');
     const [userSearch, setUserSearch] = useState('');
     const [selectedUserIds, setSelectedUserIds] = useState([]);
-    const [selectedTemplateKey, setSelectedTemplateKey] = useState('standard_anim');
-    const [newUser, setNewUser] = useState({ firstName: '', lastName: '', role: 'animator', pin: '1234' });
+    const [newUser, setNewUser] = useState({ firstName: '', lastName: '', role: 'animator', pin: '' });
+    const [pinDrafts, setPinDrafts] = useState({});
+    
+    // Custom roles states
+    const [newRoleName, setNewRoleName] = useState('');
+    const [selectedConfigRole, setSelectedConfigRole] = useState('animator');
+    const [editingUserPermId, setEditingUserPermId] = useState(null);
 
     const staffUsers = useMemo(
-        () => (participants || []).filter((p) => p && (p.role === 'animator' || p.role === 'direction')),
+        () => (participants || []).filter((p) => p && p.role !== 'child'),
         [participants]
     );
 
@@ -117,6 +89,14 @@ export default function Settings({
     const canManageUsers = !!permissions?.manageUsers;
     const canViewLogs = !!permissions?.viewLogs;
 
+    const rolesList = useMemo(() => {
+        return Object.keys(accessControl.rolePermissions || { direction: {}, animator: {} });
+    }, [accessControl.rolePermissions]);
+
+    const roleLabels = useMemo(() => {
+        return accessControl.roleLabels || { direction: 'Direction', animator: 'Animateur' };
+    }, [accessControl.roleLabels]);
+
     const updateUserPermission = (userId, perm, value) => {
         if (!canManageUsers) return;
         setAccessControl(prev => ({
@@ -128,21 +108,21 @@ export default function Settings({
         }));
     };
 
-    const updateUserPin = (userId, newPin) => {
+    const updateUserPin = async (userId, newPin) => {
         if (!canManageUsers) return;
-        setParticipants(prev => prev.map(p => {
-            if (p.id === userId) {
-                const updated = { ...p, pin: newPin };
-                try {
-                    const data = JSON.parse(p.data || '{}');
-                    updated.data = JSON.stringify({ ...data, pin: newPin });
-                } catch (e) {
-                    updated.data = JSON.stringify({ pin: newPin });
-                }
-                return updated;
-            }
-            return p;
-        }));
+        if (!/^\d{4}$/.test(newPin)) return;
+        try {
+            const res = await fetch(`/api/users/${userId}/pin`, {
+                method: 'POST',
+                headers: actorHeaders,
+                body: JSON.stringify({ newPin })
+            });
+            if (!res.ok) throw new Error(`Server returned ${res.status}`);
+            setPinDrafts(prev => ({ ...prev, [userId]: '' }));
+            ui.toast('Code PIN mis à jour.', { type: 'success' });
+        } catch (err) {
+            ui.toast('Impossible de modifier ce PIN.', { type: 'error' });
+        }
     };
 
     const updateRolePermission = (role, perm, value) => {
@@ -156,25 +136,101 @@ export default function Settings({
         }));
     };
 
-    const applyTemplateToSelection = () => {
-        if (!canManageUsers || selectedUserIds.length === 0) return;
-        const template = USER_PERMISSION_TEMPLATES[selectedTemplateKey];
-        if (!template) return;
-        setAccessControl(prev => {
-            const newUserPerms = { ...prev.userPermissions };
-            selectedUserIds.forEach(uid => {
-                newUserPerms[uid] = { ...(newUserPerms[uid] || {}), ...template.permissions };
-            });
-            return { ...prev, userPermissions: newUserPerms };
+    const updateUserRole = (userId, newRole) => {
+        if (!canManageUsers) return;
+        setParticipants(prev => prev.map(p => {
+            if (p.id !== userId) return p;
+            const updated = { ...p, role: newRole };
+            updated.data = JSON.stringify(updated);
+            return updated;
+        }));
+        ui.toast('Rôle de l\'utilisateur mis à jour.', { type: 'success' });
+    };
+
+    const handleCreateRole = () => {
+        const name = newRoleName.trim();
+        if (!name) return;
+        const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
+        if (rolesList.includes(key) || key === 'director' || key === 'child') {
+            ui.toast('Ce rôle existe déjà.', { type: 'error' });
+            return;
+        }
+        const updatedPermissions = {
+            ...(accessControl.rolePermissions || {}),
+            [key]: emptyPermissions()
+        };
+        const updatedLabels = {
+            ...roleLabels,
+            [key]: name
+        };
+        setAccessControl({
+            ...accessControl,
+            rolePermissions: updatedPermissions,
+            roleLabels: updatedLabels
         });
-        ui.toast(`Template "${template.label}" appliqué à ${selectedUserIds.length} utilisateur(s).`, { type: 'success' });
-        setSelectedUserIds([]);
+        setNewRoleName('');
+        setSelectedConfigRole(key);
+        ui.toast(`Rôle "${name}" créé avec succès.`, { type: 'success' });
+    };
+
+    const handleDeleteRole = async (key) => {
+        if (key === 'direction' || key === 'animator') {
+            ui.toast('Les rôles par défaut ne peuvent pas être supprimés.', { type: 'error' });
+            return;
+        }
+        const ok = await ui.confirm({
+            title: 'Supprimer le rôle',
+            message: `Voulez-vous vraiment supprimer le rôle "${roleLabels[key] || key}" ? Tous les utilisateurs ayant ce rôle repasseront en Animateur.`,
+            confirmText: 'Supprimer',
+            danger: true
+        });
+        if (!ok) return;
+
+        const updatedPermissions = { ...accessControl.rolePermissions };
+        delete updatedPermissions[key];
+
+        const updatedLabels = { ...roleLabels };
+        delete updatedLabels[key];
+
+        setParticipants(prev => prev.map(p => {
+            if (p.role === key) {
+                const updated = { ...p, role: 'animator' };
+                updated.data = JSON.stringify(updated);
+                return updated;
+            }
+            return p;
+        }));
+
+        if (selectedConfigRole === key) {
+            setSelectedConfigRole('animator');
+        }
+
+        setAccessControl({
+            ...accessControl,
+            rolePermissions: updatedPermissions,
+            roleLabels: updatedLabels
+        });
+        ui.toast('Rôle supprimé.', { type: 'success' });
+    };
+
+    const handleResetUserPermissions = (userId) => {
+        if (!canManageUsers) return;
+        setAccessControl(prev => {
+            const copy = { ...prev.userPermissions };
+            delete copy[userId];
+            return { ...prev, userPermissions: copy };
+        });
+        ui.toast('Droits réinitialisés selon le rôle.', { type: 'success' });
     };
 
     const handleAddUser = (e) => {
         e.preventDefault();
         if (!newUser.firstName || !newUser.lastName) {
             ui.toast('Prénom et nom sont requis.', { type: 'error' });
+            return;
+        }
+        if (!/^\d{4}$/.test(newUser.pin)) {
+            ui.toast('Le code PIN doit contenir exactement 4 chiffres.', { type: 'error' });
             return;
         }
 
@@ -191,19 +247,7 @@ export default function Settings({
 
         setParticipants(prev => [...prev, userToAdd]);
 
-        // Default permissions for new animators
-        if (newUser.role === 'animator') {
-            const template = USER_PERMISSION_TEMPLATES['standard_anim'];
-            setAccessControl(prev => ({
-                ...prev,
-                userPermissions: {
-                    ...prev.userPermissions,
-                    [id]: template.permissions
-                }
-            }));
-        }
-
-        setNewUser({ firstName: '', lastName: '', role: 'animator', pin: '1234' });
+        setNewUser({ firstName: '', lastName: '', role: 'animator', pin: '' });
         setActiveTab('users');
         ui.toast(`Utilisateur ${newUser.firstName} créé avec succès.`, { type: 'success' });
     };
@@ -219,7 +263,6 @@ export default function Settings({
         setParticipants([]);
         setGroups([]);
         setActivities([]);
-        setSavedViews({});
         localStorage.clear();
         ui.toast('Réinitialisation complète effectuée.', { type: 'success' });
     };
@@ -228,7 +271,7 @@ export default function Settings({
         const alerts = [];
         const children = (participants || []).filter((p) => p?.role === 'child');
         const missingHealth = children.filter((p) => !p.healthDocProvided).length;
-        const noGroup = children.filter((p) => !p.group).length;
+        const noGroup = children.filter((p) => !(p.group || p.groupId)).length;
         if (missingHealth > 0) alerts.push(`${missingHealth} enfant(s) sans fiche sanitaire.`);
         if (noGroup > 0) alerts.push(`${noGroup} enfant(s) sans groupe.`);
         return alerts;
@@ -249,26 +292,69 @@ export default function Settings({
 
     useEffect(() => { fetchLogs(); }, [canViewLogs]);
 
-    const handleUnlock = (e) => {
+    const handleUnlock = async (e) => {
         e.preventDefault();
-        if (pinInput === adminPin) { setIsUnlocked(true); setPinError(false); }
-        else { setPinError(true); setPinInput(''); }
+        try {
+            const response = await fetch('/api/auth/verify-admin-pin', {
+                method: 'POST',
+                headers: actorHeaders,
+                body: JSON.stringify({ pin: pinInput })
+            });
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            setIsUnlocked(true);
+            setPinError(false);
+            setPinInput('');
+        } catch (err) {
+            setPinError(true);
+            setPinInput('');
+        }
     };
 
-    const handleUpdatePin = (e) => {
+    const handleUpdatePin = async (e) => {
         e.preventDefault();
-        if (newPin.length < 4) { ui.toast('Le code PIN doit faire au moins 4 chiffres.', { type: 'error' }); return; }
+        if (!/^\d{4}$/.test(newPin)) { ui.toast('Le code PIN doit contenir exactement 4 chiffres.', { type: 'error' }); return; }
         if (newPin !== confirmPin) { ui.toast('Les codes PIN ne correspondent pas.', { type: 'error' }); return; }
-        setAdminPin(newPin); setIsChangingPin(false); setNewPin(''); setConfirmPin('');
+        try {
+            const response = await fetch('/api/auth/admin-pin', {
+                method: 'POST',
+                headers: actorHeaders,
+                body: JSON.stringify({ newPin })
+            });
+            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+        } catch (err) {
+            ui.toast('Vérifiez de nouveau le PIN administrateur avant de le modifier.', { type: 'error' });
+            return;
+        }
+        setIsChangingPin(false); setNewPin(''); setConfirmPin('');
         ui.toast('Code PIN mis à jour.', { type: 'success' });
     };
 
     const handleFullExport = () => {
-        const exportData = { version: '1.0', date: new Date().toISOString(), participants, groups, activities, savedViews };
+        const exportData = { version: '1.0', date: new Date().toISOString(), participants, groups, activities };
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.body.appendChild(document.createElement('a'));
         link.href = url; link.download = `colo-backup-${new Date().toISOString().split('T')[0]}.json`;
+        link.click(); document.body.removeChild(link);
+    };
+
+    const handleExportCsv = () => {
+        const groupName = (id) => (groups || []).find(g => g.id === id)?.name || '';
+        const roleLabel = (r) => roleLabels[r] || r;
+        const esc = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
+        const headers = ['Prénom', 'Nom', 'Rôle', 'Groupe', 'Date de naissance', 'Allergies', 'Régime', 'Contraintes', 'Fiche sanitaire', 'Téléphone', 'Contact urgence'];
+        const rows = (participants || []).map(p => [
+            esc(p.firstName), esc(p.lastName), esc(roleLabel(p.role)),
+            esc(groupName(p.group)), esc(p.birthDate), esc(p.allergies),
+            esc(p.diet), esc(p.constraints),
+            p.healthDocProvided ? 'OUI' : 'NON',
+            esc(p.phone), esc(p.emergencyContact)
+        ].join(','));
+        const csv = [headers.join(','), ...rows].join('\n');
+        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.body.appendChild(document.createElement('a'));
+        link.href = URL.createObjectURL(blob);
+        link.download = `participants-${new Date().toISOString().split('T')[0]}.csv`;
         link.click(); document.body.removeChild(link);
     };
 
@@ -279,15 +365,15 @@ export default function Settings({
                     <div style={{ background: 'var(--primary-gradient)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: 'white', transform: 'rotate(-5deg)', boxShadow: '0 12px 32px var(--shadow-color)' }}>
                         <Lock size={36} strokeWidth={2.5} />
                     </div>
-                    <h2 style={{ fontSize: '1.85rem', fontWeight: '950', marginBottom: '0.75rem', color: 'var(--text-main)', fontFamily: 'Sora, sans-serif', letterSpacing: '-0.04em' }}>Espace Direction</h2>
+                    <h2 style={{ fontSize: '1.85rem', fontWeight: '950', marginBottom: '0.75rem', color: 'var(--text-main)', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.04em' }}>Espace Direction</h2>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem', fontSize: '0.95rem', fontWeight: '850', lineHeight: '1.5' }}>Authentification requise pour accéder aux paramètres de sécurité et droits d'accès.</p>
                     <form onSubmit={handleUnlock}>
                         <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
-                            <input type="password" inputMode="numeric" autoFocus placeholder="••••" value={pinInput} onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 8))} 
+                            <input type="password" inputMode="numeric" autoFocus placeholder="••••" value={pinInput} onChange={(e) => setPinInput(e.target.value.replace(/\D/g, '').slice(0, 8))}
                                 style={{ width: '100%', padding: '1.25rem', textAlign: 'center', fontSize: '2.5rem', letterSpacing: '0.625rem', borderRadius: '20px', border: `2.5px solid ${pinError ? 'var(--danger-color)' : 'var(--bg-secondary)'}`, background: 'var(--bg-secondary)', fontWeight: '950', transition: 'all 0.3s' }} />
                         </div>
                         {pinError && <p style={{ color: 'var(--danger-color)', fontSize: '0.85rem', marginBottom: '1.25rem', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Code PIN invalide</p>}
-                        <button className="btn btn-primary" style={{ width: '100%', padding: '1.25rem', fontWeight: '950', fontSize: '1rem', borderRadius: '18px' }}>Deverrouiller l'accès</button>
+                        <button className="btn btn-primary" style={{ width: '100%', padding: '1.25rem', fontWeight: '950', fontSize: '1rem', borderRadius: '18px' }}>Déverrouiller l'accès</button>
                     </form>
                 </div>
             </div>
@@ -297,16 +383,15 @@ export default function Settings({
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', padding: isMobile ? '1rem' : '0' }}>
             {/* Header Area */}
-            {/* Header Area */}
-            <div className="card-glass" style={{ 
-                padding: isMobile ? '1rem' : '1.25rem 2rem', 
-                marginBottom: isMobile ? '1rem' : '2rem', 
-                display: 'flex', 
+            <div className="card-glass" style={{
+                padding: isMobile ? '1rem' : '1.25rem 2rem',
+                marginBottom: isMobile ? '1rem' : '2rem',
+                display: 'flex',
                 flexDirection: isMobile ? 'column' : 'row',
-                justifyContent: 'space-between', 
-                alignItems: isMobile ? 'flex-start' : 'center', 
-                background: 'white', 
-                borderRadius: '24px', 
+                justifyContent: 'space-between',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                background: 'white',
+                borderRadius: '24px',
                 border: '1.5px solid var(--glass-border)',
                 gap: '1rem'
             }}>
@@ -315,7 +400,7 @@ export default function Settings({
                         <ShieldCheck size={isMobile ? 22 : 28} strokeWidth={2.5} />
                     </div>
                     <div>
-                        <h2 style={{ margin: 0, fontWeight: '950', fontSize: isMobile ? '1.1rem' : '1.5rem', fontFamily: 'Sora, sans-serif', letterSpacing: '-0.03em' }}>
+                        <h2 style={{ margin: 0, fontWeight: '950', fontSize: isMobile ? '1.1rem' : '1.5rem', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.03em' }}>
                             Paramètres
                         </h2>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '850' }}>
@@ -332,10 +417,10 @@ export default function Settings({
 
             <div style={{ flex: 1, display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '1.5rem' : '2.5rem', overflow: isMobile ? 'visible' : 'hidden' }}>
                 {/* Sidebar Navigation */}
-                <div style={{ 
-                    display: 'flex', 
-                    flexDirection: isMobile ? 'row' : 'column', 
-                    gap: '0.5rem', 
+                <div style={{
+                    display: 'flex',
+                    flexDirection: isMobile ? 'row' : 'column',
+                    gap: '0.5rem',
                     overflowX: isMobile ? 'auto' : 'visible',
                     paddingBottom: isMobile ? '0.5rem' : '0',
                     flexShrink: 0
@@ -344,7 +429,7 @@ export default function Settings({
                         { id: 'overview', label: 'Vue d\'ensemble', icon: <LayoutDashboard size={18} strokeWidth={2.5} /> },
                         { id: 'users', label: 'Équipe & Droits', icon: <Users size={18} strokeWidth={2.5} /> },
                         { id: 'create_user', label: 'Créer Utilisateur', icon: <Sparkles size={18} strokeWidth={2.5} /> },
-                        { id: 'roles', label: 'Permissions Rôles', icon: <Unlock size={18} strokeWidth={2.5} /> },
+                        { id: 'roles', label: 'Gestion des Rôles', icon: <Unlock size={18} strokeWidth={2.5} /> },
                         { id: 'sections', label: 'Modules Visibles', icon: <Settings2 size={18} strokeWidth={2.5} /> },
                         { id: 'security', label: 'Sécurité & PIN', icon: <KeyRound size={18} strokeWidth={2.5} /> },
                         { id: 'maintenance', label: 'Maintenance & Logs', icon: <Database size={18} strokeWidth={2.5} /> },
@@ -352,7 +437,7 @@ export default function Settings({
                         <button
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
-                            style={{ 
+                            style={{
                                 display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem',
                                 border: 'none', background: activeTab === tab.id ? 'var(--primary-light)' : 'transparent',
                                 color: activeTab === tab.id ? 'var(--primary-color)' : 'var(--text-muted)',
@@ -369,8 +454,8 @@ export default function Settings({
                 </div>
 
                 {/* Main Tab Content */}
-                <div style={{ overflowY: 'auto', paddingRight: '0.5rem' }} className="no-scrollbar">
-                    
+                <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem' }} className="no-scrollbar">
+
                     {/* OVERVIEW TAB */}
                     {activeTab === 'overview' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
@@ -385,11 +470,11 @@ export default function Settings({
                                             <div style={{ background: 'var(--bg-secondary)', padding: '6px', borderRadius: '8px', color: stat.color }}>{stat.icon}</div>
                                             <div style={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>{stat.label}</div>
                                         </div>
-                                        <div style={{ fontSize: '2.5rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.04em', fontFamily: 'Sora, sans-serif' }}>{stat.value}</div>
+                                        <div style={{ fontSize: '2.5rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.04em', fontFamily: 'Bricolage Grotesque, sans-serif' }}>{stat.value}</div>
                                     </div>
                                 ))}
                             </div>
-                            
+
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 400px', gap: '2rem' }}>
                                 <div className="card-glass" style={{ padding: '2rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
@@ -436,64 +521,143 @@ export default function Settings({
                     {/* USERS TAB */}
                     {activeTab === 'users' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <div style={{ 
-                                background: 'white', borderRadius: '24px', padding: isMobile ? '1rem' : '1.25rem 1.75rem', 
+                            <div style={{
+                                background: 'white', borderRadius: '24px', padding: isMobile ? '1rem' : '1.25rem 1.75rem',
                                 border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: isMobile ? 'column' : 'row',
-                                gap: '1rem', alignItems: isMobile ? 'stretch' : 'center', position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow-lg)' 
+                                gap: '1rem', alignItems: isMobile ? 'stretch' : 'center', position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow-lg)'
                             }}>
                                 <div style={{ flex: 1, position: 'relative' }}>
                                     <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
                                     <input className="glass-input" placeholder="Filtrer par nom ou prénom..." value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ paddingLeft: '48px', height: '52px', background: 'var(--bg-secondary)', borderRadius: '16px', fontWeight: '800' }} />
                                 </div>
-                                <select className="glass-input" value={selectedTemplateKey} onChange={(e) => setSelectedTemplateKey(e.target.value)} style={{ width: 'auto', background: 'var(--bg-secondary)', borderRadius: '16px', fontWeight: '950', border: 'none' }}>
-                                    {Object.entries(USER_PERMISSION_TEMPLATES).map(([key, tpl]) => <option key={key} value={key}>{tpl.label}</option>)}
-                                </select>
-                                <button className="btn btn-primary" onClick={applyTemplateToSelection} disabled={selectedUserIds.length === 0} style={{ padding: '0 1.5rem', height: '52px', borderRadius: '16px', fontWeight: '950', fontSize: '0.9rem' }}>Appliquer Template ({selectedUserIds.length})</button>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
-                                {filteredUsers.map((user, idx) => (
-                                    <div key={user.id} className="card-glass animate-fade-in" style={{ 
-                                        '--i': idx,
-                                        animationDelay: `calc(var(--i) * 30ms)`,
-                                        padding: '1.75rem', borderRadius: '28px', background: 'white', border: selectedUserIds.includes(user.id) ? '2.5px solid var(--primary-color)' : '1.5px solid var(--glass-border)',
-                                        transition: 'all 0.3s var(--ease-out-expo)'
-                                    }}>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                            <input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={e => setSelectedUserIds(prev => e.target.checked ? [...prev, user.id] : prev.filter(id => id !== user.id))} style={{ width: '20px', height: '20px' }} />
-                                            <div style={{ width: '44px', height: '44px', background: 'var(--primary-gradient)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '1.1rem' }}>
-                                                {user.firstName[0]}{user.lastName[0]}
-                                            </div>
-                                            <div style={{ minWidth: 0, flex: 1 }}>
-                                                <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.firstName} {user.lastName}</div>
-                                                <div style={{ fontSize: '10px', color: 'var(--primary-color)', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.08em', marginTop: '2px' }}>{user.role}</div>
-                                            </div>
-                                        </div>
-                                        
-                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem', padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: '20px' }}>
-                                            {['editDirectory', 'editSchedule', 'editSeatmap', 'editIncident', 'editAttendance', 'editInventory', 'viewSettings', 'viewLogs'].map(perm => (
-                                                <label key={perm} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-                                                    <input type="checkbox" checked={!!accessControl?.userPermissions?.[user.id]?.[perm]} onChange={e => updateUserPermission(user.id, perm, e.target.checked)} />
-                                                    <span style={{ fontSize: '11px', fontWeight: '850', color: 'var(--text-muted)' }}>{perm.replace('edit', '').replace('view', '')}</span>
-                                                </label>
-                                            ))}
-                                        </div>
+                                {filteredUsers.map((user, idx) => {
+                                    const hasCustomPerms = accessControl?.userPermissions?.[user.id] && Object.keys(accessControl.userPermissions[user.id]).length > 0;
+                                    const isEditingThisUser = editingUserPermId === user.id;
 
-                                        <div style={{ marginTop: '1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1.5px solid var(--glass-border)' }}>
-                                            <KeyRound size={14} style={{ opacity: 0.5 }} />
-                                            <div style={{ flex: 1 }}>
-                                                <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase' }}>CODE PIN</div>
-                                                <input 
-                                                    type="password" inputMode="numeric" maxLength={4}
-                                                    value={user.pin || ''} 
-                                                    onChange={e => updateUserPin(user.id, e.target.value.replace(/\D/g, ''))}
-                                                    placeholder="1234"
-                                                    style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-main)', fontWeight: '950', fontSize: '0.9rem', letterSpacing: '0.2rem' }}
-                                                />
+                                    return (
+                                        <div key={user.id} className="card-glass animate-fade-in" style={{
+                                            '--i': idx,
+                                            animationDelay: `calc(var(--i) * 30ms)`,
+                                            padding: '1.75rem', borderRadius: '28px', background: 'white', border: isEditingThisUser ? '2.5px solid var(--primary-color)' : '1.5px solid var(--glass-border)',
+                                            transition: 'all 0.3s var(--ease-out-expo)'
+                                        }}>
+                                            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.25rem' }}>
+                                                <div style={{ width: '44px', height: '44px', background: 'var(--primary-gradient)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '1.1rem' }}>
+                                                    {user.firstName[0]}{user.lastName[0]}
+                                                </div>
+                                                <div style={{ minWidth: 0, flex: 1 }}>
+                                                    <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.firstName} {user.lastName}</div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '4px' }}>
+                                                        <select
+                                                            value={user.role}
+                                                            onChange={e => updateUserRole(user.id, e.target.value)}
+                                                            disabled={!canManageUsers || user.id === 'director'}
+                                                            style={{
+                                                                padding: '4px 8px', borderRadius: '8px', border: 'none',
+                                                                background: 'var(--bg-secondary)', color: 'var(--primary-color)',
+                                                                fontSize: '0.78rem', fontWeight: '900', cursor: 'pointer'
+                                                            }}
+                                                        >
+                                                            {rolesList.map(r => <option key={r} value={r}>{roleLabels[r] || r}</option>)}
+                                                        </select>
+                                                    </div>
+                                                </div>
                                             </div>
+
+                                            {/* PIN Change box */}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--bg-main)', borderRadius: '16px', border: '1px solid var(--glass-border)', marginBottom: '1rem' }}>
+                                                <KeyRound size={14} style={{ opacity: 0.5 }} />
+                                                <div style={{ flex: 1 }}>
+                                                    <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase' }}>CODE PIN</div>
+                                                    <input
+                                                        type="password" inputMode="numeric" maxLength={4}
+                                                        value={pinDrafts[user.id] || ''}
+                                                        onChange={e => {
+                                                            const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                                                            setPinDrafts(prev => ({ ...prev, [user.id]: value }));
+                                                            if (value.length === 4) updateUserPin(user.id, value);
+                                                        }}
+                                                        placeholder="••••"
+                                                        style={{ width: '100%', border: 'none', background: 'transparent', outline: 'none', color: 'var(--text-main)', fontWeight: '950', fontSize: '0.9rem', letterSpacing: '0.2rem' }}
+                                                    />
+                                                </div>
+                                            </div>
+
+                                            {/* Action buttons */}
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <button
+                                                    onClick={() => setEditingUserPermId(isEditingThisUser ? null : user.id)}
+                                                    className="btn btn-secondary"
+                                                    style={{ flex: 1, padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900' }}
+                                                >
+                                                    {isEditingThisUser ? 'Masquer accès' : hasCustomPerms ? 'Accès personnalisés' : 'Personnaliser accès'}
+                                                </button>
+                                                {hasCustomPerms && (
+                                                    <button
+                                                        onClick={() => handleResetUserPermissions(user.id)}
+                                                        className="btn btn-secondary"
+                                                        style={{ padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900', color: 'var(--danger-color)' }}
+                                                        title="Réinitialiser les permissions selon le rôle"
+                                                    >
+                                                        Rétablir Rôle
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {/* User permission overriding panel */}
+                                            {isEditingThisUser && (
+                                                <div className="animate-scale-in" style={{ marginTop: '1.25rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1.5px solid var(--glass-border)' }}>
+                                                    <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
+                                                        <span>Surcharges de permissions</span>
+                                                        <span style={{ color: 'var(--primary-color)' }}>Surchargé</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '280px', overflowY: 'auto' }} className="no-scrollbar">
+                                                        {SECTIONS_CONFIG.map(sec => {
+                                                            const roleView = !!accessControl.rolePermissions?.[user.role]?.[sec.viewKey];
+                                                            const userView = accessControl.userPermissions?.[user.id]?.[sec.viewKey];
+                                                            const activeView = userView !== undefined ? userView : roleView;
+
+                                                            const roleEdit = sec.editKey ? !!accessControl.rolePermissions?.[user.role]?.[sec.editKey] : false;
+                                                            const userEdit = sec.editKey ? accessControl.userPermissions?.[user.id]?.[sec.editKey] : undefined;
+                                                            const activeEdit = userEdit !== undefined ? userEdit : roleEdit;
+
+                                                            return (
+                                                                <div key={sec.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '6px' }}>
+                                                                    <div style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-main)' }}>{sec.label}</div>
+                                                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                                                        {sec.viewKey && (
+                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800', color: userView !== undefined ? 'var(--primary-color)' : 'var(--text-muted)' }}>
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={activeView}
+                                                                                    onChange={e => updateUserPermission(user.id, sec.viewKey, e.target.checked)}
+                                                                                />
+                                                                                <span>Voir</span>
+                                                                            </label>
+                                                                        )}
+                                                                        {sec.editKey && (
+                                                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: '800', color: userEdit !== undefined ? 'var(--primary-color)' : 'var(--text-muted)' }}>
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={activeEdit}
+                                                                                    onChange={e => updateUserPermission(user.id, sec.editKey, e.target.checked)}
+                                                                                />
+                                                                                <span>Modifier</span>
+                                                                            </label>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
@@ -503,38 +667,37 @@ export default function Settings({
                         <div className="card-glass animate-fade-in" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)', maxWidth: '600px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                 <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Sparkles size={24} strokeWidth={2.5} /></div>
-                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Sora, sans-serif' }}>Nouveau Membre</h3>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Nouveau Membre</h3>
                             </div>
-                            
+
                             <form onSubmit={handleAddUser} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                 <div>
-                                    <label className="input-label">Prénom</label>
-                                    <input className="glass-input" required value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} placeholder="Ex: Jean" />
+                                    <label className="input-label" style={{ display: 'block', fontSize: '0.78rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Prénom</label>
+                                    <input className="glass-input" required value={newUser.firstName} onChange={e => setNewUser(p => ({ ...p, firstName: e.target.value }))} placeholder="Ex: Jean" style={{ height: '48px', fontWeight: '800' }} />
                                 </div>
                                 <div>
-                                    <label className="input-label">Nom</label>
-                                    <input className="glass-input" required value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} placeholder="Ex: Dupont" />
+                                    <label className="input-label" style={{ display: 'block', fontSize: '0.78rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Nom</label>
+                                    <input className="glass-input" required value={newUser.lastName} onChange={e => setNewUser(p => ({ ...p, lastName: e.target.value }))} placeholder="Ex: Dupont" style={{ height: '48px', fontWeight: '800' }} />
                                 </div>
                                 <div>
-                                    <label className="input-label">Rôle</label>
-                                    <select className="glass-input" value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}>
-                                        <option value="animator">Animateur</option>
-                                        <option value="direction">Direction / Manager</option>
+                                    <label className="input-label" style={{ display: 'block', fontSize: '0.78rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Rôle</label>
+                                    <select className="glass-input" value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))} style={{ height: '48px', fontWeight: '800' }}>
+                                        {rolesList.map(r => <option key={r} value={r}>{roleLabels[r] || r}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="input-label">Code PIN (4 chiffres)</label>
-                                    <input 
+                                    <label className="input-label" style={{ display: 'block', fontSize: '0.78rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Code PIN (4 chiffres)</label>
+                                    <input
                                         type="password" inputMode="numeric" maxLength={4} required
-                                        className="glass-input" value={newUser.pin} 
-                                        onChange={e => setNewUser(p => ({ ...p, pin: e.target.value.replace(/\D/g, '') }))} 
-                                        placeholder="1234" 
-                                        style={{ textAlign: 'center', letterSpacing: '0.5rem', fontSize: '1.25rem' }} 
+                                        className="glass-input" value={newUser.pin}
+                                        onChange={e => setNewUser(p => ({ ...p, pin: e.target.value.replace(/\D/g, '') }))}
+                                        placeholder="4 chiffres"
+                                        style={{ textAlign: 'center', letterSpacing: '0.5rem', fontSize: '1.25rem', height: '48px', fontWeight: '800' }}
                                     />
                                 </div>
                                 <div style={{ marginTop: '1rem', padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: '16px', border: '1px solid var(--glass-border)' }}>
-                                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '850', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                        <ShieldCheck size={14} /> Les nouveaux animateurs recevront automatiquement les droits d'accès standards.
+                                    <p style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '850', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+                                        <ShieldCheck size={14} /> Les nouveaux membres recevront les droits d'accès associés à leur rôle.
                                     </p>
                                 </div>
                                 <button type="submit" className="btn btn-primary" style={{ height: '56px', borderRadius: '16px', fontWeight: '950', fontSize: '1rem', marginTop: '1rem' }}>
@@ -546,58 +709,147 @@ export default function Settings({
 
                     {/* ROLES TAB */}
                     {activeTab === 'roles' && (
-                        <div className="card-glass animate-fade-in" style={{ padding: isMobile ? '1.5rem' : '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-                                <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Unlock size={20} strokeWidth={2.5} /></div>
-                                <div>
-                                    <h3 style={{ margin: 0, fontSize: isMobile ? '1.2rem' : '1.5rem', fontWeight: '950', fontFamily: 'Sora, sans-serif' }}>Permissions</h3>
-                                    <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '850' }}>Configuration par rôle.</p>
+                        <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                            {/* Role management card */}
+                            <div className="card-glass" style={{ padding: '2rem', borderRadius: '28px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                                    <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '10px', color: 'var(--primary-color)' }}><Sparkles size={20} strokeWidth={2.5} /></div>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950' }}>Ajouter un Rôle personnalisé</h3>
+                                </div>
+                                <div style={{ display: 'flex', gap: '1rem', flexDirection: isMobile ? 'column' : 'row' }}>
+                                    <input
+                                        className="glass-input"
+                                        placeholder="Ex: Adjoint Pédagogique, Santé..."
+                                        value={newRoleName}
+                                        onChange={e => setNewRoleName(e.target.value)}
+                                        style={{ height: '48px', fontWeight: '800', flex: 1 }}
+                                    />
+                                    <button className="btn btn-primary" onClick={handleCreateRole} style={{ height: '48px', padding: '0 1.5rem', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem' }}>
+                                        Créer le rôle
+                                    </button>
                                 </div>
                             </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 60px 60px' : 'minmax(0, 1fr) 140px 140px', gap: isMobile ? '0.5rem' : '1.5rem', borderBottom: '2px solid var(--bg-secondary)', paddingBottom: '1.25rem', marginBottom: '1rem' }}>
-                                <div style={{ fontWeight: '950', fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Accès</div>
-                                <div style={{ fontWeight: '950', fontSize: '10px', color: 'var(--primary-color)', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.1em' }}>DIR</div>
-                                <div style={{ fontWeight: '950', fontSize: '10px', color: 'oklch(62% 0.18 200)', textAlign: 'center', textTransform: 'uppercase', letterSpacing: '0.1em' }}>ANIM</div>
-                            </div>
-                            {PERMISSIONS.map(perm => (
-                                <div key={perm.key} style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 60px 60px' : 'minmax(0, 1fr) 140px 140px', gap: isMobile ? '0.5rem' : '1.5rem', padding: '1rem 0', borderBottom: '1.5px solid var(--bg-secondary)', alignItems: 'center' }}>
-                                    <div style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--text-main)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{perm.label}</div>
-                                    {ROLE_KEYS.map(role => (
-                                        <div key={role} style={{ display: 'flex', justifyContent: 'center' }}>
-                                            <input 
-                                                type="checkbox" 
-                                                checked={!!accessControl?.rolePermissions?.[role]?.[perm.key]} 
-                                                onChange={e => updateRolePermission(role, perm.key, e.target.checked)}
-                                                style={{ width: '18px', height: '18px' }}
-                                            />
-                                        </div>
-                                    ))}
+
+                            {/* Configuration split layout */}
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: '2rem', alignItems: 'flex-start' }}>
+                                {/* Role list */}
+                                <div className="card-glass" style={{ padding: '1.25rem', borderRadius: '24px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0.5rem', letterSpacing: '0.05em' }}>Liste des Rôles</div>
+                                    {rolesList.map(roleKey => {
+                                        const isSelected = selectedConfigRole === roleKey;
+                                        const isDefault = roleKey === 'direction' || roleKey === 'animator';
+                                        return (
+                                            <div
+                                                key={roleKey}
+                                                onClick={() => setSelectedConfigRole(roleKey)}
+                                                style={{
+                                                    display: 'flex', alignItems: 'center', justify: 'space-between',
+                                                    padding: '0.75rem 1rem', borderRadius: '14px', cursor: 'pointer',
+                                                    background: isSelected ? 'var(--primary-light)' : 'transparent',
+                                                    border: isSelected ? '1.5px solid var(--primary-color)' : '1.5px solid transparent',
+                                                    transition: 'all 0.2s'
+                                                }}
+                                            >
+                                                <span style={{ fontSize: '0.9rem', fontWeight: '950', color: isSelected ? 'var(--primary-color)' : 'var(--text-main)' }}>
+                                                    {roleLabels[roleKey] || roleKey}
+                                                </span>
+                                                {!isDefault && (
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleDeleteRole(roleKey); }}
+                                                        style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', padding: '4px' }}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        );
+                                    })}
                                 </div>
-                            ))}
+
+                                {/* Permissions configuration panel */}
+                                <div className="card-glass" style={{ padding: '2rem', borderRadius: '28px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                    <div>
+                                        <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                                            Configuration : {roleLabels[selectedConfigRole] || selectedConfigRole}
+                                        </h3>
+                                        <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '850' }}>
+                                            Définissez précisément les droits d'accès globaux pour ce rôle.
+                                        </p>
+                                    </div>
+
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                        {SECTIONS_CONFIG.map(sec => (
+                                            <div key={sec.id} style={{ padding: '1.25rem', background: 'var(--bg-secondary)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                <div style={{ fontWeight: '950', fontSize: '0.9rem', color: 'var(--text-main)' }}>
+                                                    {sec.label}
+                                                </div>
+                                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1.5rem' }}>
+                                                    {sec.viewKey && (
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '800' }}>
+                                                            <input type="checkbox"
+                                                                checked={!!accessControl.rolePermissions?.[selectedConfigRole]?.[sec.viewKey]}
+                                                                onChange={e => updateRolePermission(selectedConfigRole, sec.viewKey, e.target.checked)}
+                                                            />
+                                                            <span>Voir</span>
+                                                        </label>
+                                                    )}
+                                                    {sec.editKey && (
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '800' }}>
+                                                            <input type="checkbox"
+                                                                checked={!!accessControl.rolePermissions?.[selectedConfigRole]?.[sec.editKey]}
+                                                                onChange={e => updateRolePermission(selectedConfigRole, sec.editKey, e.target.checked)}
+                                                            />
+                                                            <span>Modifier / Écrire</span>
+                                                        </label>
+                                                    )}
+                                                    {sec.extra && (
+                                                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '800' }}>
+                                                            <input type="checkbox"
+                                                                checked={!!accessControl.rolePermissions?.[selectedConfigRole]?.[sec.extra.key]}
+                                                                onChange={e => updateRolePermission(selectedConfigRole, sec.extra.key, e.target.checked)}
+                                                            />
+                                                            <span>{sec.extra.label}</span>
+                                                        </label>
+                                                    )}
+                                                    {sec.extraKeys && sec.extraKeys.map(extra => (
+                                                        <label key={extra.key} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.82rem', fontWeight: '800' }}>
+                                                            <input type="checkbox"
+                                                                checked={!!accessControl.rolePermissions?.[selectedConfigRole]?.[extra.key]}
+                                                                onChange={e => updateRolePermission(selectedConfigRole, extra.key, e.target.checked)}
+                                                            />
+                                                            <span>{extra.label}</span>
+                                                        </label>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
                     {/* SECTIONS TAB */}
                     {activeTab === 'sections' && (
-                        <div className="card-glass animate-fade-in" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                        <div className="card-glass" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                 <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Settings2 size={24} strokeWidth={2.5} /></div>
-                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Sora, sans-serif' }}>Modules de l'Interface</h3>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Modules de l'Interface</h3>
                             </div>
                             <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '3rem', fontWeight: '850', maxWidth: '600px', lineHeight: '1.6' }}>Masquez les modules non-essentiels pour optimiser le workflow de l'équipe d'animation pendant le séjour.</p>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
                                 {Object.entries(SECTION_LABELS).map(([key, label]) => (
-                                    <label key={key} className="card-glass" style={{ 
-                                        padding: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
-                                        background: accessControl?.hiddenSections?.[key] ? 'var(--bg-secondary)' : 'white', 
-                                        opacity: accessControl?.hiddenSections?.[key] ? 0.6 : 1, 
+                                    <label key={key} className="card-glass" style={{
+                                        padding: '1.75rem', display: 'flex', justify: 'space-between', alignItems: 'center', cursor: 'pointer',
+                                        background: accessControl?.hiddenSections?.[key] ? 'var(--bg-secondary)' : 'white',
+                                        opacity: accessControl?.hiddenSections?.[key] ? 0.6 : 1,
                                         border: accessControl?.hiddenSections?.[key] ? '1.5px solid var(--glass-border)' : '1.5px solid var(--primary-color)',
                                         borderRadius: '24px', transition: 'all 0.3s var(--ease-out-expo)'
                                     }}>
                                         <span style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{label}</span>
-                                        <input 
-                                            type="checkbox" 
-                                            checked={!accessControl?.hiddenSections?.[key]} 
+                                        <input
+                                            type="checkbox"
+                                            checked={!accessControl?.hiddenSections?.[key]}
                                             onChange={e => setAccessControl(prev => ({ ...prev, hiddenSections: { ...prev.hiddenSections, [key]: !e.target.checked } }))}
                                             style={{ width: '24px', height: '24px' }}
                                         />
@@ -613,9 +865,9 @@ export default function Settings({
                             <div className="card-glass" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><KeyRound size={24} strokeWidth={2.5} /></div>
-                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Sora, sans-serif' }}>Paramètres de Sécurité</h3>
+                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Paramètres de Sécurité</h3>
                                 </div>
-                                
+
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.75rem 2rem', background: 'var(--bg-secondary)', borderRadius: '24px', marginBottom: '2.5rem' }}>
                                     <div>
                                         <div style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)' }}>Mode Développeur / Admin</div>
@@ -633,8 +885,8 @@ export default function Settings({
                                         <button className="btn btn-primary" onClick={() => setIsChangingPin(true)} style={{ width: '100%', height: '54px', borderRadius: '16px', fontWeight: '950' }}>Modifier mon code PIN</button>
                                     ) : (
                                         <form onSubmit={handleUpdatePin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                            <input type="password" placeholder="Nouveau code PIN" value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))} className="glass-input" style={{ background: 'var(--bg-secondary)', height: '54px', borderRadius: '16px', textAlign: 'center', fontSize: '1.25rem', fontWeight: '950', letterSpacing: '0.5rem' }} />
-                                            <input type="password" placeholder="Confirmer le nouveau code" value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))} className="glass-input" style={{ background: 'var(--bg-secondary)', height: '54px', borderRadius: '16px', textAlign: 'center', fontSize: '1.25rem', fontWeight: '950', letterSpacing: '0.5rem' }} />
+                                            <input type="password" inputMode="numeric" maxLength={4} placeholder="Nouveau code PIN" value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))} className="glass-input" style={{ background: 'var(--bg-secondary)', height: '54px', borderRadius: '16px', textAlign: 'center', fontSize: '1.25rem', fontWeight: '950', letterSpacing: '0.5rem' }} />
+                                            <input type="password" inputMode="numeric" maxLength={4} placeholder="Confirmer le nouveau code" value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))} className="glass-input" style={{ background: 'var(--bg-secondary)', height: '54px', borderRadius: '16px', textAlign: 'center', fontSize: '1.25rem', fontWeight: '950', letterSpacing: '0.5rem' }} />
                                             <div style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
                                                 <button className="btn btn-primary" style={{ flex: 1, height: '54px', borderRadius: '16px', fontWeight: '950' }}>Valider le changement</button>
                                                 <button type="button" className="btn btn-secondary" style={{ flex: 1, height: '54px', borderRadius: '16px', fontWeight: '950' }} onClick={() => setIsChangingPin(false)}>Annuler</button>
@@ -652,9 +904,14 @@ export default function Settings({
                             <div className="card-glass" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Database size={24} strokeWidth={2.5} /></div>
-                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Sora, sans-serif' }}>Maintenance & Data</h3>
+                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Maintenance & Data</h3>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                                    <button className="btn-maintenance" onClick={handleExportCsv}>
+                                        <FileSpreadsheet size={32} strokeWidth={2} />
+                                        <span>Exporter CSV</span>
+                                        <small>Participants (Excel)</small>
+                                    </button>
                                     <button className="btn-maintenance" onClick={handleFullExport}>
                                         <Download size={32} strokeWidth={2} />
                                         <span>Exporter JSON</span>
@@ -674,13 +931,12 @@ export default function Settings({
                                                     setParticipants(imported.participants || []);
                                                     setGroups(imported.groups || []);
                                                     setActivities(imported.activities || []);
-                                                    setSavedViews(imported.savedViews || { 'Trajet Aller': {} });
                                                     ui.toast('Restauration réussie.', { type: 'success' });
                                                 } catch (err) { ui.toast('Import invalide.', { type: 'error' }); }
                                             };
                                             reader.readAsText(file);
                                         }} style={{ display: 'none' }} />
-                                </label>
+                                    </label>
                                     <button className="btn-maintenance danger" onClick={handleResetAll}>
                                         <Trash2 size={32} strokeWidth={2} />
                                         <span>Full Reset</span>
@@ -693,7 +949,7 @@ export default function Settings({
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '12px', color: 'var(--text-main)' }}><FileClock size={24} strokeWidth={2.5} /></div>
-                                        <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Sora, sans-serif' }}>Journal d'Activité</h3>
+                                        <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Journal d'Activité</h3>
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem' }}>
                                         <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }} onClick={fetchLogs}>Actualiser</button>

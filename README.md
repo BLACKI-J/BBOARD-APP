@@ -67,6 +67,17 @@ Si vous utilisez un tunnel (Cloudflare, Ngrok) ou un domaine personnalisé :
 ALLOWED_ORIGINS=https://mon-domaine.com,http://localhost:5173
 ```
 
+### 🔒 Sécurité
+Avant le premier démarrage, configurez un PIN Direction à 4 chiffres. En
+production HTTPS, activez également le cookie sécurisé :
+```env
+INITIAL_ADMIN_PIN=4827
+COOKIE_SECURE=true
+```
+
+Le PIN initial est immédiatement converti en hash dans SQLite. Le backend
+refuse de démarrer tant qu'un PIN initial valide n'est pas configuré.
+
 ### 🤖 Services d'Intelligence Artificielle
 Pour activer les fonctionnalités d'assistance intelligente :
 ```env
@@ -101,7 +112,7 @@ Pour utiliser votre propre logo dans l'application :
 ```
 
 > [!IMPORTANT]
-> **Profil Direction** : Par défaut, le profil "Direction Générale" est accessible avec le code PIN `1234`. Pensez à le modifier dans les réglages de sécurité dès votre première connexion.
+> **Profil Direction** : définissez `INITIAL_ADMIN_PIN` avant le premier démarrage et conservez ce code hors du dépôt Git.
 
 ---
 *Généré avec ❤️ via le skill readme-generator.*
