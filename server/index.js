@@ -708,6 +708,7 @@ app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
         setSessionCookie(res, token);
         res.json({ user: publicActor(actor), accessControl });
     } catch (err) {
+        console.error('Login failed:', err);
         res.status(500).json({ error: err.message });
     }
 });
