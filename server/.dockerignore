@@ -1,0 +1,9 @@
+# Ne jamais copier le node_modules de l'hôte dans l'image :
+# binaire natif (sqlite3) compilé pour une autre GLIBC → crash au démarrage.
+node_modules
+npm-debug.log
+*.log
+.env
+data
+backend.log
+.git

@@ -1,0 +1,10 @@
+# Le build frontend installe ses propres dépendances dans l'image.
+# Exclure le node_modules de l'hôte (binaires natifs incompatibles) + le superflu.
+node_modules
+**/node_modules
+dist
+.git
+.env
+*.log
+server/data
+.claude
