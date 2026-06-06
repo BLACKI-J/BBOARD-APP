@@ -62,6 +62,29 @@ export default function Home({
     const period = currentPeriod();
     const medSlot = currentMedSlot();
 
+    // Staff (Direction / AS / anim) can post a message or alert directly here
+    const canPost = !!activeUser && activeUser.role !== 'child';
+    const [msgOpen, setMsgOpen] = useState(false);
+    const [msgText, setMsgText] = useState('');
+    const [msgPriority, setMsgPriority] = useState('info');
+
+    const postMessage = () => {
+        if (!msgText.trim() || !setTransmissions) return;
+        const author = activeUser ? `${activeUser.firstName || ''} ${activeUser.lastName || ''}`.trim() : '';
+        const entry = {
+            id: (crypto?.randomUUID?.() || `msg_${Date.now()}`),
+            text: msgText.trim(),
+            priority: msgPriority,
+            targetDate: today,
+            childName: '',
+            author: author || (activeUser?.role === 'direction' ? 'Direction' : 'Équipe'),
+            createdAt: new Date().toISOString(),
+            done: false,
+        };
+        setTransmissions([entry, ...(transmissions || [])]);
+        setMsgText(''); setMsgPriority('info'); setMsgOpen(false);
+    };
+
     const children = useMemo(() => participants.filter(p => !p.role || p.role === 'child'), [participants]);
 
     // ── Activities of the current half-day (fallback: next upcoming today) ──
@@ -116,42 +139,78 @@ export default function Home({
     // ── Build present sections (bento) ──
     const blocks = [];
 
-    if (dueTransmissions.length > 0 || healthAlerts.length > 0) {
+    if (canPost || dueTransmissions.length > 0 || healthAlerts.length > 0) {
+        const PRIO_OPTS = [
+            { id: 'info', label: 'Info', color: 'var(--primary-color)' },
+            { id: 'important', label: 'Important', color: 'oklch(58% 0.15 75)' },
+            { id: 'urgent', label: 'Urgent', color: 'var(--danger-color)' },
+        ];
         blocks.push(
             <section key="releve" className="premium-card" style={{ padding: isMobile ? '1.25rem' : '1.5rem', borderTop: '4px solid var(--primary-color)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: '800', margin: 0 }}>
-                        <MessageSquareText size={18} style={{ color: 'var(--primary-color)' }} /> Relève & Consignes
+                        <MessageSquareText size={18} style={{ color: 'var(--primary-color)' }} /> Messages & Alertes
                     </h3>
-                    {onNavigate && <button onClick={() => onNavigate('health')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem' }}><Plus size={13} /> Ajouter</button>}
+                    {canPost && (
+                        <button onClick={() => setMsgOpen(o => !o)} style={{ background: msgOpen ? 'var(--primary-light)' : 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', padding: '5px 10px', borderRadius: '10px' }}>
+                            <Plus size={13} /> {msgOpen ? 'Fermer' : 'Écrire'}
+                        </button>
+                    )}
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {dueTransmissions.map(t => {
-                        const p = PRIORITY[t.priority] || PRIORITY.info;
-                        return (
-                            <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.75rem 0.875rem', borderRadius: '12px', background: p.bg, border: `1px solid ${p.color}25` }}>
-                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.color, flexShrink: 0, marginTop: '6px' }} />
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ fontWeight: '850', fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
-                                        {t.childName && <span style={{ color: p.color, fontWeight: '950' }}>{t.childName} — </span>}{t.text}
-                                    </div>
-                                    <div style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                        {PRIORITY[t.priority]?.label || 'Info'}{t.author ? ` · ${t.author}` : ''}
-                                    </div>
-                                </div>
-                                <button onClick={() => dismiss(t.id)} title="Vu" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '10px', border: `1.5px solid ${p.color}40`, background: 'white', color: p.color, fontWeight: '900', fontSize: '0.7rem', cursor: 'pointer' }}>
-                                    <Check size={12} strokeWidth={3} /> Vu
-                                </button>
+
+                {/* Inline composer */}
+                {canPost && msgOpen && (
+                    <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', marginBottom: '0.875rem', padding: '0.875rem', borderRadius: '14px', background: 'var(--bg-main)', border: '1.5px solid var(--glass-border)' }}>
+                        <textarea value={msgText} onChange={e => setMsgText(e.target.value)} autoFocus
+                            placeholder="Message ou alerte pour l'équipe…"
+                            className="glass-input" style={{ minHeight: '60px', padding: '0.625rem 0.75rem', resize: 'vertical', borderRadius: '10px', fontWeight: '600', fontFamily: 'inherit' }} />
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', gap: '0.375rem' }}>
+                                {PRIO_OPTS.map(p => (
+                                    <button key={p.id} onClick={() => setMsgPriority(p.id)} style={{
+                                        display: 'flex', alignItems: 'center', gap: '4px', padding: '0.4rem 0.75rem', borderRadius: '100px', cursor: 'pointer', minHeight: '36px',
+                                        border: '1.5px solid', borderColor: msgPriority === p.id ? p.color : 'var(--glass-border)',
+                                        background: msgPriority === p.id ? p.color : 'white', color: msgPriority === p.id ? 'white' : 'var(--text-muted)',
+                                        fontWeight: '900', fontSize: '0.72rem'
+                                    }}>{msgPriority === p.id && <Check size={11} strokeWidth={3} />}{p.label}</button>
+                                ))}
                             </div>
-                        );
-                    })}
-                    {healthAlerts.map(a => (
-                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.875rem', borderRadius: '12px', background: a.type === 'birthday' ? 'oklch(97% 0.05 82)' : 'oklch(97% 0.04 28)', border: '1px solid var(--glass-border)' }}>
-                            {a.type === 'birthday' ? <Cake size={16} style={{ color: 'oklch(60% 0.15 82)', flexShrink: 0 }} /> : <FileText size={16} style={{ color: 'var(--danger-color)', flexShrink: 0 }} strokeWidth={2.5} />}
-                            <span style={{ fontSize: '0.86rem', fontWeight: '800', color: 'var(--text-main)' }}>{a.message}</span>
+                            <button onClick={postMessage} className="btn btn-primary" style={{ height: '38px', padding: '0 1.1rem', borderRadius: '10px', fontWeight: '950', fontSize: '0.8rem' }}>Publier</button>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )}
+
+                {dueTransmissions.length === 0 && healthAlerts.length === 0 ? (
+                    <div style={{ padding: '0.75rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.85rem' }}>Aucun message. {canPost ? 'Écris-en un pour l\'équipe.' : ''}</div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        {dueTransmissions.map(t => {
+                            const p = PRIORITY[t.priority] || PRIORITY.info;
+                            return (
+                                <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', padding: '0.75rem 0.875rem', borderRadius: '12px', background: p.bg, border: `1px solid ${p.color}25` }}>
+                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: p.color, flexShrink: 0, marginTop: '6px' }} />
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                        <div style={{ fontWeight: '850', fontSize: '0.9rem', color: 'var(--text-main)', lineHeight: 1.35 }}>
+                                            {t.childName && <span style={{ color: p.color, fontWeight: '950' }}>{t.childName} — </span>}{t.text}
+                                        </div>
+                                        <div style={{ fontSize: '0.68rem', fontWeight: '700', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                            {PRIORITY[t.priority]?.label || 'Info'}{t.author ? ` · ${t.author}` : ''}
+                                        </div>
+                                    </div>
+                                    <button onClick={() => dismiss(t.id)} title="Vu" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '10px', border: `1.5px solid ${p.color}40`, background: 'white', color: p.color, fontWeight: '900', fontSize: '0.7rem', cursor: 'pointer' }}>
+                                        <Check size={12} strokeWidth={3} /> Vu
+                                    </button>
+                                </div>
+                            );
+                        })}
+                        {healthAlerts.map(a => (
+                            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.875rem', borderRadius: '12px', background: a.type === 'birthday' ? 'oklch(97% 0.05 82)' : 'oklch(97% 0.04 28)', border: '1px solid var(--glass-border)' }}>
+                                {a.type === 'birthday' ? <Cake size={16} style={{ color: 'oklch(60% 0.15 82)', flexShrink: 0 }} /> : <FileText size={16} style={{ color: 'var(--danger-color)', flexShrink: 0 }} strokeWidth={2.5} />}
+                                <span style={{ fontSize: '0.86rem', fontWeight: '800', color: 'var(--text-main)' }}>{a.message}</span>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </section>
         );
     }

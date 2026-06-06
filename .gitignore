@@ -39,3 +39,7 @@ server/data/*.sqlite
 public/logo/logo.png
 
 README_OPENCODE.md
+
+# Claude Code local (transient)
+.claude/scheduled_tasks.lock
+.claude/agents/
