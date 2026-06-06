@@ -100,10 +100,19 @@ bash bboard.sh up                 # sur la machine serveur → port 8080
 ## ⚙️ Configuration (.env)
 
 ### 🌐 Exposition / CORS
+Les IP locales (`192.168.*`, `10.*`, `127.*`) et `localhost` sont autorisées d'office.
+**Pour un accès par domaine ou reverse proxy (Cloudflare, Nginx, Ngrok…), vous DEVEZ
+ajouter l'origine** — sinon toutes les requêtes `/api` sont bloquées (login impossible).
+
 ```env
-# Domaine ou tunnel (Cloudflare, Ngrok). Les IP locales (192.168.*, 10.*) sont déjà autorisées.
-ALLOWED_ORIGINS=https://mon-domaine.com,http://localhost:5173
+ALLOWED_ORIGINS=https://camp.mondomaine.net      # votre domaine public exact (https://…)
+COOKIE_SECURE=true                                # obligatoire en HTTPS (cookie de session)
 ```
+
+> [!WARNING]
+> Symptôme d'un domaine non autorisé : « Serveur Backend : Non disponible » + erreurs
+> 5xx sur `/api/...`. Vérifiez : `docker logs bboard-backend` → ligne « CORS: origine
+> non autorisée → … ». Ajoutez le domaine à `ALLOWED_ORIGINS`, puis `docker compose up -d`.
 
 ### 🔒 Sécurité
 ```env

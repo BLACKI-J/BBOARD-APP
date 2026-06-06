@@ -96,8 +96,10 @@ const corsOptions = {
         if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.startsWith('http://localhost') || /^http:\/\/127\./.test(origin) || /^http:\/\/192\.168\./.test(origin) || /^http:\/\/10\./.test(origin) || /^http:\/\/172\.(1[6-9]|2[0-9]|3[0-1])\./.test(origin)) {
             callback(null, true);
         } else {
-            console.log('CORS Blocked for origin:', origin);
-            callback(new Error('Not allowed by CORS'));
+            // Refus propre : pas d'en-tête CORS (le navigateur bloque) au lieu de
+            // lever une erreur qui produit un 500. Indice clair dans les logs.
+            console.warn(`CORS: origine non autorisée → ${origin}. Ajoutez-la à ALLOWED_ORIGINS dans .env.`);
+            callback(null, false);
         }
     },
     methods: ["GET", "POST", "DELETE"],
