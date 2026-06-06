@@ -28,6 +28,21 @@ usage() {
     echo ""
 }
 
+# --- PRÉ-VOL : vérifie .env + PIN avant tout déploiement Docker ---
+check_env() {
+    if [ ! -f .env ]; then
+        echo -e "${RED}✗ Fichier .env manquant.${NC} Lancez d'abord : ${YELLOW}bash bboard.sh setup${NC}"
+        exit 1
+    fi
+    PIN=$(grep -E '^INITIAL_ADMIN_PIN=' .env | head -1 | cut -d= -f2- | tr -d " \"'")
+    if ! echo "$PIN" | grep -Eq '^[0-9]{4}$'; then
+        echo -e "${RED}✗ INITIAL_ADMIN_PIN invalide dans .env${NC} (4 chiffres requis)."
+        echo -e "${YELLOW}  → Éditez .env : INITIAL_ADMIN_PIN=1234 (votre code à 4 chiffres).${NC}"
+        echo -e "${YELLOW}  Sans PIN valide, le backend refuse de démarrer (erreur 502 sur /api).${NC}"
+        exit 1
+    fi
+}
+
 # --- COMMANDES ---
 
 case "$1" in
@@ -50,8 +65,10 @@ case "$1" in
 
     up)
         echo -e "${BLUE}=== Déploiement Docker ===${NC}"
+        check_env
         docker compose up -d --build
         echo -e "${GREEN}Application déployée sur http://localhost:8080${NC}"
+        echo -e "${YELLOW}Vérifier le backend : docker logs bboard-backend${NC}"
         ;;
 
     update)
@@ -67,6 +84,7 @@ case "$1" in
         
         if [ -f "docker-compose.yml" ] && [ "$(docker ps -q -f name=bboard-backend)" ]; then
             echo -e "${YELLOW}Redémarrage des conteneurs Docker...${NC}"
+            check_env
             docker compose up -d --build
         fi
         

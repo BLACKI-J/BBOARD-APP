@@ -26,6 +26,13 @@ if grep -q "your_api_key_here" .env; then
     echo "   Certaines fonctionnalités IA risquent de ne pas fonctionner."
 fi
 
+# 2b. Vérification du PIN admin (bloquant pour le backend)
+PIN=$(grep -E '^INITIAL_ADMIN_PIN=' .env | head -1 | cut -d= -f2- | tr -d " \"'")
+if ! echo "$PIN" | grep -Eq '^[0-9]{4}$'; then
+    echo "🔴 IMPORTANT : INITIAL_ADMIN_PIN doit être un code à 4 chiffres dans .env."
+    echo "   Éditez .env → INITIAL_ADMIN_PIN=1234  (sinon le backend ne démarrera pas : erreur 502)."
+fi
+
 # 3. Installation des dépendances (Optionnel sur l'hôte)
 if command -v npm >/dev/null 2>&1; then
     echo "📦 Installation des dépendances (Racine + Serveur)..."
