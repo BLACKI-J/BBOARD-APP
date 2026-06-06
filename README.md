@@ -1,118 +1,146 @@
-# BBOARD-APP 🚀
+# BBOARD 🏕️
 
-BBOARD-APP est une solution métier de pointe dédiée à la **gestion complète des Centres de Vacances et Séjours (Colonies)**. Conçue pour offrir une fluidité opérationnelle maximale, l'application centralise les données critiques, la planification et la sécurité, même en conditions de réseau dégradées.
+**BBOARD** est une application métier de gestion complète des **centres de vacances et séjours (colonies)**. Pensée pour le terrain : utilisable sur **téléphone, tablette et ordinateur**, en réseau local ou à distance, elle centralise la santé, la coordination, le pointage et la logistique d'un séjour.
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.2.0-green.svg)](package.json)
-[![Tech](https://img.shields.io/badge/stack-React%20%7C%20Node%20%7C%20SQLite-indigo.svg)](https://react.dev)
-
-## ✨ Caractéristiques Principales
-
--   📊 **Dashboard de Santé** : Surveillance en temps réel de la connexion backend/client.
--   🔒 **Sécurité par Profil** : Authentification individuelle par Code PIN à 4 chiffres.
--   🔄 **Synchronisation Temps Réel** : Mise à jour instantanée via Socket.io.
--   ⚡ **Mode Résilience** : Gestion intelligente des déconnexions pour un usage fluide sur le terrain.
--   🤖 **Assistance IA** : Intégration de Groq et HuggingFace pour l'aide à la saisie et l'analyse.
--   📅 **Gestion Multisectorielle** : Participants, Plannings, Inventaire, FEI (Fiches d'Incident) et Transports.
-
-## 🛠️ Stack Technique
-
--   **Frontend** : React 18, Vite, Tailwind CSS.
--   **Backend** : Node.js, Express, Socket.io.
--   **Base de Données** : SQLite (persistance locale simplifiée).
--   **Infrastructure** : Docker & Docker Compose.
+[![Version](https://img.shields.io/badge/version-1.0.0-green.svg)](package.json)
+[![Stack](https://img.shields.io/badge/stack-React%2018%20%7C%20Node%20%7C%20SQLite-c2703d.svg)](https://react.dev)
+[![PWA](https://img.shields.io/badge/PWA-installable-7c5cff.svg)](#-mobile--multi-appareils)
 
 ---
 
-## 🚀 Installation & Démarrage
+## ✨ Fonctionnalités
 
-BBOARD-APP utilise un gestionnaire unique (`bboard.sh`) pour simplifier toutes vos opérations.
+### 🩺 Pôle Santé
+- **Fiches & Suivi** : fiche complète par enfant (activités, hygiène, sommeil, repas, santé, traitements) — éditable par l'équipe sanitaire, lisible par les anims.
+- **Médicaments** : administration par créneau (Matin / Midi / Goûter / Soir) avec **calendrier** pour consulter/valider n'importe quel jour, traitement « si besoin » (PRN), et **export PDF** du registre.
+- **Registre infirmerie** : registre d'administration + suivi des passages à l'infirmerie, **exportables en PDF** (document à archiver).
+
+### 📋 Tableau de bord
+- **Messages & Alertes** : la direction / l'équipe sanitaire publie un message ou une alerte (priorité info / important / urgent) directement, visible par toute l'équipe.
+- Vue du jour : activités du créneau en cours, traitements à donner, repas, alertes auto (fiches sanitaires manquantes, anniversaires).
+
+### 👥 Annuaire & Coordination
+- **Annuaire** : participants & staff, **rôles dynamiques**, groupes, recherche/filtres, import/export CSV & JSON, **argent de poche** par enfant.
+- **Pointage** : présence par groupe, photo via **caméra native du téléphone** ou galerie.
+- **Coordination** : compte-rendu quotidien (sauvegarde auto) + tâches priorisées par jour.
+- **Planning & Menus** : activités datées + menus de la semaine.
+
+### 🚨 Sécurité & logistique
+- **FEI** (Fiches d'Événement Indésirable) : formulaire Cerfa imprimable + **reformulation assistée par IA**.
+- **Fiche de sortie**, **Matériel / Inventaire** (scan & reconnaissance IA), **Transports**.
+
+### ⚙️ Transverse
+- 🔒 **Authentification par code PIN** (4 chiffres, haché en base), rôles & permissions configurables.
+- 🔄 **Synchronisation temps réel** via Socket.io.
+- 🤖 **Assistance IA** (Groq + Hugging Face) pour la saisie FEI et la reconnaissance d'objets.
+- 📲 **PWA installable**, navigation mobile (barre inférieure), en-têtes rétractables au scroll.
+
+---
+
+## 🛠️ Stack technique
+
+| Couche | Technologies |
+| :--- | :--- |
+| **Frontend** | React 18 · Vite · design system custom (variables CSS OKLCH, thème chaud « Terracotta ») |
+| **Backend** | Node.js · Express · Socket.io |
+| **Base de données** | SQLite (persistance locale) |
+| **Infra** | Docker & Docker Compose · Nginx |
+| **Polices** | Bricolage Grotesque (titres) · Hanken Grotesk (texte) |
+
+---
+
+## 🚀 Installation & démarrage
+
+Tout passe par le gestionnaire unique `bboard.sh` :
 
 ```bash
-# 1. Cloner le projet
+# 1. Cloner
 git clone https://github.com/BLACKI-J/BBOARD-APP.git
 cd BBOARD-APP
 
-# 2. Lancer la configuration automatique (Assistance interactive)
+# 2. Configuration assistée (dépendances, .env, Docker)
 bash bboard.sh setup
 
-# 3. Lancer l'environnement souhaité
-bash bboard.sh dev   # Mode Développement (Local)
-# OU
-bash bboard.sh up    # Mode Production (Docker)
+# 3. Lancer
+bash bboard.sh dev   # Développement local (Front 5173 · Back 3001)
+bash bboard.sh up    # Production Docker (Port 8080)
 ```
 
-## 🎮 Commandes du Gestionnaire CLI
-
-Le script `bboard.sh` à la racine est votre seul outil de contrôle :
+### 🎮 Commandes CLI
 
 | Commande | Description |
 | :--- | :--- |
-| `setup` | Installe les dépendances, crée le `.env` et propose l'install de Docker. |
-| `dev` | Lance le Frontend (5173) et le Backend (3001) localement. |
-| `up` | Déploie l'application complète via Docker Compose (Port 8080). |
-| `update` | Récupère le dernier code et redémarre les services (Docker/Local). |
-| `down` | Arrête proprement tous les services (Docker et processus locaux). |
-| `logs` | Visualise les journaux d'activité du serveur. |
+| `setup` | Installe les dépendances, crée le `.env`, propose Docker. |
+| `dev` | Lance Frontend (5173) + Backend (3001) en local. |
+| `up` | Déploie via Docker Compose (port 8080). |
+| `update` | Récupère le dernier code et redémarre les services. |
+| `down` | Arrête proprement tous les services. |
+| `logs` | Affiche les journaux du serveur. |
 
 ---
 
-## ⚙️ Configuration Avancée (.env)
+## 📲 Mobile & multi-appareils
 
-L'application est hautement configurable via le fichier `.env`.
+L'app est conçue pour être **servie au quotidien depuis n'importe quel appareil** (tél, tablette, PC).
 
-### 🌐 Exposition & Domaines (CORS)
-Si vous utilisez un tunnel (Cloudflare, Ngrok) ou un domaine personnalisé :
+**Sur le réseau local (le plus simple)** : une machine héberge l'app, les autres s'y connectent en WiFi.
+
+```bash
+bash bboard.sh up                 # sur la machine serveur → port 8080
+# Sur les téléphones : ouvrir http://IP-DU-SERVEUR:8080
+```
+
+> [!TIP]
+> Sur le téléphone, « Ajouter à l'écran d'accueil » installe BBOARD comme une appli (PWA).
+> La prise de photo (pointage, matériel) utilise la **caméra native** → fonctionne aussi en HTTP sur le réseau local.
+
+---
+
+## ⚙️ Configuration (.env)
+
+### 🌐 Exposition / CORS
 ```env
+# Domaine ou tunnel (Cloudflare, Ngrok). Les IP locales (192.168.*, 10.*) sont déjà autorisées.
 ALLOWED_ORIGINS=https://mon-domaine.com,http://localhost:5173
 ```
 
 ### 🔒 Sécurité
-Avant le premier démarrage, configurez un PIN Direction à 4 chiffres. En
-production HTTPS, activez également le cookie sécurisé :
 ```env
-INITIAL_ADMIN_PIN=4827
-COOKIE_SECURE=true
+INITIAL_ADMIN_PIN=4827   # PIN Direction initial (haché au 1er démarrage)
+COOKIE_SECURE=true       # à activer en production HTTPS
 ```
+Le backend refuse de démarrer sans `INITIAL_ADMIN_PIN` valide.
 
-Le PIN initial est immédiatement converti en hash dans SQLite. Le backend
-refuse de démarrer tant qu'un PIN initial valide n'est pas configuré.
-
-### 🤖 Services d'Intelligence Artificielle
-Pour activer les fonctionnalités d'assistance intelligente :
+### 🤖 Intelligence artificielle (optionnel)
 ```env
-# Clé Groq (Recommandé)
 GROQ_API_KEY=votre_cle_ici
 GROQ_MODEL=llama-3.1-8b-instant
-
-# Clé Hugging Face (Optionnel)
 HUGGINGFACE_API_KEY=votre_cle_ici
 ```
 
-### 🎨 Personnalisation du Logo
-Pour utiliser votre propre logo dans l'application :
-1.  Préparez une image au format **PNG** (recommandé : fond transparent).
-2.  Remplacez le fichier suivant par le vôtre : `public/logo/logo.png`.
-3.  Le logo sera automatiquement mis à jour sur la page de connexion et dans l'interface.
-
-> [!NOTE]
-> Le fichier `public/logo/logo.png` est ignoré par Git pour protéger votre identité visuelle personnelle lors des mises à jour.
+### 🎨 Logo
+Remplacez `public/logo/logo.png` par votre image PNG (fond transparent recommandé). Le fichier est ignoré par Git pour protéger votre identité visuelle.
 
 ---
 
-## 📂 Structure du Projet
+## 📂 Structure
 
 ```text
 .
-├── bboard.sh        # Gestionnaire principal (CLI)
-├── scripts/         # Scripts d'automatisation internes
-├── docs/            # Archives et documents du projet
-├── server/          # Backend Node.js & Base SQLite
-└── src/             # Frontend React (Vite)
+├── bboard.sh        # Gestionnaire CLI
+├── scripts/         # Scripts d'automatisation (dev, setup…)
+├── server/          # Backend Node.js + SQLite
+│   └── index.js     # API Express + Socket.io
+├── src/
+│   ├── components/  # Sections (Home, Santé, Annuaire, Pointage…)
+│   ├── ui/          # Système d'UI (provider, primitives)
+│   └── utils/       # Helpers (meds, impression, garde non-sauvé…)
+├── docker-compose.yml
+└── nginx.conf
 ```
 
-> [!IMPORTANT]
-> **Profil Direction** : définissez `INITIAL_ADMIN_PIN` avant le premier démarrage et conservez ce code hors du dépôt Git.
-
 ---
-*Généré avec ❤️ via le skill readme-generator.*
+
+> [!IMPORTANT]
+> **Premier démarrage** : définissez `INITIAL_ADMIN_PIN` avant tout, et gardez-le hors du dépôt Git.
