@@ -67,6 +67,11 @@ const TAB_TITLES = {
 };
 
 const defaultAccessControl = {
+    roles: [
+        { id: 'direction', label: 'Direction', base: true },
+        { id: 'animator', label: 'Animateur', base: true },
+        { id: 'child', label: 'Enfant', base: true }
+    ],
     hiddenSections: {
         home: false, schedule: false, exitsheet: false, incident: false,
         recap: false, attendance: false, inventory: false, directory: false, health: false
@@ -87,19 +92,35 @@ const defaultAccessControl = {
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
             viewHealth: true, editHealth: true,
             searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
-        }
+        },
+        child: {}
     },
     userPermissions: {}, disabledUsers: {}, incidentAiDefaultMode: 'detaille'
 };
 
 function mergeAccessControl(raw) {
     const source = raw && typeof raw === 'object' ? raw : {};
+    
+    // Merge custom roles with base roles
+    let mergedRoles = [...defaultAccessControl.roles];
+    if (Array.isArray(source.roles)) {
+        source.roles.forEach(sr => {
+            if (!mergedRoles.find(mr => mr.id === sr.id)) mergedRoles.push(sr);
+            else if (!sr.base) {
+                // update existing custom role
+                const idx = mergedRoles.findIndex(mr => mr.id === sr.id);
+                mergedRoles[idx] = { ...mergedRoles[idx], ...sr };
+            }
+        });
+    }
+
     return {
         ...defaultAccessControl, ...source,
+        roles: mergedRoles,
         hiddenSections: { ...defaultAccessControl.hiddenSections, ...(source.hiddenSections || {}) },
         rolePermissions: {
-            direction: { ...defaultAccessControl.rolePermissions.direction, ...(source.rolePermissions?.direction || {}) },
-            animator: { ...defaultAccessControl.rolePermissions.animator, ...(source.rolePermissions?.animator || {}) }
+            ...defaultAccessControl.rolePermissions,
+            ...(source.rolePermissions || {})
         },
         userPermissions: { ...defaultAccessControl.userPermissions, ...(source.userPermissions || {}) },
         disabledUsers: { ...defaultAccessControl.disabledUsers, ...(source.disabledUsers || {}) }
@@ -185,7 +206,9 @@ export default function App() {
     const [retryCount, setRetryCount] = useState(0);
     const [lastSyncAt, setLastSyncAt] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
+    const [moreOpen, setMoreOpen] = useState(false);
     const [staffUsers, setStaffUsers] = useState([]);
+    const [transmissions, setTransmissions] = useState([]);
     const [sessionUser, setSessionUser] = useState(null);
     const [authChecked, setAuthChecked] = useState(false);
 
@@ -225,7 +248,7 @@ export default function App() {
 
     const navItems = useMemo(() => {
         const all = [
-            { id: 'home', label: 'Aujourd\'hui', icon: <Utensils size={22} strokeWidth={2.5} /> },
+            { id: 'home', label: 'Tableau de bord', icon: <LayoutDashboard size={22} strokeWidth={2.5} /> },
             { id: 'schedule', label: 'Planning', icon: <Calendar size={22} strokeWidth={2.5} /> },
             { id: 'exitsheet', label: 'Fiche de sortie', icon: <FileText size={22} strokeWidth={2.5} /> },
             { id: 'health', label: 'Santé', icon: <Activity size={22} strokeWidth={2.5} /> },
@@ -265,6 +288,7 @@ export default function App() {
         setIncidentSheets([]);
         setExitSheets([]);
         setMeetingRecaps([]);
+        setTransmissions([]);
         setInventoryItems([]);
         isDataLoaded.current = false;
     }, []);
@@ -287,8 +311,9 @@ export default function App() {
                 setStaffUsers(await profilesResponse.json());
 
                 const sessionResponse = await fetch(`${API_URL}/auth/session`);
-                if (sessionResponse.ok) {
-                    applyAuthenticatedSession(await sessionResponse.json());
+                const sessionData = sessionResponse.ok ? await sessionResponse.json() : null;
+                if (sessionData?.authenticated) {
+                    applyAuthenticatedSession(sessionData);
                 } else {
                     clearAuthenticatedSession();
                     setConnectionStatus('connected');
@@ -395,7 +420,8 @@ export default function App() {
                     fetchJson(`${API_URL}/meeting-recaps`, []),
                     fetchJson(`${API_URL}/inventory/items`, []),
                     fetchJson(`${API_URL}/auth/profiles`, []),
-                    fetchJson(`${API_URL}/state/menus`, {})
+                    fetchJson(`${API_URL}/state/menus`, {}),
+                    fetchJson(`${API_URL}/state/transmissions`, [])
                 ]);
 
                 const newGroups = data[0]; const newParticipants = data[1];
@@ -407,6 +433,7 @@ export default function App() {
                 setInventoryItems(data[7] || []);
                 setStaffUsers(data[8] || []);
                 setMenus(data[9] || {});
+                setTransmissions(Array.isArray(data[10]) ? data[10] : []);
                 // Sync to global store
                 useAppStore.getState().setParticipants(newParticipants);
                 useAppStore.getState().setGroups(newGroups);
@@ -510,6 +537,10 @@ export default function App() {
         mutateCollection(`${API_URL}/state/menus`, setMenus, v, menus);
     }, [mutateCollection, menus]);
 
+    const setSyncedTransmissions = useCallback((v) => {
+        mutateCollection(`${API_URL}/state/transmissions`, setTransmissions, v, transmissions);
+    }, [mutateCollection, transmissions]);
+
     const loadingShell = (
         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <div className="card-glass" style={{ padding: 'var(--space-lg)', background: 'white', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)', border: '1.5px solid var(--glass-border)' }}>
@@ -549,8 +580,8 @@ export default function App() {
 
     return (
         <div className="app-layout" style={{ background: 'transparent', overflow: 'hidden', display: 'flex', width: '100vw', height: '100dvh' }}>
-            {/* Sidebar Navigation */}
-            <aside className={`nav-sidebar ${isNavOpen ? 'open' : ''}`} style={{ borderRight: '1.5px solid var(--glass-border)', background: 'var(--glass-bg)', backdropFilter: 'blur(32px)', zIndex: 110, transition: 'all 0.4s var(--ease-out-expo)', flexShrink: 0, width: isMobile ? '100%' : '250px' }}>
+            {/* Sidebar Navigation — desktop only */}
+            {!isMobile && <aside className={`nav-sidebar ${isNavOpen ? 'open' : ''}`} style={{ borderRight: '1.5px solid var(--glass-border)', background: 'var(--glass-bg)', backdropFilter: 'blur(32px)', zIndex: 110, transition: 'all 0.4s var(--ease-out-expo)', flexShrink: 0, width: '250px' }}>
                 <div style={{ padding: '1.75rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
                     <Logo />
                     <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -608,10 +639,7 @@ export default function App() {
                         </button>
                     )}
                 </nav>
-            </aside>
-
-            {/* Mobile Overlays */}
-            {isNavOpen && <div className="mobile-overlay" onClick={() => setIsNavOpen(false)} style={{ zIndex: 105, background: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }} />}
+            </aside>}
 
             {/* Main Content */}
             <main style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
@@ -633,23 +661,20 @@ export default function App() {
 
                 {/* Topbar Header */}
                 <header style={{
-                    height: isMobile ? '70px' : '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: isMobile ? '0 0.75rem' : '0 2.5rem', background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(16px)',
-                    borderBottom: '1.5px solid var(--glass-border)', zIndex: 100, transition: 'all 0.3s var(--ease-out-expo)'
+                    height: isMobile ? '56px' : '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: isMobile ? '0 0.875rem' : '0 2.5rem', background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(16px)',
+                    borderBottom: '1.5px solid var(--glass-border)', zIndex: 100, transition: 'all 0.3s var(--ease-out-expo)',
+                    flexShrink: 0
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1.5rem', minWidth: 0, flex: 1 }}>
-                        {isMobile && (
-                            <button onClick={() => setIsNavOpen(true)} className="btn-icon-ref" style={{ background: 'white', borderRadius: '12px', width: '40px', height: '40px' }}>
-                                <Menu size={20} strokeWidth={3} />
-                            </button>
-                        )}
-                        <h1 style={{ margin: 0, fontSize: isMobile ? '0.85rem' : '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque', color: 'var(--text-main)', letterSpacing: '-0.04em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.625rem' : '1.5rem', minWidth: 0, flex: 1 }}>
+                        {!isMobile && <Logo />}
+                        <h1 style={{ margin: 0, fontSize: isMobile ? '1rem' : '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque', color: 'var(--text-main)', letterSpacing: '-0.03em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
                             {TAB_TITLES[activeTab] || activeTab}
                         </h1>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.5rem' : '1.25rem' }}>
-                        {/* Sync status */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.375rem' : '1.25rem', flexShrink: 0 }}>
+                        {/* Sync status — desktop only; mobile shows dot via SyncStatus isMobile */}
                         <SyncStatus status={connectionStatus} isSyncing={isSyncing} lastSyncAt={lastSyncAt} onRefresh={onRefresh} isMobile={isMobile} />
 
                         {/* Notification Bell */}
@@ -727,20 +752,20 @@ export default function App() {
                     onRefresh={onRefresh}
                     disabled={!isMobile}
                     className="no-scrollbar"
-                    style={{ flex: 1, padding: isMobile ? 'var(--space-sm)' : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }}
+                    style={{ flex: 1, padding: isMobile ? `var(--space-sm) var(--space-sm) 84px` : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }}
                 >
                     <Suspense fallback={loadingShell}>
                         <ErrorBoundary key={activeTab}>
                             <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} />
+                                {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} onNavigate={guardedNavigate} isMobile={isMobile} />
                                 : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} menus={menus} setMenus={setSyncedMenus} />
                                 : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)} canEdit={permissions.editDirectory} isMobile={isMobile} />
+                                : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)} canEdit={permissions.editDirectory} isMobile={isMobile} roles={accessControl.roles} />
                                 : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
                                 : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} setInventoryItems={(v) => mutateCollection(`${API_URL}/inventory/items`, setInventoryItems, v, inventoryItems)} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editHealth} actorHeaders={actorHeaders} onRefresh={onRefresh} isMobile={isMobile} />
+                                : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editHealth} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
                                 : activeTab === 'settings' ? <Settings
                                     participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)}
                                     activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
@@ -754,6 +779,59 @@ export default function App() {
                     </Suspense>
                 </PullToRefresh>
             </main>
+
+            {/* ── Bottom Nav Bar (mobile only) ── */}
+            {isMobile && (() => {
+                const PRIMARY_TABS = ['home', 'health', 'schedule', 'attendance', 'directory'];
+                const primaryItems = navItems.filter(i => PRIMARY_TABS.includes(i.id));
+                const moreItems = navItems.filter(i => !PRIMARY_TABS.includes(i.id));
+                const isMoreActive = moreItems.some(i => i.id === activeTab) || activeTab === 'settings';
+                return (
+                    <>
+                        {/* Backdrop for "more" drawer */}
+                        {moreOpen && <div onClick={() => setMoreOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 199, background: 'rgba(0,0,0,0.25)', backdropFilter: 'blur(4px)' }} />}
+
+                        {/* More drawer */}
+                        {moreOpen && (
+                            <div className="animate-scale-in" style={{ position: 'fixed', bottom: '68px', left: '1rem', right: '1rem', zIndex: 200, background: 'white', borderRadius: '24px', padding: '0.75rem', boxShadow: '0 -4px 40px rgba(0,0,0,0.15)', border: '1.5px solid var(--glass-border)' }}>
+                                {[...moreItems, ...(permissions.viewSettings ? [{ id: 'settings', label: 'Paramètres', icon: <SettingsIcon size={20} strokeWidth={2.5} /> }] : [])].map(item => (
+                                    <button key={item.id} onClick={() => { guardedNavigate(item.id); setMoreOpen(false); }}
+                                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: '850', fontSize: '0.92rem', background: activeTab === item.id ? 'var(--primary-light)' : 'transparent', color: activeTab === item.id ? 'var(--primary-color)' : 'var(--text-main)' }}>
+                                        <span style={{ color: activeTab === item.id ? 'var(--primary-color)' : 'var(--text-muted)' }}>{item.icon}</span>
+                                        {item.label}
+                                        {navBadges[item.id] > 0 && <span style={{ marginLeft: 'auto', minWidth: '20px', height: '20px', padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--danger-color)', color: 'white', fontSize: '10px', fontWeight: '950', borderRadius: '10px' }}>{navBadges[item.id]}</span>}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Bottom bar */}
+                        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, height: '64px', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'stretch', paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -4px 20px rgba(0,0,0,0.07)' }}>
+                            {primaryItems.map(item => {
+                                const isActive = activeTab === item.id;
+                                const badge = navBadges[item.id] || 0;
+                                return (
+                                    <button key={item.id} onClick={() => guardedNavigate(item.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', border: 'none', background: 'transparent', cursor: 'pointer', color: isActive ? 'var(--primary-color)' : 'var(--text-muted)', position: 'relative', minHeight: '44px' }}>
+                                        <span style={{ position: 'relative', display: 'flex' }}>
+                                            {item.icon}
+                                            {badge > 0 && <span style={{ position: 'absolute', top: '-5px', right: '-7px', minWidth: '16px', height: '16px', padding: '0 4px', background: 'var(--danger-color)', color: 'white', fontSize: '9px', fontWeight: '950', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{badge > 9 ? '9+' : badge}</span>}
+                                        </span>
+                                        <span style={{ fontSize: '9px', fontWeight: isActive ? '950' : '800', letterSpacing: '0.01em', lineHeight: 1 }}>{item.label.length > 8 ? item.label.slice(0, 7) + '.' : item.label}</span>
+                                        {isActive && <span style={{ position: 'absolute', bottom: '0', left: '50%', transform: 'translateX(-50%)', width: '20px', height: '3px', background: 'var(--primary-color)', borderRadius: '999px 999px 0 0' }} />}
+                                    </button>
+                                );
+                            })}
+                            {/* More button */}
+                            {(moreItems.length > 0 || permissions.viewSettings) && (
+                                <button onClick={() => setMoreOpen(o => !o)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', border: 'none', background: 'transparent', cursor: 'pointer', color: isMoreActive || moreOpen ? 'var(--primary-color)' : 'var(--text-muted)', minHeight: '44px' }}>
+                                    <Menu size={22} strokeWidth={2.5} />
+                                    <span style={{ fontSize: '9px', fontWeight: isMoreActive || moreOpen ? '950' : '800', letterSpacing: '0.01em', lineHeight: 1 }}>Plus</span>
+                                </button>
+                            )}
+                        </nav>
+                    </>
+                );
+            })()}
 
             <style>{`
                 .btn-icon-ref {

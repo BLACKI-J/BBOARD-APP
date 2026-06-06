@@ -1,12 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import {
-    Sunrise, Sun, Apple, Moon, Printer, AlertCircle, Check, FileDown, History
+    Sunrise, Sun, Apple, Moon, Printer, AlertCircle, Check, FileDown, History, ChevronDown
 } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { getMedicationsList, getSiBesoinList, ALL_SLOTS } from '../../utils/meds';
 import MedsPdfExport from '../MedsPdfExport';
 import MedsCalendar from './MedsCalendar';
 import { EmptyState } from '../ui';
+import { printHtml } from '../../utils/printHtml';
 
 const pad = (n) => String(n).padStart(2, '0');
 const localISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -22,7 +23,7 @@ const SLOT_CONFIG = {
     'Soir':   { icon: <Moon size={18} />,    color: 'oklch(50% 0.2 275)',  colorLight: 'oklch(96% 0.05 275)', gradient: 'linear-gradient(135deg, oklch(52% 0.22 270), oklch(60% 0.18 285))' },
 };
 
-const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, groups }) => {
+const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, groups, isScrolled = false, scrollToTop }) => {
     const [activeSlot, setActiveSlot] = useState(() => {
         const hour = new Date().getHours();
         if (hour >= 6 && hour < 11) return 'Matin';
@@ -97,8 +98,6 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
 
     // Print/export the recorded administration for the selected day (A4).
     const printDay = () => {
-        const win = window.open('', '_blank');
-        if (!win) return;
         const dateLabel = fromISO(selectedDate).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
         const rows = [];
         children.forEach(c => {
@@ -120,7 +119,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
         const body = rows.length
             ? rows.map(r => `<tr><td>${escapeHtml(r[0])}</td><td>${escapeHtml(r[1])}</td><td>${escapeHtml(r[2])}</td><td class="${r[3] ? 'ok' : 'no'}">${r[3] ? '✓ Donné' : '✗ Non'}</td></tr>`).join('')
             : `<tr><td colspan="4" style="text-align:center;color:#999;padding:24px">Aucun traitement enregistré ce jour</td></tr>`;
-        win.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Administration médicaments — ${escapeHtml(dateLabel)}</title>
+        printHtml(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Administration médicaments — ${escapeHtml(dateLabel)}</title>
             <style>
                 * { box-sizing: border-box; }
                 body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #1a1a1a; padding: 24px; }
@@ -141,53 +140,111 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
             <table><thead><tr><th>Vacancier</th><th>Créneau</th><th>Médicament</th><th>Statut</th></tr></thead><tbody>${body}</tbody></table>
             <div class="sign">Visa infirmier(ère) / responsable sanitaire : ______________________&nbsp;&nbsp;&nbsp;Signature : ______________________</div>
             </body></html>`);
-        win.document.close();
-        win.focus();
-        win.print();
+    };
+
+    const collapsed = isMobile && isScrolled;
+    const shortDate = fromISO(selectedDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+
+    const shiftDay = (delta) => {
+        const d = fromISO(selectedDate);
+        d.setDate(d.getDate() + delta);
+        const iso = localISO(d);
+        if (iso > today) return;
+        setSelectedDate(iso);
     };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>
             <MedsPdfExport children={children} />
 
-            {/* Date picker */}
-            <MedsCalendar selectedDate={selectedDate} onSelect={setSelectedDate} datesWithRecords={datesWithRecords} isMobile={isMobile} />
+            {/* ── Collapsible header: calendar + slot selector ── */}
+            <div style={{
+                overflow: 'hidden',
+                maxHeight: collapsed ? '0' : '600px',
+                opacity: collapsed ? 0 : 1,
+                transition: 'max-height 0.35s cubic-bezier(0.4,0,0.2,1), opacity 0.25s',
+                display: 'flex', flexDirection: 'column', gap: '1.5rem',
+                pointerEvents: collapsed ? 'none' : 'auto'
+            }}>
+                {/* Date picker */}
+                <MedsCalendar selectedDate={selectedDate} onSelect={setSelectedDate} datesWithRecords={datesWithRecords} isMobile={isMobile} />
 
-            {/* Viewing a past day */}
-            {!isToday && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.25rem', borderRadius: '16px', background: 'oklch(96% 0.06 80)', border: '1.5px solid oklch(80% 0.14 85 / 0.5)', color: 'oklch(45% 0.12 70)', fontWeight: '850', fontSize: '0.85rem' }}>
-                    <History size={16} strokeWidth={2.5} />
-                    Vous consultez un jour passé — {canEdit ? 'les modifications sont enregistrées' : 'lecture seule'}.
+                {/* Viewing a past day */}
+                {!isToday && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.25rem', borderRadius: '16px', background: 'oklch(96% 0.06 80)', border: '1.5px solid oklch(80% 0.14 85 / 0.5)', color: 'oklch(45% 0.12 70)', fontWeight: '850', fontSize: '0.85rem' }}>
+                        <History size={16} strokeWidth={2.5} />
+                        Vous consultez un jour passé.
+                    </div>
+                )}
+
+                {/* Slot selector */}
+                <div style={{
+                    background: 'white', borderRadius: '24px', padding: '0.5rem',
+                    border: '1.5px solid var(--glass-border)',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
+                    display: 'flex', gap: '0.5rem',
+                    flexWrap: isMobile ? 'wrap' : 'nowrap'
+                }}>
+                    {ALL_SLOTS.map(slot => {
+                        const cfg = SLOT_CONFIG[slot];
+                        const isActive = activeSlot === slot;
+                        return (
+                            <button key={slot} onClick={() => setActiveSlot(slot)} style={{
+                                flex: 1, padding: '0.75rem 1rem', borderRadius: '18px', border: 'none',
+                                background: isActive ? cfg.gradient : 'transparent',
+                                color: isActive ? 'white' : 'var(--text-muted)',
+                                fontWeight: '950', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s',
+                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                boxShadow: isActive ? `0 4px 16px ${cfg.color}40` : 'none', minHeight: '44px'
+                            }}>
+                                <span style={{ filter: isActive ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' : 'grayscale(0.5) opacity(0.6)' }}>{cfg.icon}</span>
+                                {slot}
+                            </button>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* ── Compact sticky bar (mobile, scrolled) ── */}
+            {isMobile && (
+                <div style={{
+                    position: 'sticky', top: 0, zIndex: 25,
+                    background: 'white',
+                    borderRadius: '18px',
+                    border: '1.5px solid var(--glass-border)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                    display: 'flex', alignItems: 'center',
+                    overflow: 'hidden',
+                    maxHeight: collapsed ? '52px' : '0',
+                    opacity: collapsed ? 1 : 0,
+                    transition: 'max-height 0.3s cubic-bezier(0.4,0,0.2,1), opacity 0.2s',
+                    pointerEvents: collapsed ? 'auto' : 'none',
+                }}>
+                    {/* Slot switcher pills */}
+                    <div style={{ display: 'flex', flex: 1, padding: '4px 6px', gap: '4px', overflowX: 'auto', scrollbarWidth: 'none' }} className="no-scrollbar">
+                        {ALL_SLOTS.map(slot => {
+                            const cfg = SLOT_CONFIG[slot];
+                            const isActive = activeSlot === slot;
+                            return (
+                                <button key={slot} onClick={() => setActiveSlot(slot)} style={{
+                                    flexShrink: 0, display: 'flex', alignItems: 'center', gap: '5px',
+                                    padding: '6px 12px', borderRadius: '100px', border: 'none', cursor: 'pointer',
+                                    background: isActive ? cfg.gradient : 'transparent',
+                                    color: isActive ? 'white' : 'var(--text-muted)',
+                                    fontWeight: '900', fontSize: '0.78rem', transition: 'all 0.2s', minHeight: '36px'
+                                }}>
+                                    <span style={{ display: 'flex', filter: isActive ? 'none' : 'grayscale(0.6) opacity(0.6)' }}>{React.cloneElement(cfg.icon, { size: 14 })}</span>
+                                    {slot}
+                                </button>
+                            );
+                        })}
+                    </div>
+                    {/* Date + expand */}
+                    <button onClick={scrollToTop} style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '8px 12px', background: 'transparent', border: 'none', borderLeft: '1px solid var(--glass-border)', cursor: 'pointer', flexShrink: 0, color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '800', minHeight: '44px', whiteSpace: 'nowrap' }}>
+                        {shortDate} <ChevronDown size={14} style={{ opacity: 0.6 }} />
+                    </button>
                 </div>
             )}
-
-            {/* Slot selector */}
-            <div style={{
-                position: 'sticky', top: 0, zIndex: 20, background: 'white',
-                borderRadius: '24px', padding: '0.5rem',
-                border: '1.5px solid var(--glass-border)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
-                display: 'flex', gap: '0.5rem',
-                flexWrap: isMobile ? 'wrap' : 'nowrap'
-            }}>
-                {ALL_SLOTS.map(slot => {
-                    const cfg = SLOT_CONFIG[slot];
-                    const isActive = activeSlot === slot;
-                    return (
-                        <button key={slot} onClick={() => setActiveSlot(slot)} style={{
-                            flex: 1, padding: '0.75rem 1rem', borderRadius: '18px', border: 'none',
-                            background: isActive ? cfg.gradient : 'transparent',
-                            color: isActive ? 'white' : 'var(--text-muted)',
-                            fontWeight: '950', fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.3s',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                            boxShadow: isActive ? `0 4px 16px ${cfg.color}40` : 'none'
-                        }}>
-                            <span style={{ filter: isActive ? 'drop-shadow(0 2px 4px rgba(0,0,0,0.2))' : 'grayscale(0.5) opacity(0.6)' }}>{cfg.icon}</span>
-                            {slot}
-                        </button>
-                    );
-                })}
-            </div>
 
             {/* Header */}
             <div className="u-flex u-flex-between" style={{ flexWrap: 'wrap', gap: '1rem', padding: '0 0.5rem' }}>

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Pill, ClipboardList, Clipboard, Stethoscope, Trash2, Printer } from 'lucide-react';
 import { useUi } from '../../ui/UiProvider';
 import { EmptyState } from '../ui';
+import { printHtml } from '../../utils/printHtml';
 
 const labelStyle = { display: 'block', fontSize: '0.72rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' };
 const thStyle = { padding: '0.875rem 1.5rem', fontSize: '0.7rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', whiteSpace: 'nowrap' };
@@ -11,36 +12,35 @@ const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ));
 
-// Opens a clean A4 print window for an infirmary register (legal archival doc).
-const printRegister = (title, subtitle, headers, rows) => {
-    const win = window.open('', '_blank');
-    if (!win) return;
+// Opens an A4 print window styled like the physical infirmary register:
+// dark header band, ruled rows, blank lines to fill by hand. Portrait.
+const printRegister = (title, subtitle, headers, rows, minRows = 22) => {
     const thead = headers.map(h => `<th>${escapeHtml(h)}</th>`).join('');
-    const tbody = rows.length
-        ? rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(c) || '—'}</td>`).join('')}</tr>`).join('')
-        : `<tr><td colspan="${headers.length}" style="text-align:center;color:#999;padding:24px">Aucune entrée</td></tr>`;
-    win.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title>
+    // Pad with blank ruled rows so the page reads as a fillable register.
+    const filled = rows.map(r => `<tr>${r.map(c => `<td>${escapeHtml(c)}</td>`).join('')}</tr>`);
+    const blanks = Math.max(0, minRows - rows.length);
+    const blankRow = `<tr class="blank">${headers.map(() => '<td>&nbsp;</td>').join('')}</tr>`;
+    const tbody = filled.join('') + blankRow.repeat(blanks);
+    printHtml(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>${escapeHtml(title)}</title>
         <style>
             * { box-sizing: border-box; }
-            body { font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #1a1a1a; padding: 24px; }
-            .hd { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2.5px solid #1a1a1a; padding-bottom: 10px; margin-bottom: 4px; }
-            h1 { font-size: 19px; margin: 0; letter-spacing: 0.01em; }
-            .sub { color: #666; font-size: 11px; margin: 6px 0 18px; }
-            table { width: 100%; border-collapse: collapse; }
-            th { background: #f1f1f1; text-align: left; padding: 7px 10px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border: 1px solid #ccc; }
-            td { padding: 7px 10px; border: 1px solid #ddd; vertical-align: top; }
-            tr:nth-child(even) td { background: #fafafa; }
-            .sign { margin-top: 36px; display: flex; justify-content: space-between; font-size: 11px; color: #444; }
-            @media print { @page { size: A4 landscape; margin: 12mm; } body { padding: 0; } }
+            body { font-family: Arial, Helvetica, sans-serif; font-size: 11px; color: #1a1a1a; padding: 22px; }
+            .hd { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #2b2b2b; padding-bottom: 8px; margin-bottom: 4px; }
+            h1 { font-size: 18px; margin: 0; letter-spacing: 0.01em; text-transform: uppercase; }
+            .sub { color: #666; font-size: 10px; margin: 6px 0 14px; }
+            table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+            th { background: #2b2b2b; color: #fff; text-align: center; padding: 9px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; border: 1px solid #2b2b2b; }
+            td { padding: 0 8px; height: 30px; border: 1px solid #b8b8b8; vertical-align: middle; word-wrap: break-word; overflow: hidden; }
+            tbody tr:nth-child(even) td { background: #efefef; }
+            tr.blank td { color: transparent; }
+            .sign { margin-top: 22px; display: flex; justify-content: space-between; font-size: 11px; color: #333; }
+            @media print { @page { size: A4 portrait; margin: 12mm; } body { padding: 0; } th { -webkit-print-color-adjust: exact; print-color-adjust: exact; } tbody tr:nth-child(even) td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
         </style></head><body>
-        <div class="hd"><h1>${escapeHtml(title)}</h1><div style="font-size:11px;color:#666">${escapeHtml(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}</div></div>
+        <div class="hd"><h1>${escapeHtml(title)}</h1><div style="font-size:10px;color:#666;text-align:right">${escapeHtml(new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))}</div></div>
         <div class="sub">${escapeHtml(subtitle)}</div>
         <table><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table>
         <div class="sign"><div>Visa infirmier(ère) / responsable sanitaire : ______________________</div><div>Signature : ______________________</div></div>
         </body></html>`);
-    win.document.close();
-    win.focus();
-    win.print();
 };
 
 // ─── Registre Médicaments ───────────────────────────────────────────────────
@@ -179,7 +179,7 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                                     <td style={tdStyle}><span style={{ fontWeight: '800' }}>{log.soignant}</span></td>
                                     {canEdit && (
                                         <td style={{ padding: '0.75rem 1rem' }}>
-                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Trash2 size={14} />
                                             </button>
                                         </td>
@@ -330,7 +330,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                                     <td style={{ ...tdStyle, maxWidth: '220px' }}><span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{log.observation || '—'}</span></td>
                                     {canEdit && (
                                         <td style={{ padding: '0.75rem 1rem' }}>
-                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ width: '32px', height: '32px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Trash2 size={14} />
                                             </button>
                                         </td>

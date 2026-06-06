@@ -312,7 +312,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                                             border: 'none', cursor: 'pointer', transition: 'all 0.2s',
                                                             background: sel ? 'var(--primary-gradient)' : 'rgba(255, 255, 255, 0.55)',
                                                             color: sel ? 'white' : 'var(--text-main)',
-                                                            boxShadow: sel ? '0 4px 10px rgba(37, 99, 235, 0.2)' : 'none'
+                                                            boxShadow: sel ? '0 4px 10px oklch(58% 0.18 var(--brand-hue) / 0.2)' : 'none'
                                                         }}
                                                     >
                                                         {sel && <CheckSquare size={13} strokeWidth={3} />}
@@ -514,7 +514,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                                 </div>
                                                 <button
                                                     onClick={e => deleteSheet(e, sheet.id)}
-                                                    style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', padding: '4px', display: 'flex' }}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }}
                                                     className="delete-icon-hover"
                                                 >
                                                     <Trash2 size={14} />
@@ -590,7 +590,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                 }
 
                 .delete-icon-hover:hover {
-                    color: var(--error-color) !important;
+                    color: var(--danger-color) !important;
                 }
 
                 /* ── MOBILE RESPONSIVE ── */

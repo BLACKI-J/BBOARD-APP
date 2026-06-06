@@ -190,7 +190,7 @@ button {
 .premium-card {
   background: white;
   border-radius: 24px;
-  border: 1.5px solid oklch(88% 0.02 232 / 0.4);
+  border: 1.5px solid oklch(88% 0.02 55 / 0.4);
   box-shadow: var(--shadow-sm);
   transition: all 0.4s var(--ease-out-expo);
   position: relative;
@@ -731,6 +731,33 @@ select.glass-input {
   from { opacity: 0; transform: scale(0.95); }
   to { opacity: 1; transform: scale(1); }
 }
+
+/* ── Dashboard hero animations ── */
+@keyframes heroUp {
+  from { opacity: 0; transform: translateY(16px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.hero-up { animation: heroUp 0.55s var(--ease-out-expo) both; }
+
+/* Animated gradient sweep on the greeting text */
+@keyframes heroShine { to { background-position: 200% center; } }
+.hero-greet {
+  background: linear-gradient(100deg,
+    var(--text-main) 0%, var(--text-main) 42%,
+    var(--primary-color) 50%,
+    var(--text-main) 58%, var(--text-main) 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text; background-clip: text;
+  -webkit-text-fill-color: transparent; color: transparent;
+  animation: heroShine 4s linear infinite;
+}
+
+/* Soft pulse on the greeting icon */
+@keyframes heroPulse {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  50%      { transform: scale(1.12) rotate(-6deg); }
+}
+.hero-icon { animation: heroPulse 3s ease-in-out infinite; transform-origin: center; }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
@@ -1607,3 +1634,18 @@ body.ui-high-contrast .btn-secondary {
 .u-section-title { font-size: 0.72rem; font-weight: 950; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
 .u-table-wrap { overflow-x: auto; border-radius: 24px; border: 1.5px solid var(--glass-border); background: white; box-shadow: var(--shadow-sm); }
 .u-table { width: 100%; border-collapse: collapse; text-align: left; }
+
+/* Shared health-table row/input affordances (used by OverviewTable + InfoVacSection) */
+.hover-row:hover { background: rgba(0,0,0,0.015); }
+.inline-input:hover { border-color: var(--glass-border) !important; background: white; }
+.inline-input:focus { border-color: var(--primary-color) !important; background: white; outline: none; }
+
+/* Shared icon button (used by App topbar, SyncStatus, Directory, Inventory, MeetingRecap) */
+.btn-icon-ref {
+  border: 1.5px solid var(--glass-border);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s var(--ease-out-expo);
+}

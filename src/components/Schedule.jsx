@@ -7,6 +7,7 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import Menus from './Menus';
 import { useUi } from '../ui/UiProvider';
+import { useScrollCollapse } from '../utils/useScrollCollapse';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -268,6 +269,7 @@ export default function Schedule({ activities, setActivities, participants, grou
     }, []);
 
     const isMobile = windowWidth < 1024;
+    const { scrollRef: schedScrollRef, isScrolled: schedScrolled, onScroll: schedOnScroll } = useScrollCollapse(60);
 
     const navigateDay = (dir) => {
         const d = new Date(currentDate);
@@ -439,15 +441,20 @@ export default function Schedule({ activities, setActivities, participants, grou
         <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', position: 'relative' }}>
 
             {/* View Toggle Bar */}
-            <div style={{ 
-                padding: '1.25rem 2.5rem', 
-                background: 'var(--glass-bg)', 
-                backdropFilter: 'blur(var(--glass-blur))', 
-                borderBottom: '1.5px solid var(--glass-border)', 
-                display: 'flex', 
+            <div style={{
+                padding: isMobile && schedScrolled ? '0' : '1.25rem 2.5rem',
+                maxHeight: isMobile && schedScrolled ? '0' : '120px',
+                overflow: 'hidden',
+                opacity: isMobile && schedScrolled ? 0 : 1,
+                transition: 'max-height 0.3s ease, opacity 0.2s, padding 0.3s',
+                background: 'var(--glass-bg)',
+                backdropFilter: 'blur(var(--glass-blur))',
+                borderBottom: isMobile && schedScrolled ? 'none' : '1.5px solid var(--glass-border)',
+                display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'center',
-                zIndex: 20 
+                zIndex: 20,
+                pointerEvents: isMobile && schedScrolled ? 'none' : 'auto'
             }}>
                 <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.05)', padding: '5px', borderRadius: '16px', backdropFilter: 'blur(10px)' }}>
                      <button
@@ -486,8 +493,26 @@ export default function Schedule({ activities, setActivities, participants, grou
                 </div>
             </div>
 
+            {/* Compact sticky bar — mobile scrolled */}
+            {isMobile && schedScrolled && (
+                <div style={{ position: 'sticky', top: 0, zIndex: 22, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '8px 12px' }}>
+                    <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.06)', padding: '3px', borderRadius: '10px', flexShrink: 0 }}>
+                        <button onClick={() => setViewMode('activities')} style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'activities' ? 'white' : 'transparent', color: viewMode === 'activities' ? 'var(--primary-color)' : 'var(--text-muted)' }}><CalendarIcon size={14} /></button>
+                        <button onClick={() => setViewMode('menus')} style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'menus' ? 'white' : 'transparent', color: viewMode === 'menus' ? 'var(--cta-color)' : 'var(--text-muted)' }}><Utensils size={14} /></button>
+                    </div>
+                    <div style={{ flex: 1, textAlign: 'center', fontSize: '0.82rem', fontWeight: '900', color: 'var(--text-main)', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {currentDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
+                    </div>
+                    <div style={{ display: 'flex', background: 'white', borderRadius: '10px', border: '1px solid var(--glass-border)', overflow: 'hidden', flexShrink: 0 }}>
+                        <button onClick={() => navigateDay(-1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', minHeight: '36px' }}><ChevronLeft size={15} /></button>
+                        <div style={{ width: '1px', background: 'var(--glass-border)' }} />
+                        <button onClick={() => navigateDay(1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', minHeight: '36px' }}><ChevronRight size={15} /></button>
+                    </div>
+                </div>
+            )}
+
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: isMobile ? '1.25rem' : '2.5rem', background: 'rgba(0,0,0,0.015)', overflowY: 'auto' }} className="no-scrollbar">
+                <div ref={schedScrollRef} onScroll={schedOnScroll} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: isMobile ? '1.25rem' : '2.5rem', background: 'rgba(0,0,0,0.015)', overflowY: 'auto' }} className="no-scrollbar">
                     
                     {viewMode === 'activities' ? (
                         <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto' }}>

@@ -65,7 +65,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                     padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'white',
                                     border: '1.5px solid var(--glass-border)', position: 'relative', overflow: 'hidden'
                                 }}>
-                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: m.gradient.replace(' / 0.1)', '') }} />
+                                    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: m.gradient.replace('/ 0.1)', '/ 1)') }} />
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <div style={{ background: m.gradient, padding: '0.85rem', borderRadius: '16px', color: 'var(--text-main)', display: 'flex', border: '1.5px solid var(--glass-border)' }}>
                                             {m.icon}

@@ -71,11 +71,11 @@ export default function MedsCalendar({ selectedDate, onSelect, datesWithRecords 
             {open && (
                 <div className="animate-fade-in" style={{ borderTop: '1px solid var(--glass-border)', padding: '0.75rem 1rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                        <button onClick={() => shiftMonth(-1)} style={{ width: '32px', height: '32px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <button onClick={() => shiftMonth(-1)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                             <ChevronLeft size={16} />
                         </button>
                         <div style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)' }}>{MONTHS[m]} {y}</div>
-                        <button onClick={() => shiftMonth(1)} style={{ width: '32px', height: '32px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <button onClick={() => shiftMonth(1)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                             <ChevronRight size={16} />
                         </button>
                     </div>

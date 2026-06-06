@@ -126,76 +126,93 @@ const CategoryChip = ({ category, isActive, onClick, count }) => (
     </button>
 );
 
-const ItemRow = ({ item, index, onDelete, canEdit, onTakePhoto, onUpload, isMobile }) => (
-    <div className="card-glass animate-fade-in" style={{
-        '--i': index,
-        animationDelay: `calc(var(--i) * 30ms)`,
-        padding: isMobile ? '1rem' : '1.25rem 1.5rem',
-        display: 'grid',
-        gridTemplateColumns: isMobile ? '1fr 1fr' : '1fr 140px 140px 180px 60px',
-        alignItems: 'center',
-        gap: isMobile ? '1rem' : '1.5rem',
-        marginBottom: '10px',
-        background: 'rgba(255, 255, 255, 0.4)',
-        border: '1.5px solid var(--glass-border)',
-        borderRadius: '24px',
-        transition: 'all 0.3s var(--ease-out-expo)'
-    }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0, gridColumn: isMobile ? 'span 2' : 'span 1' }}>
-            <div style={{ position: 'relative' }}>
-                {item.photos?.length > 0 ? (
-                    <img src={item.photos[0].image_base64} alt={item.label} style={{ width: '56px', height: '56px', borderRadius: '16px', objectFit: 'cover', border: '2px solid white', boxShadow: 'var(--shadow-sm)' }} />
+const ItemRow = ({ item, index, onDelete, canEdit, onTakePhoto, onUpload, isMobile }) => {
+    const photo = item.photos?.length > 0 ? item.photos[0].image_base64 : null;
+
+    // ── Mobile: compact card ──
+    if (isMobile) {
+        return (
+            <div className="animate-fade-in" style={{
+                '--i': index, animationDelay: `calc(var(--i) * 30ms)`,
+                padding: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem',
+                background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '18px', marginBottom: '8px'
+            }}>
+                {photo ? (
+                    <img src={photo} alt={item.label} style={{ width: '52px', height: '52px', borderRadius: '14px', objectFit: 'cover', flexShrink: 0, border: '2px solid white', boxShadow: 'var(--shadow-sm)' }} />
                 ) : (
-                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '2px dashed var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                        <Package size={24} strokeWidth={2.5} style={{ opacity: 0.3 }} />
+                    <div style={{ width: '52px', height: '52px', borderRadius: '14px', flexShrink: 0, background: 'var(--bg-secondary)', border: '2px dashed var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Package size={22} style={{ opacity: 0.3 }} /></div>
+                )}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '3px' }}>
+                        <span style={{ fontSize: '9px', color: 'var(--primary-color)', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.category}</span>
+                        <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)' }}>· {item.arrival_qty} arr.{item.departure_qty > 0 ? ` · ${item.departure_qty} dép.` : ''}</span>
+                    </div>
+                </div>
+                {canEdit && (
+                    <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
+                        <button onClick={() => onTakePhoto(item.id)} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'white' }} title="Photo"><Camera size={17} strokeWidth={2.5} /></button>
+                        <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'white' }} title="Supprimer"><Trash2 size={17} strokeWidth={2.5} /></button>
                     </div>
                 )}
             </div>
-            <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</div>
-                <div style={{ fontSize: '10px', color: 'var(--primary-color)', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>{item.category}</div>
+        );
+    }
+
+    // ── Desktop: detailed grid row ──
+    return (
+        <div className="card-glass animate-fade-in" style={{
+            '--i': index, animationDelay: `calc(var(--i) * 30ms)`,
+            padding: '1.25rem 1.5rem', display: 'grid',
+            gridTemplateColumns: '1fr 140px 140px 180px 60px',
+            alignItems: 'center', gap: '1.5rem', marginBottom: '10px',
+            background: 'rgba(255, 255, 255, 0.4)', border: '1.5px solid var(--glass-border)',
+            borderRadius: '24px', transition: 'all 0.3s var(--ease-out-expo)'
+        }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
+                {photo ? (
+                    <img src={photo} alt={item.label} style={{ width: '56px', height: '56px', borderRadius: '16px', objectFit: 'cover', border: '2px solid white', boxShadow: 'var(--shadow-sm)' }} />
+                ) : (
+                    <div style={{ width: '56px', height: '56px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '2px dashed var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Package size={24} strokeWidth={2.5} style={{ opacity: 0.3 }} /></div>
+                )}
+                <div style={{ minWidth: 0, flex: 1 }}>
+                    <div style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</div>
+                    <div style={{ fontSize: '10px', color: 'var(--primary-color)', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: '2px' }}>{item.category}</div>
+                </div>
+            </div>
+            <div className="qty-badge" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Arrivée</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950', fontSize: '1rem' }}>{item.arrival_qty}</div>
+                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>unités</div>
+                </div>
+            </div>
+            <div className="qty-badge" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Départ</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: item.departure_qty > 0 ? 'oklch(62% 0.18 145 / 0.1)' : 'white', border: '1.5px solid', borderColor: item.departure_qty > 0 ? 'var(--success-color)' : 'var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950', fontSize: '1rem', color: item.departure_qty > 0 ? 'var(--success-color)' : 'inherit' }}>{item.departure_qty || 0}</div>
+                    <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>confirmées</div>
+                </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.625rem' }}>
+                {canEdit && (
+                    <>
+                        <button onClick={() => onTakePhoto(item.id)} className="btn btn-secondary btn-icon-ref" style={{ flex: 1, padding: '0.5rem', borderRadius: '12px' }} title="Prendre une photo"><Camera size={18} strokeWidth={2.5} /></button>
+                        <label className="btn btn-secondary btn-icon-ref" style={{ flex: 1, padding: '0.5rem', borderRadius: '12px', cursor: 'pointer' }} title="Téléverser une image">
+                            <Upload size={18} strokeWidth={2.5} />
+                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUpload(item.id, e.target.files?.[0])} />
+                        </label>
+                    </>
+                )}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                {canEdit && (
+                    <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '38px', height: '38px', borderRadius: '12px' }}><Trash2 size={18} strokeWidth={2.5} /></button>
+                )}
             </div>
         </div>
-        
-        <div className="qty-badge" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Arrivée</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950', fontSize: '1rem' }}>{item.arrival_qty}</div>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>unités</div>
-            </div>
-        </div>
-
-        <div className="qty-badge" style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-            <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Départ</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: item.departure_qty > 0 ? 'oklch(62% 0.18 145 / 0.1)' : 'white', border: '1.5px solid', borderColor: item.departure_qty > 0 ? 'var(--success-color)' : 'var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: '950', fontSize: '1rem', color: item.departure_qty > 0 ? 'var(--success-color)' : 'inherit' }}>{item.departure_qty || 0}</div>
-                <div style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>confirmées</div>
-            </div>
-        </div>
-
-        <div style={{ display: 'flex', gap: '0.625rem', justifyContent: 'flex-start' }}>
-            {canEdit && (
-                <>
-                    <button onClick={() => onTakePhoto(item.id)} className="btn btn-secondary btn-icon-ref" style={{ flex: 1, padding: '0.5rem', borderRadius: '12px' }} title="Prendre une photo">
-                        <Camera size={18} strokeWidth={2.5} />
-                    </button>
-                    <label className="btn btn-secondary btn-icon-ref" style={{ flex: 1, padding: '0.5rem', borderRadius: '12px', cursor: 'pointer' }} title="Téléverser une image">
-                        <Upload size={18} strokeWidth={2.5} />
-                        <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUpload(item.id, e.target.files?.[0])} />
-                    </label>
-                </>
-            )}
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            {canEdit && (
-                <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '38px', height: '38px', borderRadius: '12px' }}>
-                    <Trash2 size={18} strokeWidth={2.5} />
-                </button>
-            )}
-        </div>
-    </div>
-);
+    );
+};
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
@@ -221,11 +238,8 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
 
     useEffect(() => {
         if (!isMobile) {
-            if (windowWidth < 1400) setIsSidebarCollapsed(true);
-            else setIsSidebarCollapsed(false);
-            
-            if (windowWidth < 1200) setIsActionPanelCollapsed(true);
-            else setIsActionPanelCollapsed(false);
+            setIsSidebarCollapsed(windowWidth < 1300);
+            setIsActionPanelCollapsed(windowWidth < 1100);
         }
     }, [windowWidth, isMobile]);
 
@@ -237,8 +251,27 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
     // AI States
     const [isSearchingAi, setIsSearchingAi] = useState(false);
     const [aiResults, setAiResults] = useState([]);
-    const [isSearchCameraOpen, setIsSearchCameraOpen] = useState(false);
-    const [cameraItemId, setCameraItemId] = useState(null);
+
+    // ── Unified photo capture: native camera on mobile (works over HTTP/LAN),
+    //    in-app webcam on desktop (getUserMedia needs HTTPS/localhost) ──
+    const [webcamOpen, setWebcamOpen] = useState(false);
+    const photoCbRef = useRef(null);
+    const nativeCamRef = useRef(null);
+
+    const requestCapture = useCallback((cb) => {
+        photoCbRef.current = cb;
+        if (isMobile) nativeCamRef.current?.click();
+        else setWebcamOpen(true);
+    }, [isMobile]);
+
+    const onNativeCapture = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = '';
+        if (!file) return;
+        const dataUrl = await fileToDataUrl(file);
+        photoCbRef.current?.(dataUrl);
+        photoCbRef.current = null;
+    };
 
     const children = useMemo(() => (participants || []).filter(p => p?.role === 'child'), [participants]);
     const itemsByChild = useMemo(() => {
@@ -481,7 +514,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         </div>
                     ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                            {activeItems.map((item, idx) => <ItemRow key={item.id} index={idx} item={item} onDelete={deleteItem} canEdit={canEdit} onTakePhoto={setCameraItemId} onUpload={handleUploadAction} isMobile={isMobile} />)}
+                            {activeItems.map((item, idx) => <ItemRow key={item.id} index={idx} item={item} onDelete={deleteItem} canEdit={canEdit} onTakePhoto={(id) => requestCapture(photo => handleUploadAction(id, photo))} onUpload={handleUploadAction} isMobile={isMobile} />)}
                         </div>
                     )}
                 </div>
@@ -520,7 +553,9 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                             newItem={newItem} setNewItem={setNewItem} saveItem={saveItem} batchEntries={batchEntries} setBatchEntries={setBatchEntries} 
                             handleBatchFiles={handleBatchFiles} processBatchImport={processBatchImport} isProcessingBatch={isProcessingBatch}
                             canSearchAI={canSearchAI} aiResults={aiResults} isSearchingAi={isSearchingAi} runAiSearch={runAiSearch} CATEGORIES={CATEGORIES}
-                            setIsSearchCameraOpen={setIsSearchCameraOpen} setCameraItemId={setCameraItemId}
+                            onScanObject={() => requestCapture(photo => handleUploadAction('quick-add', photo))}
+                            onPickObject={(file) => handleUploadAction('quick-add', file)}
+                            onScanSearch={() => requestCapture(photo => runAiSearch(photo))}
                             selectedChildId={selectedChildId} onRefresh={onRefresh} actorHeaders={actorHeaders}
                         />
                     )}
@@ -539,11 +574,13 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                                 <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Scan & Ajout</h3>
                                 <button className="btn-icon-ref" onClick={() => setIsControlHubOpen(false)}><X size={24} /></button>
                             </div>
-                            <ControlHub 
-                                newItem={newItem} setNewItem={setNewItem} saveItem={saveItem} batchEntries={batchEntries} setBatchEntries={setBatchEntries} 
+                            <ControlHub
+                                newItem={newItem} setNewItem={setNewItem} saveItem={saveItem} batchEntries={batchEntries} setBatchEntries={setBatchEntries}
                                 handleBatchFiles={handleBatchFiles} processBatchImport={processBatchImport} isProcessingBatch={isProcessingBatch}
                                 canSearchAI={canSearchAI} aiResults={aiResults} isSearchingAi={isSearchingAi} runAiSearch={runAiSearch} CATEGORIES={CATEGORIES}
-                                setIsSearchCameraOpen={setIsSearchCameraOpen} setCameraItemId={setCameraItemId}
+                                onScanObject={() => requestCapture(photo => handleUploadAction('quick-add', photo))}
+                                onPickObject={(file) => handleUploadAction('quick-add', file)}
+                                onScanSearch={() => requestCapture(photo => runAiSearch(photo))}
                                 selectedChildId={selectedChildId} onRefresh={onRefresh} actorHeaders={actorHeaders}
                             />
                         </div>
@@ -551,16 +588,18 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                 </>
             )}
 
-            <WebcamPhotoCapture isOpen={!!cameraItemId} onPhotoCaptured={(photo) => { handleUploadAction(cameraItemId, photo); setCameraItemId(null); }} onClose={() => setCameraItemId(null)} />
-            <WebcamPhotoCapture isOpen={isSearchCameraOpen} onPhotoCaptured={(photo) => { runAiSearch(photo); setIsSearchCameraOpen(false); }} onClose={() => setIsSearchCameraOpen(false)} />
+            {/* Native camera input — mobile, works over HTTP/LAN */}
+            <input ref={nativeCamRef} type="file" accept="image/*" capture="environment" style={{ display: 'none' }} onChange={onNativeCapture} />
+            {/* In-app webcam — desktop */}
+            <WebcamPhotoCapture isOpen={webcamOpen} onPhotoCaptured={(photo) => { setWebcamOpen(false); const cb = photoCbRef.current; photoCbRef.current = null; cb?.(photo); }} onClose={() => { setWebcamOpen(false); photoCbRef.current = null; }} />
         </div>
     );
 }
 
-const ControlHub = ({ 
-    newItem, setNewItem, saveItem, batchEntries, setBatchEntries, handleBatchFiles, 
-    processBatchImport, isProcessingBatch, canSearchAI, aiResults, isSearchingAi, 
-    runAiSearch, CATEGORIES, setIsSearchCameraOpen, setCameraItemId,
+const ControlHub = ({
+    newItem, setNewItem, saveItem, batchEntries, setBatchEntries, handleBatchFiles,
+    processBatchImport, isProcessingBatch, canSearchAI, aiResults, isSearchingAi,
+    runAiSearch, CATEGORIES, onScanObject, onPickObject, onScanSearch,
     selectedChildId, onRefresh, actorHeaders
 }) => {
     const ui = useUi();
@@ -580,17 +619,24 @@ const ControlHub = ({
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {!newItem.photo ? (
-                        <button 
-                            className="btn btn-secondary" 
-                            style={{ 
-                                width: '100%', height: '120px', border: '2px dashed var(--glass-border)', background: 'rgba(255,255,255,0.5)', 
-                                borderRadius: '24px', gap: '0.75rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center'
-                            }}
-                            onClick={() => setCameraItemId('quick-add')}
-                        >
-                            <Camera size={32} strokeWidth={1.5} style={{ opacity: 0.5 }} />
-                            <span style={{ fontWeight: '900', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Scanner un objet</span>
-                        </button>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                            <button
+                                className="btn btn-secondary"
+                                style={{ height: '110px', border: '2px dashed var(--glass-border)', background: 'rgba(255,255,255,0.5)', borderRadius: '20px', gap: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                                onClick={onScanObject}
+                            >
+                                <Camera size={28} strokeWidth={1.5} style={{ opacity: 0.6 }} />
+                                <span style={{ fontWeight: '900', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Prendre une photo</span>
+                            </button>
+                            <label
+                                className="btn btn-secondary"
+                                style={{ height: '110px', border: '2px dashed var(--glass-border)', background: 'rgba(255,255,255,0.5)', borderRadius: '20px', gap: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            >
+                                <Upload size={28} strokeWidth={1.5} style={{ opacity: 0.6 }} />
+                                <span style={{ fontWeight: '900', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choisir une photo</span>
+                                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onPickObject(f); e.target.value = ''; }} />
+                            </label>
+                        </div>
                     ) : (
                         <div style={{ position: 'relative', width: '100%', height: '200px', borderRadius: '24px', overflow: 'hidden', border: '2px solid white', boxShadow: 'var(--shadow-lg)' }}>
                             <img src={newItem.photo} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -677,7 +723,7 @@ const ControlHub = ({
                     </div>
                     <div style={{ background: 'rgba(255,255,255,0.6)', padding: '1.5rem', borderRadius: '24px', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                            <button onClick={() => setIsSearchCameraOpen(true)} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px' }}><Camera size={16} strokeWidth={2.5} /></button>
+                            <button onClick={onScanSearch} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', minHeight: '44px' }}><Camera size={16} strokeWidth={2.5} /></button>
                             <label className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', cursor: 'pointer' }}><Upload size={16} strokeWidth={2.5} /><input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => runAiSearch(ev.target.result); r.readAsDataURL(f); } }} /></label>
                         </div>
                         {isSearchingAi && <div style={{ textAlign: 'center' }}><div className="spinner-small" style={{ width: '18px', height: '18px', margin: '0 auto' }} /></div>}

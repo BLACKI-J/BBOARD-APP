@@ -90,12 +90,18 @@ export default function Settings({
     const canViewLogs = !!permissions?.viewLogs;
 
     const rolesList = useMemo(() => {
-        return Object.keys(accessControl.rolePermissions || { direction: {}, animator: {} });
-    }, [accessControl.rolePermissions]);
+        return accessControl.roles || [
+            { id: 'direction', label: 'Direction', base: true },
+            { id: 'animator', label: 'Animateur', base: true },
+            { id: 'child', label: 'Enfant', base: true }
+        ];
+    }, [accessControl.roles]);
 
     const roleLabels = useMemo(() => {
-        return accessControl.roleLabels || { direction: 'Direction', animator: 'Animateur' };
-    }, [accessControl.roleLabels]);
+        const labels = {};
+        rolesList.forEach(r => { labels[r.id] = r.label; });
+        return labels;
+    }, [rolesList]);
 
     const updateUserPermission = (userId, perm, value) => {
         if (!canManageUsers) return;
@@ -151,22 +157,23 @@ export default function Settings({
         const name = newRoleName.trim();
         if (!name) return;
         const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        if (rolesList.includes(key) || key === 'director' || key === 'child') {
+        if (rolesList.find(r => r.id === key) || key === 'direction' || key === 'animator' || key === 'child') {
             ui.toast('Ce rôle existe déjà.', { type: 'error' });
             return;
         }
+        
+        const newRole = { id: key, label: name, base: false };
+        const updatedRoles = [...rolesList, newRole];
+        
         const updatedPermissions = {
             ...(accessControl.rolePermissions || {}),
             [key]: emptyPermissions()
         };
-        const updatedLabels = {
-            ...roleLabels,
-            [key]: name
-        };
+
         setAccessControl({
             ...accessControl,
-            rolePermissions: updatedPermissions,
-            roleLabels: updatedLabels
+            roles: updatedRoles,
+            rolePermissions: updatedPermissions
         });
         setNewRoleName('');
         setSelectedConfigRole(key);
@@ -174,10 +181,12 @@ export default function Settings({
     };
 
     const handleDeleteRole = async (key) => {
-        if (key === 'direction' || key === 'animator') {
+        const roleToDelete = rolesList.find(r => r.id === key);
+        if (roleToDelete?.base || key === 'direction' || key === 'animator' || key === 'child') {
             ui.toast('Les rôles par défaut ne peuvent pas être supprimés.', { type: 'error' });
             return;
         }
+        
         const ok = await ui.confirm({
             title: 'Supprimer le rôle',
             message: `Voulez-vous vraiment supprimer le rôle "${roleLabels[key] || key}" ? Tous les utilisateurs ayant ce rôle repasseront en Animateur.`,
@@ -186,11 +195,9 @@ export default function Settings({
         });
         if (!ok) return;
 
+        const updatedRoles = rolesList.filter(r => r.id !== key);
         const updatedPermissions = { ...accessControl.rolePermissions };
         delete updatedPermissions[key];
-
-        const updatedLabels = { ...roleLabels };
-        delete updatedLabels[key];
 
         setParticipants(prev => prev.map(p => {
             if (p.role === key) {
@@ -207,8 +214,8 @@ export default function Settings({
 
         setAccessControl({
             ...accessControl,
-            rolePermissions: updatedPermissions,
-            roleLabels: updatedLabels
+            roles: updatedRoles,
+            rolePermissions: updatedPermissions
         });
         ui.toast('Rôle supprimé.', { type: 'success' });
     };
@@ -561,7 +568,7 @@ export default function Settings({
                                                                 fontSize: '0.78rem', fontWeight: '900', cursor: 'pointer'
                                                             }}
                                                         >
-                                                            {rolesList.map(r => <option key={r} value={r}>{roleLabels[r] || r}</option>)}
+                                                            {rolesList.filter(r => r.id !== 'child').map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                                                         </select>
                                                     </div>
                                                 </div>
@@ -735,9 +742,10 @@ export default function Settings({
                                 {/* Role list */}
                                 <div className="card-glass" style={{ padding: '1.25rem', borderRadius: '24px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0.5rem', letterSpacing: '0.05em' }}>Liste des Rôles</div>
-                                    {rolesList.map(roleKey => {
+                                    {rolesList.filter(r => r.id !== 'child').map(role => {
+                                        const roleKey = role.id;
                                         const isSelected = selectedConfigRole === roleKey;
-                                        const isDefault = roleKey === 'direction' || roleKey === 'animator';
+                                        const isDefault = role.base;
                                         return (
                                             <div
                                                 key={roleKey}
@@ -751,7 +759,7 @@ export default function Settings({
                                                 }}
                                             >
                                                 <span style={{ fontSize: '0.9rem', fontWeight: '950', color: isSelected ? 'var(--primary-color)' : 'var(--text-main)' }}>
-                                                    {roleLabels[roleKey] || roleKey}
+                                                    {role.label}
                                                 </span>
                                                 {!isDefault && (
                                                     <button
@@ -964,7 +972,7 @@ export default function Settings({
                                     ) : (
                                         logs.map((log, i) => (
                                             <div key={i} style={{ padding: '1.5rem', borderBottom: '1.5px solid var(--bg-secondary)', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'oklch(20% 0.05 240 / 0.4)' }}>
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'oklch(20% 0.05 45 / 0.4)' }}>
                                                     <FileClock size={22} strokeWidth={2.5} />
                                                 </div>
                                                 <div style={{ flex: 1 }}>

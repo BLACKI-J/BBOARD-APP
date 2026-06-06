@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, X, RefreshCw, Check, AlertCircle, Sparkles } from 'lucide-react';
+import { Camera, X, RefreshCw, Check, AlertCircle } from 'lucide-react';
 
 export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose }) {
     const videoRef = useRef(null);

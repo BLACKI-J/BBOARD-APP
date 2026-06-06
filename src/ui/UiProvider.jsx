@@ -153,7 +153,7 @@ export function UiProvider({ children }) {
                             </div>
                         )}
                     </div>
-                    <div style={{ borderTop: '1.5px solid var(--bg-secondary)', padding: '1.5rem 2.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: 'var(--bg-secondary) / 0.3' }}>
+                    <div style={{ borderTop: '1.5px solid var(--bg-secondary)', padding: '1.5rem 2.5rem', display: 'flex', justifyContent: 'flex-end', gap: '1rem', background: 'var(--bg-secondary)' }}>
                         {dialog.type !== 'alert' && <button className="btn btn-secondary" style={{ padding: '0.75rem 1.5rem', borderRadius: '14px', fontWeight: '950' }} onClick={onCancelDialog}>{dialog.cancelText}</button>}
                         <button className={`btn ${dialog.danger ? 'btn-danger' : 'btn-primary'}`} style={{ padding: '0.75rem 1.5rem', borderRadius: '14px', fontWeight: '950' }} onClick={onConfirmDialog}>{dialog.confirmText}</button>
                     </div>

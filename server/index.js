@@ -49,8 +49,13 @@ const ADMIN_VERIFICATION_TTL_MS = 5 * 60 * 1000;
 const sessions = new Map();
 
 const defaultAccessControl = {
+    roles: [
+        { id: 'direction', label: 'Direction', base: true },
+        { id: 'animator', label: 'Animateur', base: true },
+        { id: 'child', label: 'Enfant', base: true }
+    ],
     hiddenSections: {
-        today: false, schedule: false, exitsheet: false, incident: false,
+        home: false, schedule: false, exitsheet: false, incident: false,
         recap: false, attendance: false, inventory: false, directory: false, health: false
     },
     rolePermissions: {
@@ -69,7 +74,8 @@ const defaultAccessControl = {
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
             viewHealth: true, editHealth: true,
             searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
-        }
+        },
+        child: {}
     },
     userPermissions: {},
     disabledUsers: {},
@@ -514,18 +520,25 @@ process.on('uncaughtException', (err) => {
 
 let db;
 
+// Serialize all collection writes — SQLite has one connection, so concurrent
+// BEGIN IMMEDIATE (e.g. fast typing → rapid POSTs) would collide and 500.
+let _txChain = Promise.resolve();
 async function replaceCollection({ table, rows, insertOne }) {
-    await db.exec('BEGIN IMMEDIATE TRANSACTION');
-    try {
-        await db.run(`DELETE FROM ${table}`);
-        for (const row of rows) {
-            await insertOne(row);
+    const task = _txChain.then(async () => {
+        await db.exec('BEGIN IMMEDIATE TRANSACTION');
+        try {
+            await db.run(`DELETE FROM ${table}`);
+            for (const row of rows) {
+                await insertOne(row);
+            }
+            await db.exec('COMMIT');
+        } catch (err) {
+            await db.exec('ROLLBACK');
+            throw err;
         }
-        await db.exec('COMMIT');
-    } catch (err) {
-        await db.exec('ROLLBACK');
-        throw err;
-    }
+    });
+    _txChain = task.catch(() => {}); // keep the chain alive even if a write fails
+    return task;
 }
 
 function cosineSimilarity(a, b) {
@@ -699,8 +712,20 @@ app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
     }
 });
 
-app.get('/api/auth/session', authenticateRequest, async (req, res) => {
-    res.json({ user: publicActor(req.actor), accessControl: await getAccessControl() });
+// Soft session check — always 200 (avoids console 401 noise on initial load when not logged in).
+app.get('/api/auth/session', async (req, res) => {
+    try {
+        const token = parseCookies(req.headers.cookie)[SESSION_COOKIE_NAME];
+        const session = getSession(token);
+        const actor = session ? await getActor(session.userId) : null;
+        if (!session || !actor || actor.disabled) {
+            if (token && (!session || !actor || actor?.disabled)) { sessions.delete(token); clearSessionCookie(res); }
+            return res.json({ authenticated: false });
+        }
+        res.json({ authenticated: true, user: publicActor(actor), accessControl: await getAccessControl() });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 app.post('/api/auth/logout', (req, res) => {
@@ -769,7 +794,7 @@ app.get('/api/health', (req, res) => {
 app.get('/api/participants', requireAnyPermission('viewDirectory', 'viewAttendance', 'viewHealth', 'manageUsers'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM participants');
-        res.json(rows.map((row) => sanitizeParticipant(JSON.parse(row.data))));
+        res.json(rows.map((row) => parseJsonValue(row.data, null)).filter(Boolean).map(sanitizeParticipant));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -838,7 +863,7 @@ app.post('/api/users/:id/pin', requireAnyPermission('manageUsers'), async (req, 
 app.get('/api/groups', requireAnyPermission('viewDirectory', 'viewAttendance'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM groups');
-        res.json(rows.map(r => JSON.parse(r.data)));
+        res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -870,7 +895,7 @@ app.post('/api/groups', requireAnyPermission('editDirectory'), async (req, res) 
 app.get('/api/activities', requireAnyPermission('viewSchedule'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM activities');
-        res.json(rows.map(r => JSON.parse(r.data)));
+        res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -901,11 +926,11 @@ app.post('/api/activities', requireAnyPermission('editSchedule'), async (req, re
 // Generic App State
 app.get('/api/state/:key', requireAnyPermission('viewSchedule', 'viewSettings', 'manageAccess'), async (req, res) => {
     try {
-        if (!['accessControl', 'menus'].includes(req.params.key)) {
+        if (!['accessControl', 'menus', 'savedViews', 'transmissions'].includes(req.params.key)) {
             return res.status(404).json({ error: 'State key not found' });
         }
         const row = await db.get('SELECT value FROM app_state WHERE key = ?', req.params.key);
-        res.json(row ? JSON.parse(row.value) : null);
+        res.json(row ? parseJsonValue(row.value, null) : null);
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -915,7 +940,9 @@ app.post('/api/state/:key', async (req, res) => {
     try {
         const permissionByKey = {
             menus: 'editSchedule',
-            accessControl: 'manageAccess'
+            accessControl: 'manageAccess',
+            savedViews: 'editDirectory',
+            transmissions: 'editHealth'
         };
         const permission = permissionByKey[req.params.key];
         if (!permission) return res.status(404).json({ error: 'State key not found' });
@@ -933,7 +960,7 @@ app.post('/api/state/:key', async (req, res) => {
 app.get('/api/exit-sheets', requireAnyPermission('viewExitSheet'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM exit_sheets ORDER BY created_at DESC');
-        res.json(rows.map(r => JSON.parse(r.data)));
+        res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -980,7 +1007,7 @@ app.delete('/api/exit-sheets/:id', requireAnyPermission('editExitSheet'), async 
 app.get('/api/incident-sheets', requireAnyPermission('viewIncident'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM incident_sheets ORDER BY created_at DESC');
-        res.json(rows.map(r => JSON.parse(r.data)));
+        res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -1027,7 +1054,7 @@ app.delete('/api/incident-sheets/:id', requireAnyPermission('editIncident'), asy
 app.get('/api/meeting-recaps', requireAnyPermission('viewRecap'), async (req, res) => {
     try {
         const rows = await db.all('SELECT data FROM meeting_recaps ORDER BY created_at DESC');
-        res.json(rows.map(r => JSON.parse(r.data)));
+        res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
         res.status(500).json({ error: err.message });
     }

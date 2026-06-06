@@ -3,9 +3,11 @@ import { CheckCircle2, Circle, Search, Users, Camera, Image as ImageIcon, UserCh
 import WebcamPhotoCapture from './directory/WebcamPhotoCapture';
 import confetti from 'canvas-confetti';
 import { useUi } from '../ui/UiProvider';
+import { useScrollCollapse } from '../utils/useScrollCollapse';
 
 export default function Attendance({ participants, setParticipants, groups, canEdit = true, isMobile }) {
     const ui = useUi();
+    const { scrollRef, isScrolled, onScroll } = useScrollCollapse(60);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterGroup, setFilterGroup] = useState('all');
     const [statusFilter, setStatusFilter] = useState('all'); // all, present, absent
@@ -16,6 +18,10 @@ export default function Attendance({ participants, setParticipants, groups, canE
     // Photo capture states
     const [isCameraOpen, setIsCameraOpen] = useState(false);
     const [selectedParticipantId, setSelectedParticipantId] = useState(null);
+    const [photoMenuFor, setPhotoMenuFor] = useState(null); // participantId for the choice sheet
+    const fileInputRef = useRef(null);   // gallery picker
+    const cameraInputRef = useRef(null); // native camera (works over HTTP, unlike getUserMedia)
+    const fileTargetId = useRef(null);
 
     const children = participants.filter(p => p.role === 'child');
 
@@ -105,6 +111,29 @@ export default function Attendance({ participants, setParticipants, groups, canE
             };
             reader.readAsDataURL(file);
         }
+        e.target.value = ''; // allow re-pick same file
+    };
+
+    // Photo choice sheet actions
+    const openPhotoMenu = (participantId) => { if (canEdit) setPhotoMenuFor(participantId); };
+    const choosePicCamera = () => {
+        const target = photoMenuFor;
+        setPhotoMenuFor(null);
+        if (isMobile) {
+            // Native camera app — works over HTTP/LAN (getUserMedia requires HTTPS)
+            fileTargetId.current = target;
+            setTimeout(() => cameraInputRef.current?.click(), 50);
+        } else {
+            // Desktop: in-app webcam (HTTPS/localhost OK)
+            setSelectedParticipantId(target);
+            setIsCameraOpen(true);
+        }
+    };
+    const choosePicGallery = () => {
+        fileTargetId.current = photoMenuFor;
+        setPhotoMenuFor(null);
+        // small delay so the sheet closes before the OS picker opens
+        setTimeout(() => fileInputRef.current?.click(), 50);
     };
 
     const handlePhotoCaptured = (photoBase64) => {
@@ -118,15 +147,19 @@ export default function Attendance({ participants, setParticipants, groups, canE
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
             <div style={{ maxWidth: '1600px', width: '96%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
             {/* Action Bar */}
-            <div style={{ 
-                padding: isMobile ? '0.75rem 1rem' : '1rem 2.5rem', 
-                background: 'var(--glass-bg)', 
-                backdropFilter: 'blur(var(--glass-blur))', 
-                borderBottom: '1.5px solid var(--glass-border)', 
-                display: 'flex', 
+            <div style={{
+                background: 'var(--glass-bg)',
+                backdropFilter: 'blur(var(--glass-blur))',
+                borderBottom: '1.5px solid var(--glass-border)',
+                display: 'flex',
                 flexDirection: 'column',
                 gap: isMobile ? '0.75rem' : '1rem',
-                zIndex: 20 
+                zIndex: 20,
+                maxHeight: (isMobile && isScrolled) ? 0 : '500px',
+                overflow: (isMobile && isScrolled) ? 'hidden' : 'visible',
+                opacity: (isMobile && isScrolled) ? 0 : 1,
+                transition: 'max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease',
+                padding: (isMobile && isScrolled) ? '0 1rem' : isMobile ? '0.75rem 1rem' : '1rem 2.5rem'
             }}>
                 <div style={{ display: 'flex', gap: isMobile ? '0.75rem' : '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     {/* Search */}
@@ -234,6 +267,16 @@ export default function Attendance({ participants, setParticipants, groups, canE
                 </div>
             </div>
 
+            {isMobile && isScrolled && (
+                <div style={{position:'sticky',top:0,zIndex:20,background:'rgba(255,255,255,0.95)',backdropFilter:'blur(16px)',borderBottom:'1px solid var(--glass-border)',display:'flex',alignItems:'center',gap:'0.625rem',padding:'8px 12px'}}>
+                    <span style={{background:'var(--primary-gradient)',color:'white',borderRadius:'100px',padding:'4px 12px',fontSize:'0.78rem',fontWeight:'950',flexShrink:0,whiteSpace:'nowrap'}}>{presentCount}/{totalCount}</span>
+                    <div style={{position:'relative',flex:1}}>
+                        <Search size={14} style={{position:'absolute',left:'10px',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}} />
+                        <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="Rechercher..." className="glass-input" style={{paddingLeft:'30px',height:'36px',borderRadius:'20px',fontSize:'0.85rem',width:'100%'}} />
+                    </div>
+                </div>
+            )}
+
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 {/* Lateral Summary Sidebar */}
                 <div style={{ 
@@ -316,7 +359,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                 </div>
 
                 {/* Main Content */}
-                <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2.5rem', background: 'rgba(0,0,0,0.02)' }} className="no-scrollbar">
+                <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2.5rem', background: 'rgba(0,0,0,0.02)' }} className="no-scrollbar">
                     {filteredChildren.length === 0 ? (
                         <div className="card-glass" style={{ textAlign: 'center', padding: '6rem 2rem', maxWidth: '600px', margin: '4rem auto', border: '2.5px dashed var(--glass-border)' }}>
                             <div style={{ width: '90px', height: '90px', background: 'var(--bg-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
@@ -373,23 +416,14 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                                     </div>
                                                 )}
 
-                                                <div style={{ position: 'absolute', bottom: isMobile ? '-4px' : '-6px', right: isMobile ? '-4px' : '-6px', display: 'flex', gap: '4px', zIndex: 10 }}>
+                                                {canEdit && (
                                                     <button
-                                                        onClick={(e) => { e.stopPropagation(); setSelectedParticipantId(child.id); setIsCameraOpen(true); }}
-                                                        style={{ width: isMobile ? '24px' : '28px', height: isMobile ? '24px' : '28px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.08)' }}
-                                                        title="Photo Caméra">
-                                                        <Camera size={isMobile ? 12 : 14} strokeWidth={2.5} />
+                                                        onClick={(e) => { e.stopPropagation(); openPhotoMenu(child.id); }}
+                                                        style={{ position: 'absolute', bottom: isMobile ? '-4px' : '-6px', right: isMobile ? '-4px' : '-6px', width: isMobile ? '26px' : '30px', height: isMobile ? '26px' : '30px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '9px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.08)', zIndex: 10 }}
+                                                        title="Modifier la photo">
+                                                        <Camera size={isMobile ? 13 : 15} strokeWidth={2.5} />
                                                     </button>
-                                                    {!isMobile && (
-                                                        <label
-                                                            onClick={(e) => e.stopPropagation()}
-                                                            style={{ width: '28px', height: '28px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '10px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.08)' }}
-                                                            title="Upload Photo">
-                                                            <ImageIcon size={14} strokeWidth={2.5} />
-                                                            <input type="file" accept="image/*" onChange={(e) => handlePhotoUpload(e, child.id)} style={{ display: 'none' }} />
-                                                        </label>
-                                                    )}
-                                                </div>
+                                                )}
                                             </div>
 
                                             {/* Info Area */}
@@ -402,7 +436,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                                                     {group && (
-                                                        <span style={{ fontSize: '9px', padding: '1px 6px', background: `oklch(from ${group.color} 98% calc(c / 8) h / 0.1)`, color: group.color, borderRadius: '4px', fontWeight: '950', border: '1px solid oklch(from ${group.color} l c h / 0.15)' }}>
+                                                        <span style={{ fontSize: '9px', padding: '1px 6px', background: `oklch(from ${group.color} 98% calc(c / 8) h / 0.1)`, color: group.color, borderRadius: '4px', fontWeight: '950', border: `1px solid oklch(from ${group.color} l c h / 0.15)` }}>
                                                             {group.name}
                                                         </span>
                                                     )}
@@ -444,6 +478,31 @@ export default function Attendance({ participants, setParticipants, groups, canE
                 onClose={() => { setIsCameraOpen(false); setSelectedParticipantId(null); }}
                 onPhotoCaptured={handlePhotoCaptured}
             />
+
+            {/* Hidden file inputs: gallery + native camera */}
+            <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => handlePhotoUpload(e, fileTargetId.current)} style={{ display: 'none' }} />
+            <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={(e) => handlePhotoUpload(e, fileTargetId.current)} style={{ display: 'none' }} />
+
+            {/* Photo choice bottom sheet */}
+            {photoMenuFor && (
+                <div onClick={() => setPhotoMenuFor(null)} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: isMobile ? '0' : '2rem' }}>
+                    <div onClick={(e) => e.stopPropagation()} className="animate-scale-in" style={{ width: '100%', maxWidth: '440px', background: 'white', borderRadius: isMobile ? '24px 24px 0 0' : '24px', padding: '1.5rem', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: isMobile ? '0' : 'auto' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
+                            <div style={{ fontWeight: '950', fontSize: '1.05rem', color: 'var(--text-main)' }}>Photo du vacancier</div>
+                            <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', marginTop: '2px' }}>Prendre une nouvelle photo ou en choisir une</div>
+                        </div>
+                        <button onClick={choosePicCamera} className="btn btn-primary" style={{ height: '54px', borderRadius: '16px', fontWeight: '950', fontSize: '0.95rem', gap: '0.75rem', justifyContent: 'flex-start', paddingLeft: '1.5rem' }}>
+                            <Camera size={20} strokeWidth={2.5} /> Prendre une photo
+                        </button>
+                        <button onClick={choosePicGallery} className="btn btn-secondary" style={{ height: '54px', borderRadius: '16px', fontWeight: '950', fontSize: '0.95rem', gap: '0.75rem', justifyContent: 'flex-start', paddingLeft: '1.5rem', background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)' }}>
+                            <ImageIcon size={20} strokeWidth={2.5} /> Choisir une photo
+                        </button>
+                        <button onClick={() => setPhotoMenuFor(null)} style={{ height: '48px', borderRadius: '16px', border: 'none', background: 'transparent', color: 'var(--text-muted)', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer', marginTop: '0.25rem' }}>
+                            Annuler
+                        </button>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 .attendance-card:hover {

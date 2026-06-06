@@ -2,7 +2,7 @@ import React from 'react';
 
 export const StatBadge = ({ icon, count, label, color = 'blue' }) => {
     const mainColor = color === 'blue' ? 'var(--primary-color)' : (color === 'green' ? 'var(--secondary-color)' : 'var(--text-muted)');
-    const bg = color === 'blue' ? 'oklch(58% 0.2 var(--brand-hue) / 0.1)' : (color === 'green' ? 'oklch(62% 0.18 145 / 0.1)' : 'oklch(0% 0 0 / 0.05)');
+    const bg = 'oklch(from ' + mainColor + ' l c h / 0.1)';
     
     return (
         <div style={{ 
@@ -23,18 +23,17 @@ export const StatBadge = ({ icon, count, label, color = 'blue' }) => {
 
 export const RoleBadge = ({ role }) => {
     let color = 'var(--primary-color)';
-    let bg = 'oklch(58% 0.2 var(--brand-hue) / 0.1)';
     let label = 'Enfant';
 
     if (role === 'animator') {
         color = 'var(--secondary-color)';
-        bg = 'oklch(62% 0.18 145 / 0.1)';
         label = 'Animateur';
     } else if (role === 'direction') {
         color = 'var(--accent-color)';
-        bg = 'oklch(60% 0.15 340 / 0.1)';
         label = 'Directeur';
     }
+
+    const bg = 'oklch(from ' + color + ' l c h / 0.1)';
 
     return (
         <span style={{ 

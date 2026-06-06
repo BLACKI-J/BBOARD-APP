@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Square, Eye, Edit2, Trash2, Coins, ChevronRight } from 'lucide-react';
+import { Check, Eye, Edit2, Trash2, Coins } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { RoleBadge, GroupBadge } from '../common/Badges';
 import HealthIndicators from '../common/HealthIndicators';

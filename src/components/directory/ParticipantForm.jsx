@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sunrise, Sun, Apple, Moon, X, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check, Lock } from 'lucide-react';
+import { Sunrise, Sun, Apple, Moon, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check, Lock } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../../ui/UiProvider';
 import { useUnsavedGuard } from '../../utils/unsavedGuard';
 
-const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, editingId, groups, canEdit }) => {
+const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, editingId, groups, canEdit, roles = [] }) => {
     const ui = useUi();
     const [newMed, setNewMed] = useState('');
     const [newPrn, setNewPrn] = useState('');
@@ -135,11 +135,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <label className="form-label">Rôle au sein de la structure</label>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '0.75rem', background: 'oklch(0% 0 0 / 0.05)', padding: '6px', borderRadius: '18px' }}>
-                                {[
-                                    { id: 'child', label: 'Enfant', icon: <User size={18} /> },
-                                    { id: 'animator', label: 'Anim.', icon: <Users size={18} /> },
-                                    { id: 'direction', label: 'Dir.', icon: <Shield size={18} /> }
-                                ].map(r => (
+                                {roles.length > 0 ? roles.map(r => (
                                     <button
                                         key={r.id}
                                         type="button"
@@ -153,9 +149,9 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                             boxShadow: formData.role === r.id ? 'var(--shadow-sm)' : 'none'
                                         }}
                                     >
-                                        {r.icon} {r.label}
+                                        {r.id === 'child' ? <User size={18} /> : (r.id === 'direction' ? <Shield size={18} /> : <Users size={18} />)} {r.label}
                                     </button>
-                                ))}
+                                )) : null}
                             </div>
                         </div>
 
@@ -500,15 +496,15 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                             </div>
                         )}
 
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label className="form-label">Allergies Connues</label>
-                                <textarea rows="2" placeholder="Aucune allergie..." value={formData.allergies || ''} onChange={e => setFormData({ ...formData, allergies: e.target.value })}
+                                <textarea rows="3" placeholder="Aucune allergie..." value={formData.allergies || ''} onChange={e => setFormData({ ...formData, allergies: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                 <label className="form-label">Remarques / Régime</label>
-                                <textarea rows="2" placeholder="Notes diverses..." value={formData.constraints || ''} onChange={e => setFormData({ ...formData, constraints: e.target.value })}
+                                <textarea rows="3" placeholder="Notes diverses..." value={formData.constraints || ''} onChange={e => setFormData({ ...formData, constraints: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
                             </div>
                         </div>
@@ -525,13 +521,13 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                     </div>
                                 </div>
 
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                                    <div style={{ flex: 1 }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.875rem', alignItems: 'end' }}>
+                                    <div>
                                         <label className="form-label" style={{ marginBottom: '8px' }}>Dépôt Initial (€)</label>
                                         <input type="number" step="0.5" value={pocketMoney.initial} onChange={handleInitialMoneyUpdate}
-                                            className="glass-input" style={{ width: '100%', background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.75rem 1rem', borderRadius: '14px', fontWeight: '800' }} />
+                                            className="glass-input" style={{ width: '100%', background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.75rem 1rem', borderRadius: '14px', fontWeight: '800', height: '48px' }} />
                                     </div>
-                                    <button type="button" onClick={addPocketExpense} className="btn btn-primary" style={{ marginTop: 'auto', padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '950', gap: '0.5rem', background: 'var(--success-color)', boxShadow: 'none' }}>
+                                    <button type="button" onClick={addPocketExpense} className="btn btn-primary" style={{ height: '48px', borderRadius: '14px', fontWeight: '950', gap: '0.5rem', background: 'var(--success-color)', boxShadow: 'none', whiteSpace: 'nowrap' }}>
                                         <Plus size={18} strokeWidth={3} /> Nouvelle Dépense
                                     </button>
                                 </div>

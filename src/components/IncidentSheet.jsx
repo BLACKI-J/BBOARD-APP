@@ -492,10 +492,10 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                     </div>
                 </div>
             ) : (
-                <div className="no-print" style={{ flex: 1, overflowY: 'auto', background: 'oklch(20% 0.05 240)', padding: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className="no-print" style={{ flex: 1, overflowY: 'auto', background: 'oklch(20% 0.05 40)', padding: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{ maxWidth: '920px', width: '100%', background: 'white', borderRadius: '24px', padding: '1rem 2rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 20px 40px oklch(0% 0 0 / 0.2)' }}>
                         <button onClick={() => setShowPreview(false)} className="btn btn-secondary" style={{ padding: '0.625rem 1rem' }}><ArrowLeft size={18} /> Retour Édition</button>
-                        <div style={{ fontWeight: '950', fontSize: '1rem', color: 'oklch(20% 0.05 240)' }}>Aperçu du Cerfa FEI</div>
+                        <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>Aperçu du Cerfa FEI</div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
                             <button onClick={handlePrint} className="btn btn-primary" style={{ padding: '0.625rem 1.5rem' }}><Printer size={18} strokeWidth={2.5} /> Imprimer Maintenant</button>
                         </div>

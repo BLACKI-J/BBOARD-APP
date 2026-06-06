@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus, Trash2, Download, Upload, Filter, LayoutGrid, LayoutList, Users } from 'lucide-react';
+import { Search, Plus } from 'lucide-react';
+import { useScrollCollapse } from '../utils/useScrollCollapse';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../ui/UiProvider';
 
@@ -12,14 +13,14 @@ import ParticipantDetails from './directory/ParticipantDetails';
 import ParticipantForm from './directory/ParticipantForm';
 import GroupManager from './directory/GroupManager';
 
-export default function Directory({ participants = [], setParticipants, groups = [], setGroups, canEdit = true }) {
+export default function Directory({ participants = [], setParticipants, groups = [], setGroups, canEdit = true, roles = [] }) {
     const ui = useUi();
     const safeParticipants = Array.isArray(participants) ? participants : [];
     const safeGroups = Array.isArray(groups) ? groups : [];
 
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'firstName', direction: 'ascending' });
-    const [viewMode, setViewMode] = useState('grid');
+    const [viewMode, setViewMode] = useState('table');
     const [filterRole, setFilterRole] = useState('all');
     const [filterGroup, setFilterGroup] = useState('all');
 
@@ -40,7 +41,7 @@ export default function Directory({ participants = [], setParticipants, groups =
 
     // Group Management State
     const [isGroupManagerOpen, setIsGroupManagerOpen] = useState(false);
-    const [newGroupData, setNewGroupData] = useState({ name: '', color: '#3b82f6' });
+    const [newGroupData, setNewGroupData] = useState({ name: '', color: '#c2703d' });
 
     const toggleSelection = (id) => {
         if (!canEdit) {
@@ -78,7 +79,7 @@ export default function Directory({ participants = [], setParticipants, groups =
         if (!canEdit) return;
         if (newGroupData.name) {
             setGroups([...safeGroups, { id: uuidv4(), ...newGroupData }]);
-            setNewGroupData({ name: '', color: '#3b82f6' });
+            setNewGroupData({ name: '', color: '#c2703d' });
         }
     };
 
@@ -255,6 +256,7 @@ export default function Directory({ participants = [], setParticipants, groups =
     }, []);
 
     const isMobile = windowWidth < 1024;
+    const { scrollRef, isScrolled, onScroll } = useScrollCollapse(60);
 
     const handleEdit = (participant) => {
         if (!canEdit) return;
@@ -294,15 +296,19 @@ export default function Directory({ participants = [], setParticipants, groups =
         }
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         if (!canEdit) return;
-        if (editingId) {
-            setParticipants(safeParticipants.map(p => p.id === editingId ? { ...formData, id: editingId } : p));
-        } else {
-            setParticipants([...safeParticipants, { ...formData, id: uuidv4() }]);
+        try {
+            if (editingId) {
+                await setParticipants(safeParticipants.map(p => p.id === editingId ? { ...formData, id: editingId } : p));
+            } else {
+                await setParticipants([...safeParticipants, { ...formData, id: uuidv4() }]);
+            }
+            resetForm();
+        } catch (err) {
+            ui.alert({ title: 'Erreur', message: 'Impossible d\'enregistrer. Veuillez vérifier les informations (ex: PIN manquant pour un compte adulte).', type: 'error' });
         }
-        resetForm();
     };
 
     const requestSort = (key) => {
@@ -348,19 +354,28 @@ export default function Directory({ participants = [], setParticipants, groups =
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden', position: 'relative' }}>
             <div style={{ maxWidth: '1600px', width: '96%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
-            <DirectoryHeader
-                stats={stats}
-                selectedCount={selectedParticipants.length}
-                handleBulkDelete={handleBulkDelete}
-                openGroupManager={() => setIsGroupManagerOpen(true)}
-                openNewForm={() => { resetForm(); setIsFormOpen(true); }}
-                handleExport={handleExport}
-                handleExportCsv={handleExportCsv}
-                handleImport={handleImport}
-                handleImportCsv={handleImportCsv}
-                isMobile={isMobile}
-                canEdit={canEdit}
-            />
+            <div style={{overflow:'hidden', maxHeight: isMobile && isScrolled ? '0' : '300px', opacity: isMobile && isScrolled ? 0 : 1, transition:'max-height 0.3s ease,opacity 0.2s', pointerEvents: isMobile && isScrolled ? 'none' : 'auto'}}>
+                <DirectoryHeader
+                    stats={stats}
+                    selectedCount={selectedParticipants.length}
+                    handleBulkDelete={handleBulkDelete}
+                    openGroupManager={() => setIsGroupManagerOpen(true)}
+                    openNewForm={() => { resetForm(); setIsFormOpen(true); }}
+                    handleExport={handleExport}
+                    handleExportCsv={handleExportCsv}
+                    handleImport={handleImport}
+                    handleImportCsv={handleImportCsv}
+                    isMobile={isMobile}
+                    canEdit={canEdit}
+                />
+            </div>
+            {isMobile && isScrolled && (
+                <div style={{position:'sticky',top:0,zIndex:20,background:'rgba(255,255,255,0.95)',backdropFilter:'blur(16px)',borderBottom:'1px solid var(--glass-border)',display:'flex',alignItems:'center',gap:'0.625rem',padding:'8px 12px'}}>
+                    <Search size={14} style={{position:'absolute',left:'22px',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}} />
+                    <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="Rechercher..." className="glass-input" style={{paddingLeft:'32px',height:'38px',borderRadius:'20px',fontSize:'0.85rem',flex:1}} />
+                    <span style={{fontSize:'0.72rem',fontWeight:'900',color:'var(--text-muted)',flexShrink:0}}>{filteredParticipants?.length ?? 0}</span>
+                </div>
+            )}
 
             <DirectoryFilters
                 searchTerm={searchTerm}
@@ -369,14 +384,35 @@ export default function Directory({ participants = [], setParticipants, groups =
                 setFilterRole={setFilterRole}
                 filterGroup={filterGroup}
                 setFilterGroup={setFilterGroup}
-                viewMode={isMobile ? 'grid' : viewMode}
+                viewMode={viewMode}
                 setViewMode={setViewMode}
                 groups={safeGroups}
                 isMobile={isMobile}
             />
 
-            <div style={{ flex: 1, overflowY: 'auto' }} className="no-scrollbar">
+            <div style={{ flex: 1, overflowY: 'auto' }} className="no-scrollbar" ref={scrollRef} onScroll={onScroll}>
                 <div style={{ padding: isMobile ? '1rem' : '1.5rem 2.5rem' }}>
+                {/* Result count + active filter chips */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.875rem' }}>
+                    <span style={{ fontSize: '0.8rem', fontWeight: '900', color: 'var(--text-main)' }}>
+                        {sortedParticipants.length} membre{sortedParticipants.length !== 1 ? 's' : ''}
+                    </span>
+                    {filterRole !== 'all' && (
+                        <button onClick={() => setFilterRole('all')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', cursor: 'pointer' }}>
+                            {({ child: 'Enfants', animator: 'Animateurs', direction: 'Direction' }[filterRole])} ✕
+                        </button>
+                    )}
+                    {filterGroup !== 'all' && (
+                        <button onClick={() => setFilterGroup('all')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', cursor: 'pointer' }}>
+                            {filterGroup === 'none' ? 'Sans groupe' : (safeGroups.find(g => g.id === filterGroup)?.name || 'Groupe')} ✕
+                        </button>
+                    )}
+                    {searchTerm && (
+                        <button onClick={() => setSearchTerm('')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--glass-border)', cursor: 'pointer' }}>
+                            "{searchTerm}" ✕
+                        </button>
+                    )}
+                </div>
                 {sortedParticipants.length === 0 ? (
                     <div className="card-glass" style={{ textAlign: 'center', padding: '6rem 2rem', maxWidth: '600px', margin: '4rem auto', border: '2.5px dashed var(--glass-border)' }}>
                         <div style={{ width: '90px', height: '90px', background: 'var(--bg-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
@@ -390,8 +426,8 @@ export default function Directory({ participants = [], setParticipants, groups =
                     </div>
                 ) : (
                     <>
-                        {(isMobile || viewMode === 'grid') ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.25rem', paddingBottom: '4rem' }}>
+                        {viewMode === 'grid' ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem', paddingBottom: '4rem' }}>
                                 {sortedParticipants.map((p, idx) => (
                                     <ParticipantCard
                                         key={p.id}
@@ -421,22 +457,13 @@ export default function Directory({ participants = [], setParticipants, groups =
                                 handleDelete={handleDelete}
                                 groups={safeGroups}
                                 canEdit={canEdit}
+                                isMobile={isMobile}
                             />
                         )}
                     </>
                 )}
                 </div>
             </div>
-
-            {isMobile && !isFormOpen && canEdit && (
-                <button 
-                    onClick={() => { resetForm(); setIsFormOpen(true); }}
-                    className="btn btn-primary"
-                    style={{ position: 'fixed', bottom: '32px', right: '32px', width: '64px', height: '64px', borderRadius: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 12px 32px oklch(58% 0.18 var(--brand-hue) / 0.4)', zIndex: 150 }}
-                >
-                    <Plus size={32} strokeWidth={3} />
-                </button>
-            )}
 
             <GroupManager
                 isOpen={isGroupManagerOpen}
@@ -469,6 +496,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 editingId={editingId}
                 groups={safeGroups}
                 canEdit={canEdit}
+                roles={roles}
             />
 
             <style>{`
@@ -480,7 +508,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 .btn-icon-ref.danger:hover { border-color: var(--danger-color); color: var(--danger-color); background: oklch(62% 0.2 28 / 0.05); }
 
                 .badge-pill {
-                   padding: 0.5rem 1rem; border-radius: 30px; font-size: 0.8rem; fontWeight: 900;
+                   padding: 0.5rem 1rem; border-radius: 30px; font-size: 0.8rem; font-weight: 900;
                    display: flex; align-items: center; gap: 0.625rem; background: white; border: 1.5px solid var(--glass-border);
                 }
             `}</style>

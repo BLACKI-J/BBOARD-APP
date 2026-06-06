@@ -3,7 +3,8 @@ export const ALL_SLOTS = ['Matin', 'Midi', 'Goûter', 'Soir'];
 export const getMedicationsList = (child) => {
     // New format: child.medications is an array of { name: '...', slots: ['...', '...'] }
     if (Array.isArray(child.medications) && child.medications.length > 0) {
-        return child.medications;
+        // Guard: every consumer calls m.slots.includes(...), so ensure slots is always an array
+        return child.medications.map(m => ({ ...m, slots: Array.isArray(m.slots) ? m.slots : [] }));
     }
 
     // Legacy fallback: parse dailyMeds string and apply medSlots to all of them

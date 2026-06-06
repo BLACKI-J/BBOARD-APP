@@ -1,49 +1,32 @@
 import React, { useState, useMemo } from 'react';
 import {
-    Activity, Zap, FileText, User, ClipboardList, LayoutDashboard
+    Activity, Zap, FileText, ClipboardList
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
+import { useScrollCollapse } from '../utils/useScrollCollapse';
 
-// ─── Sub-component imports (extracted for maintainability) ────────────────
-import HealthDashboard  from './health/HealthDashboard';
-import OverviewTable    from './health/OverviewTable';
-import IndividualCarnet from './health/IndividualCarnet';
+// ─── Sub-component imports ────────────────────────────────────────────────
+import TransmissionComposer from './health/TransmissionComposer';
 import MedsDashboard    from './health/MedsDashboard';
 import InfoVacSection   from './health/InfoVacSection';
 import RegistreInfi     from './health/RegistreInfi';
 
 const HEALTH_TABS = [
-    { id: 'overview',   label: 'Tableau Bord',      icon: <LayoutDashboard size={20} />, color: 'oklch(55% 0.2 232)',  bg: 'oklch(96% 0.06 232)' },
+    { id: 'infovac',    label: 'Fiches & Suivi',    icon: <FileText size={20} />,        color: 'oklch(52% 0.2 272)',  bg: 'oklch(96% 0.05 272)' },
     { id: 'meds',       label: 'Médicaments',       icon: <Zap size={20} />,             color: 'oklch(55% 0.22 30)',  bg: 'oklch(96% 0.06 30)' },
-    { id: 'infovac',    label: 'Fiches Infos',      icon: <FileText size={20} />,        color: 'oklch(52% 0.2 272)',  bg: 'oklch(96% 0.05 272)' },
-    { id: 'individual', label: 'Carnet Individuel', icon: <User size={20} />,             color: 'oklch(52% 0.2 145)',  bg: 'oklch(96% 0.06 145)' },
-    { id: 'registre',   label: 'Registre Infi',     icon: <ClipboardList size={20} />,   color: 'oklch(52% 0.22 310)', bg: 'oklch(96% 0.05 310)' },
+    { id: 'registre',   label: 'Registre',          icon: <ClipboardList size={20} />,   color: 'oklch(52% 0.22 310)', bg: 'oklch(96% 0.05 310)' },
 ];
 
-export default function HealthCenter({ participants = [], setParticipants, groups = [], canEdit = true, isMobile }) {
+export default function HealthCenter({ participants = [], setParticipants, groups = [], canEdit = true, isMobile, transmissions = [], setTransmissions, activeUser }) {
     const ui = useUi();
-    const [searchTerm, setSearchTerm] = useState('');
-    const [activeTab, setActiveTab] = useState('overview');
-    const [selectedChildId, setSelectedChildId] = useState(null);
-    const [filterAlertsOnly, setFilterAlertsOnly] = useState(false);
+    const [activeTab, setActiveTab] = useState('infovac');
 
     const children = useMemo(
         () => (participants || []).filter(p => p.role === 'child'),
         [participants]
     );
 
-    const selectedChild = useMemo(
-        () => children.find(c => c.id === selectedChildId),
-        [children, selectedChildId]
-    );
-
-    const filteredChildren = useMemo(() => {
-        return children.filter(c => {
-            const matchesSearch = `${c.firstName} ${c.lastName}`.toLowerCase().includes(searchTerm.toLowerCase());
-            const hasAlerts = (c.allergies && c.allergies.trim() !== '') || (c.constraints && c.constraints.trim() !== '');
-            return matchesSearch && (!filterAlertsOnly || hasAlerts);
-        });
-    }, [children, searchTerm, filterAlertsOnly]);
+    const { scrollRef, isScrolled, onScroll, scrollToTop } = useScrollCollapse(80);
 
     const updateParticipantHealth = (childId, field, value) => {
         if (!canEdit) return;
@@ -61,55 +44,26 @@ export default function HealthCenter({ participants = [], setParticipants, group
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden' }}>
-            {/* ── Header / Nav ── */}
-            <header style={{
-                padding: isMobile ? '1rem' : '1.5rem 2.5rem',
-                borderBottom: '1.5px solid var(--glass-border)',
-                background: 'rgba(255, 255, 255, 0.6)',
-                backdropFilter: 'blur(20px)',
-                display: 'flex', flexDirection: isMobile ? 'column' : 'row',
-                justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center',
-                gap: '1rem', zIndex: 10
-            }}>
-                <div className="u-flex u-items-center u-gap-md">
-                    <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '12px', padding: '0.625rem', color: 'oklch(62% 0.18 20)' }}>
-                        <Activity size={24} strokeWidth={2.5} />
+            {/* ── Header ── */}
+            {!isMobile && (
+                <header style={{
+                    padding: '1.5rem 2.5rem',
+                    borderBottom: '1.5px solid var(--glass-border)',
+                    background: 'rgba(255, 255, 255, 0.6)',
+                    backdropFilter: 'blur(20px)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    gap: '1rem', zIndex: 10
+                }}>
+                    <div className="u-flex u-items-center u-gap-md">
+                        <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '12px', padding: '0.625rem', color: 'oklch(62% 0.18 20)' }}>
+                            <Activity size={24} strokeWidth={2.5} />
+                        </div>
+                        <div>
+                            <h1 style={{ fontSize: '1.3rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, letterSpacing: '-0.03em' }}>Pôle Santé</h1>
+                            <p className="u-text-muted u-font-bold" style={{ margin: 0, fontSize: '0.75rem' }}>Assistant Sanitaire & Suivi Médical</p>
+                        </div>
                     </div>
-                    <div>
-                        <h1 style={{ fontSize: isMobile ? '1.15rem' : '1.3rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, letterSpacing: '-0.03em' }}>Pôle Santé</h1>
-                        <p className="u-text-muted u-font-bold" style={{ margin: 0, fontSize: '0.75rem' }}>Assistant Sanitaire & Suivi Médical</p>
-                    </div>
-                </div>
-
-                {/* ── Nav Tabs ── */}
-                {isMobile ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                        {HEALTH_TABS.map(tab => {
-                            const isActive = activeTab === tab.id;
-                            return (
-                                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                                    display: 'flex', alignItems: 'center', gap: '0.625rem',
-                                    padding: '0.75rem 1rem', borderRadius: '14px', border: '2px solid', cursor: 'pointer',
-                                    transition: 'all 0.25s cubic-bezier(0.34,1.2,0.64,1)',
-                                    borderColor: isActive ? tab.color : 'var(--glass-border)',
-                                    background: isActive ? tab.color : 'white',
-                                    boxShadow: isActive ? `0 4px 16px ${tab.color}35` : 'none',
-                                    transform: isActive ? 'scale(1.02)' : 'scale(1)',
-                                }}>
-                                    <div style={{
-                                        width: '34px', height: '34px', borderRadius: '10px', flexShrink: 0,
-                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                        background: isActive ? 'rgba(255,255,255,0.2)' : tab.bg,
-                                        color: isActive ? 'white' : tab.color, transition: 'all 0.25s'
-                                    }}>
-                                        {tab.icon}
-                                    </div>
-                                    <span style={{ fontSize: '0.72rem', fontWeight: '950', lineHeight: 1.2, textAlign: 'left', color: isActive ? 'white' : 'var(--text-main)', letterSpacing: '-0.01em' }}>{tab.label}</span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                ) : (
+                    {/* Desktop tabs */}
                     <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px' }}>
                         {HEALTH_TABS.map(tab => (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
@@ -125,44 +79,68 @@ export default function HealthCenter({ participants = [], setParticipants, group
                             </button>
                         ))}
                     </div>
-                )}
-            </header>
+                </header>
+            )}
+
+            {/* ── Mobile: compact sticky tab bar ── */}
+            {isMobile && (
+                <div style={{
+                    position: 'sticky', top: 0, zIndex: 10,
+                    background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)',
+                    borderBottom: '1px solid var(--glass-border)',
+                    overflowX: 'auto', WebkitOverflowScrolling: 'touch',
+                    scrollbarWidth: 'none', msOverflowStyle: 'none',
+                    display: 'flex', gap: '0.375rem', padding: '0.625rem 1rem',
+                    flexShrink: 0
+                }} className="no-scrollbar">
+                    {HEALTH_TABS.map(tab => {
+                        const isActive = activeTab === tab.id;
+                        return (
+                            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                                display: 'flex', alignItems: 'center', gap: '0.375rem',
+                                padding: '0.5rem 0.875rem', borderRadius: '100px',
+                                border: '1.5px solid', cursor: 'pointer', flexShrink: 0,
+                                transition: 'all 0.2s',
+                                borderColor: isActive ? tab.color : 'var(--glass-border)',
+                                background: isActive ? tab.color : 'white',
+                                color: isActive ? 'white' : 'var(--text-muted)',
+                                fontWeight: '900', fontSize: '0.78rem',
+                                whiteSpace: 'nowrap', minHeight: '36px',
+                                boxShadow: isActive ? `0 2px 10px ${tab.color}40` : 'none',
+                            }}>
+                                <span style={{ display: 'flex', opacity: isActive ? 1 : 0.7 }}>
+                                    {React.cloneElement(tab.icon, { size: 15 })}
+                                </span>
+                                {tab.label}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
 
             {/* ── Tab Content ── */}
-            <main style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2rem 2.5rem' }} className="no-scrollbar">
-                {activeTab === 'overview' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        <HealthDashboard
-                            children={children} groups={groups}
-                            onNavigate={setActiveTab} isMobile={isMobile}
-                        />
-                        <OverviewTable
-                            children={filteredChildren} groups={groups}
-                            searchTerm={searchTerm} setSearchTerm={setSearchTerm}
-                            filterAlertsOnly={filterAlertsOnly} setFilterAlertsOnly={setFilterAlertsOnly}
-                            updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} isMobile={isMobile}
-                        />
-                    </div>
-                ) : activeTab === 'meds' ? (
+            <main ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2rem 2.5rem' }} className="no-scrollbar">
+                {activeTab === 'meds' ? (
                     <MedsDashboard
                         children={children} updateParticipantHealth={updateParticipantHealth}
                         canEdit={canEdit} isMobile={isMobile} groups={groups}
-                    />
-                ) : activeTab === 'infovac' ? (
-                    <InfoVacSection
-                        children={children} groups={groups}
-                        updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} isMobile={isMobile}
+                        isScrolled={isScrolled} scrollToTop={scrollToTop}
                     />
                 ) : activeTab === 'registre' ? (
-                    <RegistreInfi
-                        children={children} groups={groups}
-                        updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} isMobile={isMobile}
-                    />
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                        <TransmissionComposer
+                            children={children} transmissions={transmissions} setTransmissions={setTransmissions}
+                            activeUser={activeUser} canEdit={canEdit} isMobile={isMobile}
+                        />
+                        <RegistreInfi
+                            children={children} groups={groups}
+                            updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} isMobile={isMobile}
+                        />
+                    </div>
                 ) : (
-                    <IndividualCarnet
-                        children={filteredChildren} groups={groups}
-                        selectedChild={selectedChild} setSelectedChildId={setSelectedChildId}
-                        addHealthLog={addHealthLog} updateParticipantHealth={updateParticipantHealth}
+                    <InfoVacSection
+                        children={children} groups={groups}
+                        updateParticipantHealth={updateParticipantHealth} addHealthLog={addHealthLog}
                         canEdit={canEdit} isMobile={isMobile}
                     />
                 )}

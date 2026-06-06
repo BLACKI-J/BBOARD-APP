@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Mail, Phone, Edit2, ShieldAlert, CheckCircle2, Coins, MapPin, GraduationCap, Calendar, History, ArrowRight } from 'lucide-react';
+import { X, Phone, Edit2, ShieldAlert, CheckCircle2, Coins, MapPin, GraduationCap, History } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { RoleBadge, GroupBadge } from '../common/Badges';
 import { getAge } from '../../utils/participantUtils';

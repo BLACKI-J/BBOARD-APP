@@ -5,27 +5,27 @@ import { StatBadge } from '../common/Badges';
 const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleExportCsv, handleImport, handleImportCsv, isMobile, canEdit }) => {
     return (
         <div className="directory-header dh-wrap" style={{
-            padding: isMobile ? '1.5rem 1rem' : '2.5rem 2.5rem 1.5rem', 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            alignItems: 'flex-end', 
-            flexWrap: 'wrap', 
-            gap: isMobile ? '1rem' : '2rem',
+            padding: isMobile ? '0.75rem 1rem' : '2.5rem 2.5rem 1.5rem',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: isMobile ? '0.5rem' : '2rem',
             zIndex: 30,
             background: 'transparent'
         }}>
             {/* Left: Section Title & Stats */}
             <div style={{ flex: isMobile ? '1' : 'none', minWidth: isMobile ? '0' : 'auto' }}>
-                <h2 style={{ fontSize: isMobile ? '1.8rem' : '2.5rem', fontWeight: '950', marginBottom: '1.25rem', letterSpacing: '-0.05em' }}>Annuaire</h2>
-                <div className="dh-stats no-scrollbar" style={{ 
-                    display: 'flex', 
-                    gap: '0.85rem', 
-                    flexWrap: isMobile ? 'nowrap' : 'wrap',
-                    overflowX: isMobile ? 'auto' : 'visible',
+                {!isMobile && <h2 style={{ fontSize: '2.5rem', fontWeight: '950', marginBottom: '1.25rem', letterSpacing: '-0.05em' }}>Annuaire</h2>}
+                <div className="dh-stats no-scrollbar" style={{
+                    display: 'flex',
+                    gap: isMobile ? '0.5rem' : '0.85rem',
+                    flexWrap: 'nowrap',
+                    overflowX: 'auto',
                 }}>
-                    <StatBadge icon={<Users size={16} strokeWidth={2.5} />} count={stats.total} label="TOTAL" />
-                    <StatBadge icon={<User size={16} strokeWidth={2.5} />} count={stats.children} label="ENFANTS" color="blue" />
-                    <StatBadge icon={<Shield size={16} strokeWidth={2.5} />} count={stats.animators + stats.direction} label="STAFF" color="green" />
+                    <StatBadge icon={<Users size={isMobile ? 14 : 16} strokeWidth={2.5} />} count={stats.total} label={isMobile ? '' : 'TOTAL'} />
+                    <StatBadge icon={<User size={isMobile ? 14 : 16} strokeWidth={2.5} />} count={stats.children} label={isMobile ? '' : 'ENFANTS'} color="blue" />
+                    <StatBadge icon={<Shield size={isMobile ? 14 : 16} strokeWidth={2.5} />} count={stats.animators + stats.direction} label={isMobile ? '' : 'STAFF'} color="green" />
                 </div>
             </div>
 
@@ -47,9 +47,9 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                                 <Users size={18} strokeWidth={2.5} /> <span className="dh-label">Groupes</span>
                             </button>
                         )}
-                        {canEdit && !isMobile && (
-                            <button className="btn btn-primary" onClick={openNewForm} style={{ padding: '0.75rem 1.25rem', borderRadius: '16px', fontWeight: '950', gap: '0.625rem' }}>
-                                <Plus size={20} strokeWidth={3} /> <span className="dh-label">Ajouter</span>
+                        {canEdit && (
+                            <button className="btn btn-primary" onClick={openNewForm} style={{ padding: isMobile ? '0.5rem 0.875rem' : '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '950', gap: '0.5rem', minHeight: '44px' }}>
+                                <Plus size={isMobile ? 18 : 20} strokeWidth={3} /> {!isMobile && <span className="dh-label">Ajouter</span>}
                             </button>
                         )}
                     </>

@@ -1,11 +1,11 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import {
-    ShieldAlert, FileText, Check, X, AlertTriangle,
-    Search
+    ShieldAlert, FileText, Check, X
 } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { GroupBadge } from '../common/Badges';
 import { SearchInput } from '../ui';
+import { printHtml } from '../../utils/printHtml';
 
 const OverviewTable = ({
     children,
@@ -29,8 +29,7 @@ const OverviewTable = ({
                 <td>${c.diet || '—'}</td>
                 <td>${c.constraints || '—'}</td>
             </tr>`).join('');
-        const win = window.open('', '_blank');
-        win.document.write(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
+        printHtml(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8">
             <title>Liste Allergies & Régimes</title>
             <style>
                 body { font-family: Arial, sans-serif; font-size: 13px; padding: 24px; }
@@ -46,8 +45,6 @@ const OverviewTable = ({
             <table><thead><tr><th>Enfant</th><th>Allergies</th><th>Régime</th><th>Contraintes</th></tr></thead>
             <tbody>${rows}</tbody></table>
             </body></html>`);
-        win.document.close();
-        win.print();
     };
 
     return (

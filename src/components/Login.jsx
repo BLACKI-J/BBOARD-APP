@@ -58,7 +58,7 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                     </div>
                     <h1 style={{ fontSize: '1.75rem', fontWeight: '950', marginBottom: '0.5rem', color: 'var(--text-main)' }}>BBOARD</h1>
                     <p style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
-                        Session Été 2024
+                        Session Été {new Date().getFullYear()}
                     </p>
                 </header>
 
