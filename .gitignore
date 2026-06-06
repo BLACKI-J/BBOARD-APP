@@ -37,3 +37,5 @@ server/data/*.sqlite
 .agents/
 .gemini/
 public/logo/logo.png
+
+README_OPENCODE.md
