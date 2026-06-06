@@ -4,6 +4,7 @@ import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
 
 const SECTION_LABELS = {
+    home: 'Tableau de bord',
     schedule: 'Planning',
     exitsheet: 'Fiche de sortie',
     incident: 'FEI',
@@ -11,8 +12,7 @@ const SECTION_LABELS = {
     attendance: 'Pointage',
     inventory: 'Matériel',
     directory: 'Annuaire',
-    health: 'Santé',
-    settings: 'Paramètres'
+    health: 'Santé'
 };
 
 const SECTIONS_CONFIG = [
@@ -144,20 +144,23 @@ export default function Settings({
 
     const updateUserRole = (userId, newRole) => {
         if (!canManageUsers) return;
-        setParticipants(prev => prev.map(p => {
-            if (p.id !== userId) return p;
-            const updated = { ...p, role: newRole };
-            updated.data = JSON.stringify(updated);
-            return updated;
-        }));
+        // Promouvoir/rétrograder en Direction exige manageAccess (anti-escalade)
+        const target = participants.find(p => p.id === userId);
+        if ((newRole === 'direction' || target?.role === 'direction') && !canManageAccess) {
+            ui.toast('Seule la Direction peut gérer le rôle Direction.', { type: 'error' });
+            return;
+        }
+        setParticipants(prev => prev.map(p => p.id === userId ? { ...p, role: newRole } : p));
         ui.toast('Rôle de l\'utilisateur mis à jour.', { type: 'success' });
     };
 
     const handleCreateRole = () => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         const name = newRoleName.trim();
         if (!name) return;
         const key = name.toLowerCase().replace(/[^a-z0-9]/g, '_');
-        if (rolesList.find(r => r.id === key) || key === 'direction' || key === 'animator' || key === 'child') {
+        if (!key) { ui.toast('Nom de rôle invalide.', { type: 'error' }); return; }
+        if (rolesList.find(r => r.id === key)) {
             ui.toast('Ce rôle existe déjà.', { type: 'error' });
             return;
         }
@@ -181,8 +184,9 @@ export default function Settings({
     };
 
     const handleDeleteRole = async (key) => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         const roleToDelete = rolesList.find(r => r.id === key);
-        if (roleToDelete?.base || key === 'direction' || key === 'animator' || key === 'child') {
+        if (roleToDelete?.base) {
             ui.toast('Les rôles par défaut ne peuvent pas être supprimés.', { type: 'error' });
             return;
         }
@@ -199,14 +203,7 @@ export default function Settings({
         const updatedPermissions = { ...accessControl.rolePermissions };
         delete updatedPermissions[key];
 
-        setParticipants(prev => prev.map(p => {
-            if (p.role === key) {
-                const updated = { ...p, role: 'animator' };
-                updated.data = JSON.stringify(updated);
-                return updated;
-            }
-            return p;
-        }));
+        setParticipants(prev => prev.map(p => p.role === key ? { ...p, role: 'animator' } : p));
 
         if (selectedConfigRole === key) {
             setSelectedConfigRole('animator');
@@ -242,6 +239,8 @@ export default function Settings({
         }
 
         const id = uuidv4();
+        // pin reste au niveau racine : le serveur le hache puis le retire (sanitizeParticipant).
+        // Pas de `data` embarqué (redondant + éviterait de figer le PIN en clair).
         const userToAdd = {
             ...newUser,
             id,
@@ -249,7 +248,6 @@ export default function Settings({
             groupId: '',
             allergies: '',
             constraints: '',
-            data: JSON.stringify({ ...newUser, id })
         };
 
         setParticipants(prev => [...prev, userToAdd]);
@@ -260,6 +258,7 @@ export default function Settings({
     };
 
     const handleResetAll = async () => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         const ok = await ui.confirm({
             title: 'Réinitialisation complète',
             message: 'Toutes les données seront effacées définitivement. Cette action est irréversible.',
@@ -270,7 +269,8 @@ export default function Settings({
         setParticipants([]);
         setGroups([]);
         setActivities([]);
-        localStorage.clear();
+        // Ne vider que les clés de l'app (pas localStorage.clear() qui touche tout l'origine)
+        Object.keys(localStorage).filter(k => k.startsWith('colo-')).forEach(k => localStorage.removeItem(k));
         ui.toast('Réinitialisation complète effectuée.', { type: 'success' });
     };
 
@@ -298,6 +298,22 @@ export default function Settings({
     };
 
     useEffect(() => { fetchLogs(); }, [canViewLogs]);
+
+    const handleClearLogs = async () => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        const ok = await ui.confirm({
+            title: 'Effacer le journal',
+            message: 'Supprimer définitivement tout le journal d\'activité ?',
+            confirmText: 'Effacer', danger: true
+        });
+        if (!ok) return;
+        try {
+            const res = await fetch('/api/action-logs', { method: 'DELETE', headers: actorHeaders });
+            if (!res.ok) throw new Error('Échec');
+            setLogs([]);
+            ui.toast('Journal effacé.', { type: 'success' });
+        } catch (err) { ui.toast('Échec de la suppression.', { type: 'error' }); }
+    };
 
     const handleUnlock = async (e) => {
         e.preventDefault();
@@ -352,7 +368,7 @@ export default function Settings({
         const headers = ['Prénom', 'Nom', 'Rôle', 'Groupe', 'Date de naissance', 'Allergies', 'Régime', 'Contraintes', 'Fiche sanitaire', 'Téléphone', 'Contact urgence'];
         const rows = (participants || []).map(p => [
             esc(p.firstName), esc(p.lastName), esc(roleLabel(p.role)),
-            esc(groupName(p.group)), esc(p.birthDate), esc(p.allergies),
+            esc(groupName(p.groupId || p.group)), esc(p.birthDate), esc(p.allergies),
             esc(p.diet), esc(p.constraints),
             p.healthDocProvided ? 'OUI' : 'NON',
             esc(p.phone), esc(p.emergencyContact)
@@ -416,7 +432,7 @@ export default function Settings({
                     </div>
                 </div>
                 <div style={{ display: 'flex', gap: '0.75rem', width: isMobile ? '100%' : 'auto' }}>
-                    <button className="btn btn-secondary" style={{ flex: isMobile ? 1 : 'none', padding: '0.625rem 1rem', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem' }} onClick={() => setIsUnlocked(false)}>
+                    <button className="btn btn-secondary" style={{ flex: isMobile ? 1 : 'none', padding: '0.625rem 1rem', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem', minHeight: '44px' }} onClick={() => setIsUnlocked(false)}>
                         <Lock size={16} strokeWidth={2.5} /> Verrouiller
                     </button>
                 </div>
@@ -445,17 +461,17 @@ export default function Settings({
                             key={tab.id}
                             onClick={() => setActiveTab(tab.id)}
                             style={{
-                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem',
+                                display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.75rem 1rem',
                                 border: 'none', background: activeTab === tab.id ? 'var(--primary-light)' : 'transparent',
                                 color: activeTab === tab.id ? 'var(--primary-color)' : 'var(--text-muted)',
                                 borderRadius: '14px', fontWeight: '950', cursor: 'pointer', transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                textAlign: 'left', fontSize: '12px', whiteSpace: 'nowrap'
+                                textAlign: 'left', fontSize: '12px', whiteSpace: 'nowrap',
+                                flexShrink: 0, minHeight: '44px'
                             }}
                         >
-                            <span style={{ display: 'flex' }}>{tab.icon}</span>
-                            {!isMobile && <span>{tab.label}</span>}
+                            <span style={{ display: 'flex', flexShrink: 0 }}>{tab.icon}</span>
+                            <span>{tab.label}</span>
                             {activeTab === tab.id && !isMobile && <ChevronRight size={14} style={{ marginLeft: 'auto' }} strokeWidth={3} />}
-                            {isMobile && <span>{tab.label}</span>}
                         </button>
                     ))}
                 </div>
@@ -511,7 +527,7 @@ export default function Settings({
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {logs.slice(0, 6).map((log, i) => (
-                                            <div key={i} style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--bg-secondary)', paddingBottom: '10px' }}>
+                                            <div key={log.id || i} style={{ display: 'flex', gap: '12px', borderBottom: '1px solid var(--bg-secondary)', paddingBottom: '10px' }}>
                                                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)', marginTop: '6px', opacity: 0.6 }} />
                                                 <div>
                                                     <div style={{ fontSize: '13px', fontWeight: '950', color: 'var(--text-main)' }}>{log.action}</div>
@@ -553,7 +569,7 @@ export default function Settings({
                                         }}>
                                             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.25rem' }}>
                                                 <div style={{ width: '44px', height: '44px', background: 'var(--primary-gradient)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '1.1rem' }}>
-                                                    {user.firstName[0]}{user.lastName[0]}
+                                                    {(user.firstName?.[0] || '') + (user.lastName?.[0] || '') || '?'}
                                                 </div>
                                                 <div style={{ minWidth: 0, flex: 1 }}>
                                                     <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.firstName} {user.lastName}</div>
@@ -618,16 +634,17 @@ export default function Settings({
                                             {isEditingThisUser && (
                                                 <div className="animate-scale-in" style={{ marginTop: '1.25rem', padding: '1rem', background: 'var(--bg-secondary)', borderRadius: '20px', display: 'flex', flexDirection: 'column', gap: '1rem', border: '1.5px solid var(--glass-border)' }}>
                                                     <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'flex', justifyContent: 'space-between' }}>
-                                                        <span>Surcharges de permissions</span>
-                                                        <span style={{ color: 'var(--primary-color)' }}>Surchargé</span>
+                                                        <span>Accès personnalisés</span>
+                                                        <span style={{ color: hasCustomPerms ? 'var(--primary-color)' : 'var(--text-softer)' }}>{hasCustomPerms ? 'Surchargé' : 'Hérité du rôle'}</span>
                                                     </div>
                                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '280px', overflowY: 'auto' }} className="no-scrollbar">
                                                         {SECTIONS_CONFIG.map(sec => {
-                                                            const roleView = !!accessControl.rolePermissions?.[user.role]?.[sec.viewKey];
+                                                            const baseline = accessControl.rolePermissions?.[user.role] || accessControl.rolePermissions?.animator || {};
+                                                            const roleView = !!baseline[sec.viewKey];
                                                             const userView = accessControl.userPermissions?.[user.id]?.[sec.viewKey];
                                                             const activeView = userView !== undefined ? userView : roleView;
 
-                                                            const roleEdit = sec.editKey ? !!accessControl.rolePermissions?.[user.role]?.[sec.editKey] : false;
+                                                            const roleEdit = sec.editKey ? !!baseline[sec.editKey] : false;
                                                             const userEdit = sec.editKey ? accessControl.userPermissions?.[user.id]?.[sec.editKey] : undefined;
                                                             const activeEdit = userEdit !== undefined ? userEdit : roleEdit;
 
@@ -689,7 +706,7 @@ export default function Settings({
                                 <div>
                                     <label className="input-label" style={{ display: 'block', fontSize: '0.78rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Rôle</label>
                                     <select className="glass-input" value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))} style={{ height: '48px', fontWeight: '800' }}>
-                                        {rolesList.map(r => <option key={r} value={r}>{roleLabels[r] || r}</option>)}
+                                        {rolesList.filter(r => r.id !== 'child').map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                                     </select>
                                 </div>
                                 <div>
@@ -751,7 +768,7 @@ export default function Settings({
                                                 key={roleKey}
                                                 onClick={() => setSelectedConfigRole(roleKey)}
                                                 style={{
-                                                    display: 'flex', alignItems: 'center', justify: 'space-between',
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                                     padding: '0.75rem 1rem', borderRadius: '14px', cursor: 'pointer',
                                                     background: isSelected ? 'var(--primary-light)' : 'transparent',
                                                     border: isSelected ? '1.5px solid var(--primary-color)' : '1.5px solid transparent',
@@ -848,7 +865,7 @@ export default function Settings({
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
                                 {Object.entries(SECTION_LABELS).map(([key, label]) => (
                                     <label key={key} className="card-glass" style={{
-                                        padding: '1.75rem', display: 'flex', justify: 'space-between', alignItems: 'center', cursor: 'pointer',
+                                        padding: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
                                         background: accessControl?.hiddenSections?.[key] ? 'var(--bg-secondary)' : 'white',
                                         opacity: accessControl?.hiddenSections?.[key] ? 0.6 : 1,
                                         border: accessControl?.hiddenSections?.[key] ? '1.5px solid var(--glass-border)' : '1.5px solid var(--primary-color)',
@@ -876,13 +893,13 @@ export default function Settings({
                                     <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Paramètres de Sécurité</h3>
                                 </div>
 
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.75rem 2rem', background: 'var(--bg-secondary)', borderRadius: '24px', marginBottom: '2.5rem' }}>
+                                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '1.75rem 2rem', background: 'var(--bg-secondary)', borderRadius: '24px', marginBottom: '2.5rem', cursor: 'pointer' }}>
                                     <div>
-                                        <div style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)' }}>Mode Développeur / Admin</div>
-                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '850', marginTop: '4px' }}>Activation des outils de diagnostic système</div>
+                                        <div style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)' }}>Alertes de pointage</div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '850', marginTop: '4px' }}>Afficher le nombre d'absents sur le Tableau de bord</div>
                                     </div>
-                                    <input type="checkbox" checked={isAdminMode} onChange={e => setIsAdminMode(e.target.checked)} style={{ width: '28px', height: '28px' }} />
-                                </div>
+                                    <input type="checkbox" checked={isAttendanceEnabled} onChange={e => setIsAttendanceEnabled(e.target.checked)} style={{ width: '28px', height: '28px', flexShrink: 0, cursor: 'pointer', accentColor: 'var(--primary-color)' }} />
+                                </label>
 
                                 <div style={{ background: 'white', border: '2px solid var(--glass-border)', padding: '2.5rem', borderRadius: '28px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -936,6 +953,9 @@ export default function Settings({
                                             reader.onload = (ev) => {
                                                 try {
                                                     const imported = JSON.parse(ev.target.result);
+                                                    if (!imported || typeof imported !== 'object' || (!Array.isArray(imported.participants) && !Array.isArray(imported.groups))) {
+                                                        ui.toast('Fichier de sauvegarde non reconnu.', { type: 'error' }); return;
+                                                    }
                                                     setParticipants(imported.participants || []);
                                                     setGroups(imported.groups || []);
                                                     setActivities(imported.activities || []);
@@ -943,6 +963,7 @@ export default function Settings({
                                                 } catch (err) { ui.toast('Import invalide.', { type: 'error' }); }
                                             };
                                             reader.readAsText(file);
+                                            e.target.value = '';
                                         }} style={{ display: 'none' }} />
                                     </label>
                                     <button className="btn-maintenance danger" onClick={handleResetAll}>
@@ -961,7 +982,7 @@ export default function Settings({
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem' }}>
                                         <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }} onClick={fetchLogs}>Actualiser</button>
-                                        <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px', color: 'var(--danger-color)' }} onClick={() => setLogs([])}>Effacer</button>
+                                        {canManageAccess && <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px', color: 'var(--danger-color)' }} onClick={handleClearLogs}>Effacer</button>}
                                     </div>
                                 </div>
                                 <div style={{ maxHeight: '600px', overflowY: 'auto', paddingRight: '0.5rem' }} className="no-scrollbar">
@@ -971,7 +992,7 @@ export default function Settings({
                                         <div style={{ textAlign: 'center', padding: '4rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px dashed var(--glass-border)', color: 'var(--text-muted)', fontWeight: '850' }}>Aucun log disponible.</div>
                                     ) : (
                                         logs.map((log, i) => (
-                                            <div key={i} style={{ padding: '1.5rem', borderBottom: '1.5px solid var(--bg-secondary)', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+                                            <div key={log.id || i} style={{ padding: '1.5rem', borderBottom: '1.5px solid var(--bg-secondary)', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                                                 <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'oklch(20% 0.05 45 / 0.4)' }}>
                                                     <FileClock size={22} strokeWidth={2.5} />
                                                 </div>
