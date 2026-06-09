@@ -18,7 +18,7 @@ const ChildCard = ({ child, groups, onOpen }) => {
                 <Avatar participant={child} size={44} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-                        {child.firstName} {child.lastName.toUpperCase()}
+                        {child.firstName} {(child.lastName || "").toUpperCase()}
                     </div>
                     <div style={{ display: 'flex', gap: '0.375rem', marginTop: '3px', flexWrap: 'wrap' }}>
                         <GroupBadge groupId={child.group} groups={groups} />

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { Camera, Search, Plus, Trash2, Package, Upload, X, ChevronRight, Layers, Box, RefreshCcw, List, Sparkles, CheckCircle2, AlertCircle, ShoppingBag, ArrowRight, Users } from 'lucide-react';
 import WebcamPhotoCapture from './directory/WebcamPhotoCapture';
 import { useUi } from '../ui/UiProvider';
+import { apiSend } from '../utils/api';
 
 const CATEGORIES = ['vêtement', 'chaussures', 'hygiène', 'accessoire', 'autre'];
 
@@ -216,7 +217,7 @@ const ItemRow = ({ item, index, onDelete, canEdit, onTakePhoto, onUpload, isMobi
 
 // ─── Main Component ──────────────────────────────────────────────────────────
 
-export default function Inventory({ participants = [], canEdit = true, canSearchAI = true, actorHeaders = { 'Content-Type': 'application/json' }, inventoryItems = [], setInventoryItems, onRefresh, isMobile }) {
+export default function Inventory({ participants = [], canEdit = true, canSearchAI = true, actorHeaders = { 'Content-Type': 'application/json' }, inventoryItems = [], onRefresh, isMobile }) {
     const ui = useUi();
     const allItems = inventoryItems;
     const [selectedChildId, setSelectedChildId] = useState('');
@@ -298,25 +299,32 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
     }, [children, selectedChildId]);
 
     const saveItem = async (payload, options = {}) => {
-        if (!canEdit) return;
+        if (!canEdit) return null;
         const participantId = options.participantId || selectedChildId;
         const id = payload.id || `item_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`;
-        
         const newItem = { ...payload, id, participant_id: participantId };
-        const updatedItems = allItems.some(i => i.id === id)
-            ? allItems.map(i => i.id === id ? newItem : i)
-            : [...allItems, newItem];
-            
-        setInventoryItems(updatedItems);
-        return id;
+        // Backend attend UN objet par requête (pas le tableau complet).
+        try {
+            await apiSend('POST', '/api/inventory/items', { headers: actorHeaders, body: newItem });
+            // Le rafraîchissement est géré par l'appelant (une seule fois, après la photo / le lot).
+            return id;
+        } catch (err) {
+            ui.toast(`Échec d'enregistrement : ${err.message}`, { type: 'error' });
+            return null;
+        }
     };
 
     const deleteItem = async (id) => {
         if (!canEdit) return;
         const ok = await ui.confirm({ title: 'Supprimer', message: 'Supprimer cet objet ?', confirmText: 'Supprimer', danger: true });
         if (!ok) return;
-        setInventoryItems(allItems.filter(i => i.id !== id));
-        ui.toast('Objet supprimé.', { type: 'success' });
+        try {
+            await apiSend('DELETE', `/api/inventory/items/${id}`, { headers: actorHeaders });
+            onRefresh?.();
+            ui.toast('Objet supprimé.', { type: 'success' });
+        } catch (err) {
+            ui.toast(`Échec de suppression : ${err.message}`, { type: 'error' });
+        }
     };
 
     const handleUploadAction = async (itemId, file) => {
@@ -387,6 +395,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
         if (!canEdit || batchEntries.length === 0) return;
         setIsProcessingBatch(true);
         try {
+            let ok = 0, fail = 0;
             for (const entry of batchEntries) {
                 const itemId = await saveItem({
                     label: entry.label,
@@ -396,15 +405,22 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                     status: 'ok'
                 }, { refresh: false });
                 if (itemId) {
+                    ok++;
                     await fetch(`/api/inventory/items/${itemId}/photos`, {
                         method: 'POST',
                         headers: actorHeaders,
                         body: JSON.stringify({ participantId: selectedChildId, imageBase64: entry.imageBase64 })
                     });
+                } else {
+                    fail++;
                 }
             }
-            ui.toast('Lot importé.', { type: 'success' });
-            setBatchEntries([]);
+            if (fail === 0) {
+                ui.toast(`Lot importé (${ok}).`, { type: 'success' });
+                setBatchEntries([]); // ne vide que si tout a réussi (sinon on garde pour réessayer)
+            } else {
+                ui.toast(`${ok} importé(s), ${fail} échec(s).`, { type: 'error' });
+            }
             if (onRefresh) await onRefresh();
         } finally { setIsProcessingBatch(false); }
     };
@@ -677,15 +693,16 @@ const ControlHub = ({
                         style={{ width: '100%', height: '56px', borderRadius: '18px', fontWeight: '950', fontSize: '1rem', marginTop: '0.5rem' }} 
                         onClick={async () => { 
                             if (!newItem.label.trim()) { ui.toast('Veuillez entrer une désignation.', { type: 'error' }); nameInputRef.current?.focus(); return; }
-                            const savedId = await saveItem(newItem, { refresh: false }); 
-                            if (savedId && newItem.photo) {
+                            const savedId = await saveItem(newItem, { refresh: false });
+                            if (!savedId) return; // échec déjà signalé par saveItem
+                            if (newItem.photo) {
                                 await fetch(`/api/inventory/items/${savedId}/photos`, {
                                     method: 'POST', headers: actorHeaders, body: JSON.stringify({ participantId: selectedChildId, imageBase64: newItem.photo })
                                 });
                             }
-                            if (onRefresh) await onRefresh(); 
-                            setNewItem({ label: '', category: 'vêtement', arrival_qty: 1, departure_qty: 0, photo: '' }); 
-                            ui.toast('Objet enregistré.', { type: 'success' }); 
+                            if (onRefresh) await onRefresh();
+                            setNewItem({ label: '', category: 'vêtement', arrival_qty: 1, departure_qty: 0, photo: '' });
+                            ui.toast('Objet enregistré.', { type: 'success' });
                         }}
                     >
                         {isSearchingAi ? 'Analyse...' : (newItem.photo ? 'Confirmer l\'ajout' : 'Enregistrer cet objet')}

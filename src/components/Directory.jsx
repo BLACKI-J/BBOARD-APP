@@ -216,8 +216,10 @@ export default function Directory({ participants = [], setParticipants, groups =
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
-                const imported = JSON.parse(e.target.result);
-                if (Array.isArray(imported)) {
+                const parsed = JSON.parse(e.target.result);
+                // Accepte un tableau brut OU une sauvegarde { participants: [...] }
+                const imported = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.participants) ? parsed.participants : null);
+                if (imported) {
                     const ok = await ui.confirm({
                         title: 'Importer les participants',
                         message: `Remplacer la liste actuelle (${safeParticipants.length}) par ${imported.length} participants importés ?`,
@@ -228,7 +230,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                         ui.toast('Import terminé.', { type: 'success' });
                     }
                 } else {
-                    ui.alert({ title: 'Import invalide', message: 'Le fichier doit contenir un tableau JSON.' });
+                    ui.alert({ title: 'Import invalide', message: 'Le fichier doit contenir un tableau JSON, ou un objet avec une clé "participants".' });
                 }
             } catch (err) {
                 ui.alert({ title: 'Erreur', message: 'Erreur lors de la lecture du JSON.' });

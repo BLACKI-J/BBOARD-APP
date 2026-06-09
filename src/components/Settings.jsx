@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, EyeOff, FileClock, Settings2, AlertCircle, Eye, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, Activity, Trash, History, Plus, X } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
+import { apiSend } from '../utils/api';
 
 const SECTION_LABELS = {
     home: 'Tableau de bord',
@@ -104,7 +105,8 @@ export default function Settings({
     }, [rolesList]);
 
     const updateUserPermission = (userId, perm, value) => {
-        if (!canManageUsers) return;
+        // Écrit dans accessControl → côté serveur gated manageAccess. Aligner le gate client.
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         setAccessControl(prev => ({
             ...prev,
             userPermissions: {
@@ -218,7 +220,8 @@ export default function Settings({
     };
 
     const handleResetUserPermissions = (userId) => {
-        if (!canManageUsers) return;
+        // Écrit dans accessControl → gated manageAccess côté serveur.
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         setAccessControl(prev => {
             const copy = { ...prev.userPermissions };
             delete copy[userId];
@@ -227,7 +230,7 @@ export default function Settings({
         ui.toast('Droits réinitialisés selon le rôle.', { type: 'success' });
     };
 
-    const handleAddUser = (e) => {
+    const handleAddUser = async (e) => {
         e.preventDefault();
         if (!newUser.firstName || !newUser.lastName) {
             ui.toast('Prénom et nom sont requis.', { type: 'error' });
@@ -245,16 +248,20 @@ export default function Settings({
             ...newUser,
             id,
             healthDocProvided: true,
-            groupId: '',
+            group: '', // l'app lit `group` partout (pas `groupId`)
             allergies: '',
             constraints: '',
         };
 
-        setParticipants(prev => [...prev, userToAdd]);
+        const name = newUser.firstName;
+        // Attend le résultat réel du serveur : en cas d'échec, mutateCollection a déjà
+        // affiché l'erreur — on n'annonce pas un faux succès ni ne vide le formulaire.
+        const ok = await setParticipants(prev => [...prev, userToAdd]);
+        if (ok === false) return;
 
         setNewUser({ firstName: '', lastName: '', role: 'animator', pin: '' });
         setActiveTab('users');
-        ui.toast(`Utilisateur ${newUser.firstName} créé avec succès.`, { type: 'success' });
+        ui.toast(`Utilisateur ${name} créé avec succès.`, { type: 'success' });
     };
 
     const handleResetAll = async () => {
@@ -308,8 +315,7 @@ export default function Settings({
         });
         if (!ok) return;
         try {
-            const res = await fetch('/api/action-logs', { method: 'DELETE', headers: actorHeaders });
-            if (!res.ok) throw new Error('Échec');
+            await apiSend('DELETE', '/api/action-logs', { headers: actorHeaders });
             setLogs([]);
             ui.toast('Journal effacé.', { type: 'success' });
         } catch (err) { ui.toast('Échec de la suppression.', { type: 'error' }); }
@@ -359,6 +365,44 @@ export default function Settings({
         const link = document.body.appendChild(document.createElement('a'));
         link.href = url; link.download = `colo-backup-${new Date().toISOString().split('T')[0]}.json`;
         link.click(); document.body.removeChild(link);
+    };
+
+    const handleRestoreFile = async (file) => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        let imported;
+        try {
+            imported = JSON.parse(await file.text());
+        } catch {
+            ui.toast('Fichier illisible (JSON invalide).', { type: 'error' }); return;
+        }
+        if (!imported || typeof imported !== 'object' ||
+            (!Array.isArray(imported.participants) && !Array.isArray(imported.groups) && !Array.isArray(imported.activities))) {
+            ui.toast('Fichier de sauvegarde non reconnu.', { type: 'error' }); return;
+        }
+        // Ne restaure que les sections présentes (évite d'écraser le reste avec du vide).
+        const sections = [
+            Array.isArray(imported.participants) && { url: '/api/participants', data: imported.participants, label: 'participants' },
+            Array.isArray(imported.groups) && { url: '/api/groups', data: imported.groups, label: 'groupes' },
+            Array.isArray(imported.activities) && { url: '/api/activities', data: imported.activities, label: 'activités' },
+        ].filter(Boolean);
+        const ok = await ui.confirm({
+            title: 'Restaurer la sauvegarde',
+            message: `Remplacer ${sections.map(s => s.label).join(', ')} par le contenu du fichier ? Les données actuelles seront écrasées.`,
+            confirmText: 'Restaurer', danger: true
+        });
+        if (!ok) return;
+        for (const s of sections) {
+            try {
+                await apiSend('POST', s.url, { headers: actorHeaders, body: s.data });
+            } catch (err) {
+                // Le serveur renvoie déjà un message clair (ex. permission manageUsers
+                // requise pour le staff, ou PIN manquant).
+                ui.toast(`Échec (${s.label}) : ${err.message}`, { type: 'error' });
+                return;
+            }
+        }
+        // Le serveur émet 'data_updated' → le store se rafraîchit tout seul.
+        ui.toast('Restauration réussie.', { type: 'success' });
     };
 
     const handleExportCsv = () => {
@@ -609,8 +653,8 @@ export default function Settings({
                                                 </div>
                                             </div>
 
-                                            {/* Action buttons */}
-                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            {/* Action buttons (override accessControl → manageAccess requis) */}
+                                            {canManageAccess && <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                                 <button
                                                     onClick={() => setEditingUserPermId(isEditingThisUser ? null : user.id)}
                                                     className="btn btn-secondary"
@@ -628,7 +672,7 @@ export default function Settings({
                                                         Rétablir Rôle
                                                     </button>
                                                 )}
-                                            </div>
+                                            </div>}
 
                                             {/* User permission overriding panel */}
                                             {isEditingThisUser && (
@@ -948,22 +992,8 @@ export default function Settings({
                                         <small>Fichier .json uniquement</small>
                                         <input type="file" accept=".json" onChange={(e) => {
                                             const file = e.target.files[0];
-                                            if (!file) return;
-                                            const reader = new FileReader();
-                                            reader.onload = (ev) => {
-                                                try {
-                                                    const imported = JSON.parse(ev.target.result);
-                                                    if (!imported || typeof imported !== 'object' || (!Array.isArray(imported.participants) && !Array.isArray(imported.groups))) {
-                                                        ui.toast('Fichier de sauvegarde non reconnu.', { type: 'error' }); return;
-                                                    }
-                                                    setParticipants(imported.participants || []);
-                                                    setGroups(imported.groups || []);
-                                                    setActivities(imported.activities || []);
-                                                    ui.toast('Restauration réussie.', { type: 'success' });
-                                                } catch (err) { ui.toast('Import invalide.', { type: 'error' }); }
-                                            };
-                                            reader.readAsText(file);
                                             e.target.value = '';
+                                            if (file) handleRestoreFile(file);
                                         }} style={{ display: 'none' }} />
                                     </label>
                                     <button className="btn-maintenance danger" onClick={handleResetAll}>

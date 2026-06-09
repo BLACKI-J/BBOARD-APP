@@ -74,9 +74,38 @@ bash bboard.sh up    # Production Docker (Port 8080)
 | `setup` | Installe les dépendances, crée le `.env`, propose Docker. |
 | `dev` | Lance Frontend (5173) + Backend (3001) en local. |
 | `up` | Déploie via Docker Compose (port 8080). |
-| `update` | Récupère le dernier code et redémarre les services. |
+| `update` | Récupère le dernier code et reconstruit les conteneurs. |
 | `down` | Arrête proprement tous les services. |
 | `logs` | Affiche les journaux du serveur. |
+
+---
+
+## 🔄 Mise à jour (déploiement Docker)
+
+Pour récupérer la dernière version sur le serveur (vos données dans `server/data/` sont **conservées**) :
+
+```bash
+cd ~/BBOARD-APP
+git pull origin main
+docker compose up -d --build      # reconstruit les images (front + back)
+docker logs bboard-backend --tail 10
+```
+
+Ou en une commande via le gestionnaire :
+
+```bash
+bash bboard.sh update
+```
+
+> [!IMPORTANT]
+> - Le `--build` est nécessaire : il reconstruit le backend (le module natif `sqlite3`
+>   est recompilé dans l'image). Sans lui, les changements de dépendances ne sont pas pris.
+> - Après mise à jour, **rechargez l'app en vidant le cache** (Ctrl+Maj+R, ou sur mobile :
+>   fermer puis rouvrir l'onglet / l'icône PWA) — sinon l'ancienne interface reste en cache.
+> - En cas de souci : `docker logs bboard-backend --tail 30` montre l'erreur exacte.
+
+> [!TIP]
+> Si le rebuild semble figé sur du cache, forcez : `docker compose build --no-cache && docker compose up -d`.
 
 ---
 

@@ -34,7 +34,7 @@ export default function TransmissionComposer({ children = [], transmissions = []
             text: text.trim(),
             priority,
             targetDate,
-            childName: child ? `${child.firstName} ${child.lastName.toUpperCase()}` : '',
+            childName: child ? `${child.firstName} ${(child.lastName || "").toUpperCase()}` : '',
             author: activeUser ? `${activeUser.firstName || ''} ${activeUser.lastName || ''}`.trim() : '',
             createdAt: new Date().toISOString(),
             done: false,
@@ -72,7 +72,7 @@ export default function TransmissionComposer({ children = [], transmissions = []
                             <label style={{ display: 'block', fontSize: '0.68rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.4rem' }}>Vacancier concerné (optionnel)</label>
                             <select value={childId} onChange={e => setChildId(e.target.value)} className="glass-input" style={{ height: '42px', fontWeight: '700' }}>
                                 <option value="">— Aucun / général —</option>
-                                {children.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName.toUpperCase()}</option>)}
+                                {children.map(c => <option key={c.id} value={c.id}>{c.firstName} {(c.lastName || "").toUpperCase()}</option>)}
                             </select>
                         </div>
                         <div>

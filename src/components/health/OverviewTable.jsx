@@ -24,7 +24,7 @@ const OverviewTable = ({
         );
         const rows = childrenWithAlert.map(c => `
             <tr>
-                <td>${c.firstName} ${c.lastName.toUpperCase()}</td>
+                <td>${c.firstName} ${(c.lastName || "").toUpperCase()}</td>
                 <td>${c.allergies || '—'}</td>
                 <td>${c.diet || '—'}</td>
                 <td>${c.constraints || '—'}</td>
@@ -102,7 +102,7 @@ const OverviewTable = ({
                                     <div className="u-flex u-items-center u-gap-md">
                                         <Avatar participant={child} size={40} />
                                         <div>
-                                            <div style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{child.firstName} {child.lastName.toUpperCase()}</div>
+                                            <div style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{child.firstName} {(child.lastName || "").toUpperCase()}</div>
                                             <div style={{ marginTop: '2px' }}>
                                                 <GroupBadge groupId={child.group} groups={groups} />
                                             </div>

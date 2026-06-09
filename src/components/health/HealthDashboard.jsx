@@ -7,7 +7,7 @@ const HealthDashboard = ({ children = [], groups = [], onNavigate, isMobile }) =
     const recentPassages = useMemo(() => {
         const all = [];
         children.forEach(c => (c.passageLogs || []).forEach(l =>
-            all.push({ ...l, name: `${c.firstName} ${c.lastName.toUpperCase()}`, child: c })
+            all.push({ ...l, name: `${c.firstName} ${(c.lastName || "").toUpperCase()}`, child: c })
         ));
         return all.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).slice(0, 4);
     }, [children]);

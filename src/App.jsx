@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import Login from './components/Login';
 import { useUi } from './ui/UiProvider';
 import { hasUnsavedChanges } from './utils/unsavedGuard';
+import { apiSend } from './utils/api';
 import PullToRefresh from './components/common/PullToRefresh';
 import SyncStatus from './components/common/SyncStatus';
 import useAppStore from './store/useAppStore';
@@ -421,7 +422,8 @@ export default function App() {
                     fetchJson(`${API_URL}/inventory/items`, []),
                     fetchJson(`${API_URL}/auth/profiles`, []),
                     fetchJson(`${API_URL}/state/menus`, {}),
-                    fetchJson(`${API_URL}/state/transmissions`, [])
+                    fetchJson(`${API_URL}/state/transmissions`, []),
+                    fetchJson(`${API_URL}/state/savedViews`, [])
                 ]);
 
                 const newGroups = data[0]; const newParticipants = data[1];
@@ -434,9 +436,7 @@ export default function App() {
                 setStaffUsers(data[8] || []);
                 setMenus(data[9] || {});
                 setTransmissions(Array.isArray(data[10]) ? data[10] : []);
-                // Sync to global store
-                useAppStore.getState().setParticipants(newParticipants);
-                useAppStore.getState().setGroups(newGroups);
+                setSavedViews(Array.isArray(data[11]) ? data[11] : []);
 
                 isDataLoaded.current = true;
                 setConnectionStatus('connected');
@@ -502,20 +502,21 @@ export default function App() {
 
     const mutateCollection = useCallback(async (endpoint, setter, update, currentValue) => {
         const finalValue = typeof update === 'function' ? update(currentValue) : update;
-        setter(finalValue);
+        setter(finalValue); // maj optimiste
         try {
-            const response = await fetch(endpoint, {
-                method: 'POST',
-                headers: actorHeaders,
-                body: JSON.stringify(finalValue)
-            });
-            if (response.status === 401) clearAuthenticatedSession();
-            if (!response.ok) throw new Error(`Server returned ${response.status}`);
+            await apiSend('POST', endpoint, { headers: actorHeaders, body: finalValue });
+            return true;
         } catch (err) {
+            setter(currentValue); // rollback de l'optimiste
+            if (err.status === 401) {
+                clearAuthenticatedSession();
+                return false;
+            }
             console.error(`Failed to sync ${endpoint}:`, err);
-            setter(currentValue);
+            ui.toast(`Échec d'enregistrement : ${err.message}`, { type: 'error' });
+            return false;
         }
-    }, [actorHeaders, clearAuthenticatedSession]);
+    }, [actorHeaders, clearAuthenticatedSession, ui]);
 
     const onRefresh = useCallback(() => refreshDataRef.current?.(), []);
 
@@ -758,17 +759,17 @@ export default function App() {
                         <ErrorBoundary key={activeTab}>
                             <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                 {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} onNavigate={guardedNavigate} isMobile={isMobile} />
-                                : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} menus={menus} setMenus={setSyncedMenus} />
+                                : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} menus={menus} setMenus={setSyncedMenus} />
                                 : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)} canEdit={permissions.editDirectory} isMobile={isMobile} roles={accessControl.roles} />
-                                : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
-                                : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} setInventoryItems={(v) => mutateCollection(`${API_URL}/inventory/items`, setInventoryItems, v, inventoryItems)} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} canEdit={permissions.editHealth} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
+                                : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)} canEdit={permissions.editDirectory} isMobile={isMobile} roles={accessControl.roles} />
+                                : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
+                                : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} onRefresh={onRefresh} isMobile={isMobile} />
+                                : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editHealth} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
                                 : activeTab === 'settings' ? <Settings
-                                    participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, groups)}
-                                    activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
+                                    participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)}
+                                    activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
                                     isAdminMode={isAdminMode} setIsAdminMode={setIsAdminMode} isAttendanceEnabled={isAttendanceEnabled}
                                     setIsAttendanceEnabled={setIsAttendanceEnabled}
                                     accessControl={accessControl} setAccessControl={(v) => mutateCollection(`${API_URL}/state/accessControl`, setAccessControl, v, accessControl)}

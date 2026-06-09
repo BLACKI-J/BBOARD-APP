@@ -187,13 +187,23 @@ function sanitizeParticipant(participant) {
     return clean;
 }
 
+// Réponse d'erreur 500 uniforme : log serveur détaillé + message générique au client
+// (pas de fuite de err.message). Utilisé par tous les catch de routes.
+function serverError(req, res, err) {
+    console.error(`${req.method} ${req.path} error:`, err);
+    res.status(500).json({ error: 'Erreur serveur.' });
+}
+
 function mergeAccessControl(raw) {
     const source = raw && typeof raw === 'object' ? raw : {};
     return {
         ...defaultAccessControl,
         ...source,
         hiddenSections: { ...defaultAccessControl.hiddenSections, ...(source.hiddenSections || {}) },
+        // Conserve TOUS les rôles (custom inclus). Les deux rôles de base héritent
+        // de leurs valeurs par défaut, les rôles custom sont gardés tels quels.
         rolePermissions: {
+            ...(source.rolePermissions && typeof source.rolePermissions === 'object' ? source.rolePermissions : {}),
             direction: { ...defaultAccessControl.rolePermissions.direction, ...(source.rolePermissions?.direction || {}) },
             animator: { ...defaultAccessControl.rolePermissions.animator, ...(source.rolePermissions?.animator || {}) }
         },
@@ -335,7 +345,7 @@ async function authenticateRequest(req, res, next) {
         req.actor = actor;
         next();
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 }
 
@@ -684,7 +694,7 @@ app.get('/api/auth/profiles', async (req, res) => {
             .map(({ id, firstName, lastName, role }) => ({ id, firstName, lastName, role }));
         res.json([{ id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction' }, ...profiles]);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -711,7 +721,7 @@ app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
         res.json({ user: publicActor(actor), accessControl });
     } catch (err) {
         console.error('Login failed:', err);
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -727,7 +737,7 @@ app.get('/api/auth/session', async (req, res) => {
         }
         res.json({ authenticated: true, user: publicActor(actor), accessControl: await getAccessControl() });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -799,7 +809,7 @@ app.get('/api/participants', requireAnyPermission('viewDirectory', 'viewAttendan
         const rows = await db.all('SELECT data FROM participants');
         res.json(rows.map((row) => parseJsonValue(row.data, null)).filter(Boolean).map(sanitizeParticipant));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -807,8 +817,29 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
     try {
         const participants = req.body || [];
         if (!Array.isArray(participants)) return res.status(400).json({ error: 'Participants must be an array' });
-        const existingRows = await db.all('SELECT id, pin_hash FROM participants');
-        const existingPinHashes = new Map(existingRows.map((row) => [row.id, row.pin_hash]));
+        const accessControl = await getAccessControl();
+        const validRoles = new Set(['child', ...((accessControl.roles || []).map((r) => r.id))]);
+        const canManageStaff = !!req.actor?.permissions?.manageUsers;
+        const existingRows = await db.all('SELECT id, pin_hash, role FROM participants');
+        const existingById = new Map(existingRows.map((row) => [row.id, row]));
+
+        // Anti-escalade vérifiée AVANT la transaction : créer/promouvoir un staff exige
+        // manageUsers. Un éditeur sans manageUsers peut re-sauver un staff existant inchangé.
+        // Pré-valider ici évite un throw en cours de transaction (rollback de tout le lot)
+        // et renvoie un 403 explicite au lieu d'un 500 générique.
+        if (!canManageStaff) {
+            const escalation = participants.some((p) => {
+                if (!p || !p.id) return false;
+                const role = validRoles.has(p.role) ? p.role : 'child';
+                if (role === 'child') return false;
+                const prior = existingById.get(p.id);
+                return !prior || prior.role !== role;
+            });
+            if (escalation) {
+                return res.status(403).json({ error: 'Permission manageUsers requise pour créer ou modifier un membre du staff.' });
+            }
+        }
+
         const stmt = await db.prepare('INSERT INTO participants (id, firstName, lastName, role, groupId, allergies, constraints, pin_hash, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
         try {
             await replaceCollection({
@@ -817,15 +848,18 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
                 insertOne: async (p) => {
                     if (!p || !p.id) return;
                     const cleanParticipant = sanitizeParticipant(p);
-                    const pinHash = isValidPin(p.pin) ? hashPin(p.pin) : existingPinHashes.get(p.id) || null;
-                    if (cleanParticipant.role !== 'child' && !pinHash) {
-                        throw new Error(`A PIN is required for staff member ${cleanParticipant.id}`);
-                    }
+                    const prior = existingById.get(p.id);
+                    // Rôle inconnu → ramené à 'child' (jamais de rôle arbitraire)
+                    const role = validRoles.has(cleanParticipant.role) ? cleanParticipant.role : 'child';
+                    cleanParticipant.role = role;
+                    // PIN modifiable seulement via manageUsers ; sinon on garde l'existant.
+                    // Un staff sans PIN est autorisé (il ne pourra juste pas se connecter).
+                    const pinHash = (canManageStaff && isValidPin(p.pin)) ? hashPin(p.pin) : (prior?.pin_hash || null);
                     await stmt.run(
                         cleanParticipant.id,
                         cleanParticipant.firstName || '',
                         cleanParticipant.lastName || '',
-                        cleanParticipant.role || '',
+                        role,
                         cleanParticipant.groupId || cleanParticipant.group || '',
                         cleanParticipant.allergies || '',
                         cleanParticipant.constraints || '',
@@ -840,7 +874,7 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
         io.emit('data_updated', { type: 'participants' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -858,7 +892,7 @@ app.post('/api/users/:id/pin', requireAnyPermission('manageUsers'), async (req, 
         if (!result.changes) return res.status(404).json({ error: 'Staff member not found' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -868,13 +902,14 @@ app.get('/api/groups', requireAnyPermission('viewDirectory', 'viewAttendance'), 
         const rows = await db.all('SELECT data FROM groups');
         res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
 app.post('/api/groups', requireAnyPermission('editDirectory'), async (req, res) => {
     try {
         const groups = req.body || [];
+        if (!Array.isArray(groups)) return res.status(400).json({ error: 'Groups must be an array' });
         const stmt = await db.prepare('INSERT INTO groups (id, data) VALUES (?, ?)');
         try {
             await replaceCollection({
@@ -890,7 +925,7 @@ app.post('/api/groups', requireAnyPermission('editDirectory'), async (req, res) 
         io.emit('data_updated', { type: 'groups' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -900,13 +935,14 @@ app.get('/api/activities', requireAnyPermission('viewSchedule'), async (req, res
         const rows = await db.all('SELECT data FROM activities');
         res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
 app.post('/api/activities', requireAnyPermission('editSchedule'), async (req, res) => {
     try {
         const activities = req.body || [];
+        if (!Array.isArray(activities)) return res.status(400).json({ error: 'Activities must be an array' });
         const stmt = await db.prepare('INSERT INTO activities (id, data) VALUES (?, ?)');
         try {
             await replaceCollection({
@@ -922,20 +958,33 @@ app.post('/api/activities', requireAnyPermission('editSchedule'), async (req, re
         io.emit('data_updated', { type: 'activities' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
 // Generic App State
-app.get('/api/state/:key', requireAnyPermission('viewSchedule', 'viewSettings', 'manageAccess'), async (req, res) => {
+// Permission de lecture par clé (alignée sur les usages côté front).
+const STATE_READ_PERMISSIONS = {
+    // null = lisible par tout utilisateur authentifié. accessControl est déjà renvoyé
+    // par /auth/session à chaque connexion : tout client en a besoin pour calculer
+    // ses propres permissions. Le restreindre casserait les rôles non-admin.
+    accessControl: null,
+    menus: ['viewSchedule', 'viewSettings'],
+    savedViews: ['viewDirectory', 'viewSchedule', 'viewSettings'],
+    transmissions: ['viewHealth', 'viewSchedule', 'viewSettings', 'manageAccess']
+};
+
+app.get('/api/state/:key', async (req, res) => {
     try {
-        if (!['accessControl', 'menus', 'savedViews', 'transmissions'].includes(req.params.key)) {
-            return res.status(404).json({ error: 'State key not found' });
+        if (!(req.params.key in STATE_READ_PERMISSIONS)) return res.status(404).json({ error: 'State key not found' });
+        const allowed = STATE_READ_PERMISSIONS[req.params.key];
+        if (allowed && !allowed.some((p) => req.actor?.permissions?.[p])) {
+            return res.status(403).json({ error: 'Permission denied' });
         }
         const row = await db.get('SELECT value FROM app_state WHERE key = ?', req.params.key);
         res.json(row ? parseJsonValue(row.value, null) : null);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -955,7 +1004,7 @@ app.post('/api/state/:key', async (req, res) => {
         io.emit('data_updated', { type: 'state', key: req.params.key });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -965,7 +1014,7 @@ app.get('/api/exit-sheets', requireAnyPermission('viewExitSheet'), async (req, r
         const rows = await db.all('SELECT data FROM exit_sheets ORDER BY created_at DESC');
         res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -987,7 +1036,7 @@ app.post('/api/exit-sheets', requireAnyPermission('editExitSheet'), async (req, 
         io.emit('data_updated', { type: 'exitsheets' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1002,7 +1051,7 @@ app.delete('/api/exit-sheets/:id', requireAnyPermission('editExitSheet'), async 
             res.status(404).json({ error: 'Exit sheet not found' });
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1012,7 +1061,7 @@ app.get('/api/incident-sheets', requireAnyPermission('viewIncident'), async (req
         const rows = await db.all('SELECT data FROM incident_sheets ORDER BY created_at DESC');
         res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1034,7 +1083,7 @@ app.post('/api/incident-sheets', requireAnyPermission('editIncident'), async (re
         io.emit('data_updated', { type: 'incidentsheets' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1049,7 +1098,7 @@ app.delete('/api/incident-sheets/:id', requireAnyPermission('editIncident'), asy
             res.status(404).json({ error: 'Incident sheet not found' });
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1059,7 +1108,7 @@ app.get('/api/meeting-recaps', requireAnyPermission('viewRecap'), async (req, re
         const rows = await db.all('SELECT data FROM meeting_recaps ORDER BY created_at DESC');
         res.json(rows.map(r => parseJsonValue(r.data, null)).filter(x => x !== null));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1081,7 +1130,7 @@ app.post('/api/meeting-recaps', requireAnyPermission('editRecap'), async (req, r
         io.emit('data_updated', { type: 'meetingrecaps' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1096,7 +1145,7 @@ app.delete('/api/meeting-recaps/:id', requireAnyPermission('editRecap'), async (
             res.status(404).json({ error: 'Meeting recap not found' });
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1127,7 +1176,7 @@ app.get('/api/inventory/items', requireAnyPermission('viewInventory'), async (re
 
         res.json(items.map((item) => ({ ...item, photos: byItem[item.id] || [] })));
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1156,7 +1205,7 @@ app.post('/api/inventory/items', requireAnyPermission('editInventory'), async (r
         io.emit('data_updated', { type: 'inventory' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1169,7 +1218,7 @@ app.delete('/api/inventory/items/:id', requireAnyPermission('editInventory'), as
         io.emit('data_updated', { type: 'inventory' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1202,7 +1251,7 @@ app.post('/api/inventory/items/:id/photos', requireAnyPermission('editInventory'
         io.emit('data_updated', { type: 'inventory' });
         res.json({ success: true, photoId, embeddingGenerated: !!embedding });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1216,7 +1265,7 @@ app.delete('/api/inventory/photos/:photoId', requireAnyPermission('editInventory
         io.emit('data_updated', { type: 'inventory' });
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1268,7 +1317,7 @@ app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), asy
 
         res.json({ searchId, matches });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1279,7 +1328,7 @@ app.post('/api/inventory/matches/:id/validate', requireAnyPermission('searchInve
         await db.run('UPDATE inventory_matches SET validated_item_id = ?, validated_by = ? WHERE id = ?', itemId || null, validatedBy || null, id);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1360,7 +1409,7 @@ app.post('/api/ai/rewrite-fei', requireAnyPermission('editIncident'), aiRateLimi
         if (err?.name === 'AbortError') {
             return res.status(504).json({ error: 'AI request timed out' });
         }
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1376,7 +1425,7 @@ app.get('/api/action-logs', requireAnyPermission('viewLogs'), async (req, res) =
         });
         res.json(logs);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 
@@ -1385,7 +1434,7 @@ app.delete('/api/action-logs', requireAnyPermission('manageAccess'), async (req,
         await db.run('DELETE FROM action_logs');
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        serverError(req, res, err);
     }
 });
 // Fin du fichier

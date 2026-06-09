@@ -53,7 +53,7 @@ const MedsPdfExport = ({ children }) => {
                         <div className="print-header">
                             <h1>FICHE DE SUIVI DES TRAITEMENTS MÉDICAUX</h1>
                             <div className="child-info">
-                                <strong>Nom / Prénom :</strong> {child.lastName.toUpperCase()} {child.firstName}
+                                <strong>Nom / Prénom :</strong> {(child.lastName || "").toUpperCase()} {child.firstName}
                             </div>
                         </div>
 

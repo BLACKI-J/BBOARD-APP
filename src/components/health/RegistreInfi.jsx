@@ -54,7 +54,7 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
         const logs = [];
         children.forEach(c => {
             (c.registreLogs || []).forEach(log => {
-                logs.push({ ...log, childId: c.id, childName: `${c.firstName} ${c.lastName.toUpperCase()}` });
+                logs.push({ ...log, childId: c.id, childName: `${c.firstName} ${(c.lastName || "").toUpperCase()}` });
             });
         });
         return logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -122,7 +122,7 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                             <label style={labelStyle}>Vacancier</label>
                             <select className="glass-input" value={form.childId} onChange={e => handleChildSelect(e.target.value)} style={{ height: '44px', fontWeight: '800' }}>
                                 <option value="">Sélectionner…</option>
-                                {children.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName.toUpperCase()}</option>)}
+                                {children.map(c => <option key={c.id} value={c.id}>{c.firstName} {(c.lastName || "").toUpperCase()}</option>)}
                             </select>
                         </div>
                         <div>
@@ -204,7 +204,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
         const logs = [];
         children.forEach(c => {
             (c.passageLogs || []).forEach(log => {
-                logs.push({ ...log, childId: c.id, childName: `${c.firstName} ${c.lastName.toUpperCase()}` });
+                logs.push({ ...log, childId: c.id, childName: `${c.firstName} ${(c.lastName || "").toUpperCase()}` });
             });
         });
         return logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
@@ -271,7 +271,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                             <label style={labelStyle}>Vacancier</label>
                             <select className="glass-input" value={form.childId} onChange={e => setForm(f => ({ ...f, childId: e.target.value }))} style={{ height: '44px', fontWeight: '800' }}>
                                 <option value="">Sélectionner…</option>
-                                {children.map(c => <option key={c.id} value={c.id}>{c.firstName} {c.lastName.toUpperCase()}</option>)}
+                                {children.map(c => <option key={c.id} value={c.id}>{c.firstName} {(c.lastName || "").toUpperCase()}</option>)}
                             </select>
                         </div>
                         <div>

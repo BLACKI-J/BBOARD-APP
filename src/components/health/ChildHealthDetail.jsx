@@ -192,7 +192,7 @@ const ChildHealthDetail = ({ child, groups, onBack, updateParticipantHealth, add
                 <Avatar participant={child} size={44} />
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontWeight: '950', fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {child.firstName} {child.lastName.toUpperCase()}
+                        {child.firstName} {(child.lastName || "").toUpperCase()}
                     </div>
                     <div style={{ marginTop: '2px' }}><GroupBadge groupId={child.group} groups={groups} /></div>
                 </div>

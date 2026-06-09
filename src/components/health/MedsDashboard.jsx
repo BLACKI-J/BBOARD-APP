@@ -105,7 +105,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
             const prn = getSiBesoinList(c);
             if (meds.length === 0 && prn.length === 0) return;
             const v = c.medsValidated?.[selectedDate] || {};
-            const name = `${c.firstName} ${c.lastName.toUpperCase()}`;
+            const name = `${c.firstName} ${(c.lastName || "").toUpperCase()}`;
             meds.forEach(m => (m.slots || []).forEach(slot => {
                 const sd = v[slot];
                 const done = sd === true || (sd && typeof sd === 'object' && sd[m.name]);
@@ -297,7 +297,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                     <div className="u-flex u-items-center u-gap-md">
                                         <Avatar participant={child} size={48} />
                                         <div>
-                                            <div style={{ fontWeight: '950', fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '-0.02em', paddingRight: '60px' }}>{child.firstName} {child.lastName.toUpperCase()}</div>
+                                            <div style={{ fontWeight: '950', fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '-0.02em', paddingRight: '60px' }}>{child.firstName} {(child.lastName || "").toUpperCase()}</div>
                                             <div className="u-text-xs u-text-muted u-font-bold">{groups.find(g => g.id === child.group)?.name || ''}</div>
                                         </div>
                                     </div>

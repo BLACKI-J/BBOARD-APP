@@ -110,7 +110,7 @@ export default function Home({
             getMedicationsList(c).forEach(m => {
                 if (!m.slots.includes(medSlot)) return;
                 const done = v === true || (v && typeof v === 'object' && v[m.name]);
-                if (!done) due.push({ name: `${c.firstName} ${c.lastName.toUpperCase()}`, med: m.name });
+                if (!done) due.push({ name: `${c.firstName} ${(c.lastName || "").toUpperCase()}`, med: m.name });
             });
         });
         return due;

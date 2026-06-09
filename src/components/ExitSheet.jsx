@@ -49,7 +49,7 @@ function PrintContent({ date, destination, startTime, endTime, selectedChildren,
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '5px' }}>
                     {selectedChildren.map((p, idx) => (
                         <div key={p.id} style={{ fontSize: '9pt', borderBottom: '0.5px solid #eee', paddingBottom: '2px' }}>
-                            {idx + 1}. {p.lastName.toUpperCase()} {p.firstName}
+                            {idx + 1}. {(p.lastName || "").toUpperCase()} {p.firstName}
                         </div>
                     ))}
                     {selectedChildren.length === 0 && <div style={{ fontStyle: 'italic', gridColumn: 'span 3' }}>Aucun enfant sélectionné.</div>}
