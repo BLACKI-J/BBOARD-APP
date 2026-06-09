@@ -3,6 +3,7 @@ import { Sunrise, Sun, Apple, Moon, Plus, Trash2, Edit2, ShieldAlert, Coins, Use
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../../ui/UiProvider';
 import { useUnsavedGuard } from '../../utils/unsavedGuard';
+import { getMedicationsList } from '../../utils/meds';
 
 const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, editingId, groups, canEdit, roles = [] }) => {
     const ui = useUi();
@@ -232,7 +233,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                                     if (e.key === 'Enter') {
                                                         e.preventDefault();
                                                         if (newMed.trim()) {
-                                                            const currentMeds = formData.medications || (formData.dailyMeds ? formData.dailyMeds.split(/,|\n/).map(s => s.trim()).filter(Boolean).map(name => ({name, slots: formData.medSlots || ['Matin', 'Midi', 'Goûter', 'Soir']})) : []);
+                                                            const currentMeds = getMedicationsList(formData);
                                                             setFormData({ ...formData, medications: [...currentMeds, { name: newMed.trim(), slots: [] }] });
                                                             setNewMed('');
                                                         }
@@ -245,7 +246,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                                 type="button"
                                                 onClick={() => {
                                                     if (newMed.trim()) {
-                                                        const currentMeds = formData.medications || (formData.dailyMeds ? formData.dailyMeds.split(/,|\n/).map(s => s.trim()).filter(Boolean).map(name => ({name, slots: formData.medSlots || ['Matin', 'Midi', 'Goûter', 'Soir']})) : []);
+                                                        const currentMeds = getMedicationsList(formData);
                                                         setFormData({ ...formData, medications: [...currentMeds, { name: newMed.trim(), slots: [] }] });
                                                         setNewMed('');
                                                     }
@@ -261,7 +262,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                         </div>
                                         
                                         {(() => {
-                                            const currentMeds = formData.medications || (formData.dailyMeds ? formData.dailyMeds.split(/,|\n/).map(s => s.trim()).filter(Boolean).map(name => ({name, slots: formData.medSlots || ['Matin', 'Midi', 'Goûter', 'Soir']})) : []);
+                                            const currentMeds = getMedicationsList(formData);
                                             if (currentMeds.length === 0) return null;
                                             
                                             return (
@@ -503,7 +504,12 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
                             </div>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                <label className="form-label">Remarques / Régime</label>
+                                <label className="form-label">Régime alimentaire</label>
+                                <textarea rows="2" placeholder="Sans porc, végétarien, sans gluten..." value={formData.diet || ''} onChange={e => setFormData({ ...formData, diet: e.target.value })}
+                                    className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                <label className="form-label">Remarques</label>
                                 <textarea rows="3" placeholder="Notes diverses..." value={formData.constraints || ''} onChange={e => setFormData({ ...formData, constraints: e.target.value })}
                                     className="glass-input" style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700', resize: 'none' }} />
                             </div>

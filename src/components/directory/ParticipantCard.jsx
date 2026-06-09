@@ -101,16 +101,16 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
                         <button
                             onClick={(e) => { e.stopPropagation(); handleEdit(participant); }}
                             className="btn-icon-ref"
-                            style={{ background: 'white', width: '40px', height: '40px' }}
-                            title="Modifier"
+                            style={{ background: 'white', width: '44px', height: '44px' }}
+                            title="Modifier" aria-label="Modifier le participant"
                         >
                             <Edit2 size={16} strokeWidth={2.5} />
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(participant.id); }}
                             className="btn-icon-ref danger"
-                            style={{ background: 'white', width: '40px', height: '40px' }}
-                            title="Supprimer"
+                            style={{ background: 'white', width: '44px', height: '44px' }}
+                            title="Supprimer" aria-label="Supprimer le participant"
                         >
                             <Trash2 size={16} strokeWidth={2.5} />
                         </button>

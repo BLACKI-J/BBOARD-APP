@@ -227,10 +227,10 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
                         >
                             {isDone ? <Check size={20} strokeWidth={3} /> : <Circle size={20} strokeWidth={3} />}
                         </button>
-                        <button onClick={() => onEdit(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                        <button aria-label="Modifier l'activité" onClick={() => onEdit(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                             <Edit2 size={16} strokeWidth={2.5} />
                         </button>
-                        <button onClick={() => onDelete(activity.id)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)', color: 'var(--danger-color)' }}>
+                        <button aria-label="Supprimer l'activité" onClick={() => onDelete(activity.id)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)', color: 'var(--danger-color)' }}>
                             <Trash2 size={16} strokeWidth={2.5} />
                         </button>
                     </div>
@@ -475,13 +475,13 @@ export default function Schedule({ activities, setActivities, participants, grou
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: isMobile ? 'center' : 'flex-end', flexWrap: 'wrap' }}>
-                    <button onClick={goToToday} className="btn-icon" style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                    <button aria-label="Aller à aujourd'hui" onClick={goToToday} className="btn-icon" style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)' }} />
                     </button>
                     <div style={{ display: 'flex', alignItems: 'center', background: 'white', borderRadius: '14px', border: '1.5px solid var(--glass-border)', overflow: 'hidden' }}>
-                        <button onClick={() => navigateDay(-1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronLeft size={isMobile ? 16 : 18} /></button>
+                        <button aria-label="Jour précédent" onClick={() => navigateDay(-1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronLeft size={isMobile ? 16 : 18} /></button>
                         <div style={{ width: '1px', height: isMobile ? '16px' : '20px', background: 'var(--glass-border)' }} />
-                        <button onClick={() => navigateDay(1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronRight size={isMobile ? 16 : 18} /></button>
+                        <button aria-label="Jour suivant" onClick={() => navigateDay(1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronRight size={isMobile ? 16 : 18} /></button>
                     </div>
                 </div>
             </div>
@@ -490,16 +490,16 @@ export default function Schedule({ activities, setActivities, participants, grou
             {isMobile && schedScrolled && (
                 <div style={{ position: 'sticky', top: 0, zIndex: 22, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '8px 12px' }}>
                     <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.06)', padding: '3px', borderRadius: '10px', flexShrink: 0 }}>
-                        <button onClick={() => setViewMode('activities')} style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'activities' ? 'white' : 'transparent', color: viewMode === 'activities' ? 'var(--primary-color)' : 'var(--text-muted)' }}><CalendarIcon size={14} /></button>
-                        <button onClick={() => setViewMode('menus')} style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'menus' ? 'white' : 'transparent', color: viewMode === 'menus' ? 'var(--cta-color)' : 'var(--text-muted)' }}><Utensils size={14} /></button>
+                        <button aria-label="Vue activités" onClick={() => setViewMode('activities')} style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'activities' ? 'white' : 'transparent', color: viewMode === 'activities' ? 'var(--primary-color)' : 'var(--text-muted)' }}><CalendarIcon size={14} /></button>
+                        <button aria-label="Vue repas" onClick={() => setViewMode('menus')} style={{ padding: '5px 10px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'menus' ? 'white' : 'transparent', color: viewMode === 'menus' ? 'var(--cta-color)' : 'var(--text-muted)' }}><Utensils size={14} /></button>
                     </div>
                     <div style={{ flex: 1, textAlign: 'center', fontSize: '0.82rem', fontWeight: '900', color: 'var(--text-main)', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {currentDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </div>
                     <div style={{ display: 'flex', background: 'white', borderRadius: '10px', border: '1px solid var(--glass-border)', overflow: 'hidden', flexShrink: 0 }}>
-                        <button onClick={() => navigateDay(-1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', minHeight: '36px' }}><ChevronLeft size={15} /></button>
+                        <button aria-label="Jour précédent" onClick={() => navigateDay(-1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', minHeight: '36px' }}><ChevronLeft size={15} /></button>
                         <div style={{ width: '1px', background: 'var(--glass-border)' }} />
-                        <button onClick={() => navigateDay(1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', minHeight: '36px' }}><ChevronRight size={15} /></button>
+                        <button aria-label="Jour suivant" onClick={() => navigateDay(1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', minHeight: '36px' }}><ChevronRight size={15} /></button>
                     </div>
                 </div>
             )}
@@ -579,8 +579,8 @@ export default function Schedule({ activities, setActivities, participants, grou
                                         {calendarMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                                     </h4>
                                     <div style={{ display: 'flex', gap: '4px' }}>
-                                        <button onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() - 1); setCalendarMonth(d); }} className="btn-icon" style={{ width: '32px', height: '32px' }}><ChevronLeft size={14} /></button>
-                                        <button onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() + 1); setCalendarMonth(d); }} className="btn-icon" style={{ width: '32px', height: '32px' }}><ChevronRight size={14} /></button>
+                                        <button aria-label="Mois précédent" onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() - 1); setCalendarMonth(d); }} className="btn-icon" style={{ width: '32px', height: '32px' }}><ChevronLeft size={14} /></button>
+                                        <button aria-label="Mois suivant" onClick={() => { const d = new Date(calendarMonth); d.setMonth(d.getMonth() + 1); setCalendarMonth(d); }} className="btn-icon" style={{ width: '32px', height: '32px' }}><ChevronRight size={14} /></button>
                                     </div>
                                 </div>
 
@@ -611,7 +611,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     {editingId ? 'Modifier l\'activité' : 'Nouvelle Activité'}
                                 </h3>
                             </div>
-                            <button onClick={() => setIsFormOpen(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '12px', padding: '0.5rem', cursor: 'pointer', color: 'white' }}>
+                            <button aria-label="Fermer" onClick={() => setIsFormOpen(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '12px', padding: '0.5rem', cursor: 'pointer', color: 'white' }}>
                                 <X size={20} />
                             </button>
                         </div>
