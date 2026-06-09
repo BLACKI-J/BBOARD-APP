@@ -73,8 +73,10 @@ bash bboard.sh up    # Production Docker (Port 8080)
 | :--- | :--- |
 | `setup` | Installe les dépendances, crée le `.env`, propose Docker. |
 | `dev` | Lance Frontend (5173) + Backend (3001) en local. |
-| `up` | Déploie via Docker Compose (port 8080). |
-| `update` | Récupère le dernier code et reconstruit les conteneurs. |
+| `up` | Déploie via Docker Compose (port 8080) + affiche l'URL d'accès (tél/PC). |
+| `update` | **Sauvegarde auto de la base**, récupère le code, reconstruit, vérifie le serveur. |
+| `backup` | Sauvegarde la base maintenant (`server/data/backup-<date>.sqlite`). |
+| `restore` | Restaure la base depuis une sauvegarde : `bash bboard.sh restore <fichier>`. |
 | `down` | Arrête proprement tous les services. |
 | `logs` | Affiche les journaux du serveur. |
 
@@ -91,11 +93,16 @@ docker compose up -d --build      # reconstruit les images (front + back)
 docker logs bboard-backend --tail 10
 ```
 
-Ou en une commande via le gestionnaire :
+Ou en une commande via le gestionnaire (recommandé) :
 
 ```bash
 bash bboard.sh update
 ```
+
+`bboard.sh update` fait tout, en sécurité : **copie de sauvegarde de la base avant
+toute opération**, `git pull`, reconstruction Docker, vérification que le serveur
+répond, puis affiche l'URL à ouvrir sur téléphone. Une sauvegarde manuelle reste
+possible à tout moment : `bash bboard.sh backup` (et `restore <fichier>` pour revenir en arrière).
 
 > [!IMPORTANT]
 > - Le `--build` est nécessaire : il reconstruit le backend (le module natif `sqlite3`
