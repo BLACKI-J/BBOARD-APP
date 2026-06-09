@@ -50,35 +50,61 @@
 
 ---
 
-## 🚀 Installation & démarrage
+## 🚀 Déploiement facile (Docker)
 
-Tout passe par le gestionnaire unique `bboard.sh` :
+> **Cible** : un PC ou serveur sous **Linux** (ou **Windows avec WSL2**) avec **Docker** installé.
+> Toute la gestion passe par **un seul script** : `bboard.sh`. Aucune connaissance technique requise.
 
+### Étape par étape
+
+**1. Récupérer le code**
 ```bash
-# 1. Cloner
 git clone https://github.com/BLACKI-J/BBOARD-APP.git
 cd BBOARD-APP
-
-# 2. Configuration assistée (dépendances, .env, Docker)
-bash bboard.sh setup
-
-# 3. Lancer
-bash bboard.sh dev   # Développement local (Front 5173 · Back 3001)
-bash bboard.sh up    # Production Docker (Port 8080)
 ```
 
-### 🎮 Commandes CLI
+**2. Configuration initiale** (crée le fichier `.env`, prépare les dossiers ; propose d'installer Docker si absent — répondez `y`)
+```bash
+bash bboard.sh setup
+```
 
-| Commande | Description |
+**3. Choisir le code PIN Direction** — obligatoire, **4 chiffres**. Éditez `.env` :
+```bash
+nano .env     # remplacez la ligne : INITIAL_ADMIN_PIN=change_me_4_digits
+```
+*ou* en une commande (remplacez `4827` par votre code) :
+```bash
+sed -i 's/^INITIAL_ADMIN_PIN=.*/INITIAL_ADMIN_PIN=4827/' .env
+```
+
+**4. Déployer**
+```bash
+bash bboard.sh up
+```
+Le script reconstruit l'app, vérifie que le serveur répond, puis **affiche l'URL d'accès** :
+```
+➜ Sur cette machine : http://localhost:8080
+➜ Téléphone/tablette (même WiFi) : http://192.168.X.X:8080
+```
+
+**5. Se connecter** — ouvrez l'URL, profil **Direction**, code PIN choisi à l'étape 3.
+Sur téléphone : « Ajouter à l'écran d'accueil » installe l'app (PWA).
+
+> [!NOTE]
+> Le PIN n'est lu qu'au **premier** démarrage (création de la base) ; ensuite il se change
+> dans **Paramètres**. Vos données vivent dans `server/data/` et **survivent** aux mises à jour.
+
+### 🎮 Au quotidien
+
+| Besoin | Commande |
 | :--- | :--- |
-| `setup` | Installe les dépendances, crée le `.env`, propose Docker. |
-| `dev` | Lance Frontend (5173) + Backend (3001) en local. |
-| `up` | Déploie via Docker Compose (port 8080) + affiche l'URL d'accès (tél/PC). |
-| `update` | **Sauvegarde auto de la base**, récupère le code, reconstruit, vérifie le serveur. |
-| `backup` | Sauvegarde la base maintenant (`server/data/backup-<date>.sqlite`). |
-| `restore` | Restaure la base depuis une sauvegarde : `bash bboard.sh restore <fichier>`. |
-| `down` | Arrête proprement tous les services. |
-| `logs` | Affiche les journaux du serveur. |
+| Démarrer / redéployer | `bash bboard.sh up` |
+| **Mettre à jour** (sauvegarde auto + rebuild) | `bash bboard.sh update` |
+| Sauvegarder la base maintenant | `bash bboard.sh backup` |
+| Restaurer une sauvegarde | `bash bboard.sh restore <fichier>` |
+| Voir les journaux | `bash bboard.sh logs` |
+| Arrêter les services | `bash bboard.sh down` |
+| Développement local (sans Docker) | `bash bboard.sh dev` *(Front 5173 · Back 3001)* |
 
 ---
 
