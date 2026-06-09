@@ -38,7 +38,11 @@ server/data/*.sqlite
 .gemini/
 public/logo/logo.png
 
-README_OPENCODE.md
+# Données participants / imports (PII — ne jamais committer).
+# Les modèles Cerfa vierges sous docs/ restent autorisés.
+*.pdf
+!docs/*.pdf
+colo-import-*.json
 
 # Claude Code local (transient)
 .claude/scheduled_tasks.lock
