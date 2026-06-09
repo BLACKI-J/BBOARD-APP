@@ -3,6 +3,7 @@ import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, Shie
 import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { apiSend } from '../utils/api';
+import { exportParticipantsCsv } from '../utils/participantsCsv';
 
 const SECTION_LABELS = {
     home: 'Tableau de bord',
@@ -48,7 +49,6 @@ export default function Settings({
     participants, setParticipants,
     groups, setGroups,
     activities, setActivities,
-    isAdminMode, setIsAdminMode,
     isAttendanceEnabled, setIsAttendanceEnabled,
     accessControl, setAccessControl,
     actorHeaders,
@@ -405,25 +405,7 @@ export default function Settings({
         ui.toast('Restauration réussie.', { type: 'success' });
     };
 
-    const handleExportCsv = () => {
-        const groupName = (id) => (groups || []).find(g => g.id === id)?.name || '';
-        const roleLabel = (r) => roleLabels[r] || r;
-        const esc = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
-        const headers = ['Prénom', 'Nom', 'Rôle', 'Groupe', 'Date de naissance', 'Allergies', 'Régime', 'Contraintes', 'Fiche sanitaire', 'Téléphone', 'Contact urgence'];
-        const rows = (participants || []).map(p => [
-            esc(p.firstName), esc(p.lastName), esc(roleLabel(p.role)),
-            esc(groupName(p.groupId || p.group)), esc(p.birthDate), esc(p.allergies),
-            esc(p.diet), esc(p.constraints),
-            p.healthDocProvided ? 'OUI' : 'NON',
-            esc(p.phone), esc(p.emergencyContact)
-        ].join(','));
-        const csv = [headers.join(','), ...rows].join('\n');
-        const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.body.appendChild(document.createElement('a'));
-        link.href = URL.createObjectURL(blob);
-        link.download = `participants-${new Date().toISOString().split('T')[0]}.csv`;
-        link.click(); document.body.removeChild(link);
-    };
+    const handleExportCsv = () => exportParticipantsCsv(participants, groups, roleLabels);
 
     if (!isUnlocked) {
         return (

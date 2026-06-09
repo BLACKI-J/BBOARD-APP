@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Search, Plus } from 'lucide-react';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
+import useIsMobile from '../utils/useIsMobile';
+import { exportParticipantsCsv } from '../utils/participantsCsv';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../ui/UiProvider';
 
@@ -111,25 +113,9 @@ export default function Directory({ participants = [], setParticipants, groups =
     };
 
     const handleExportCsv = () => {
-        const groupName = (id) => safeGroups.find(g => g.id === id)?.name || '';
-        const roleLabel = (r) => ({ child: 'Enfant', animator: 'Animateur', direction: 'Direction' }[r] || r);
-        const escape = (v) => `"${String(v || '').replace(/"/g, '""')}"`;
-        const headers = ['Prénom', 'Nom', 'Rôle', 'Groupe', 'Date de naissance', 'Allergies', 'Régime', 'Contraintes', 'Fiche sanitaire', 'Téléphone', 'Contact urgence'];
-        const rows = safeParticipants.map(p => [
-            escape(p.firstName), escape(p.lastName), escape(roleLabel(p.role)),
-            escape(groupName(p.group)), escape(p.birthDate), escape(p.allergies),
-            escape(p.diet), escape(p.constraints),
-            p.healthDocProvided ? 'OUI' : 'NON',
-            escape(p.phone), escape(p.emergencyContact)
-        ].join(','));
-        const csv = [headers.join(','), ...rows].join('\n');
-        const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.download = `participants-${new Date().toISOString().split('T')[0]}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const baseLabels = { child: 'Enfant', animator: 'Animateur', direction: 'Direction' };
+        const roleLabels = { ...baseLabels, ...Object.fromEntries((roles || []).map(r => [r.id, r.label])) };
+        exportParticipantsCsv(safeParticipants, safeGroups, roleLabels);
     };
 
     const handleImportCsv = (event) => {
@@ -250,14 +236,7 @@ export default function Directory({ participants = [], setParticipants, groups =
         setIsFormOpen(false);
     };
 
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    const isMobile = windowWidth < 1024;
+    const isMobile = useIsMobile();
     const { scrollRef, isScrolled, onScroll } = useScrollCollapse(60);
 
     const handleEdit = (participant) => {

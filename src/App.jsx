@@ -172,7 +172,6 @@ export default function App() {
     const ui = useUi();
     const isDataLoaded = useRef(false);
     const refreshDataRef = useRef(null);
-    const ignoreNextSocketUpdate = useRef(false);
     const [activeTab, setActiveTab] = useState(() => localStorage.getItem('colo-active-tab') || 'home');
     const groups = useAppStore(s => s.groups);
     const setGroups = useAppStore(s => s.setGroups);
@@ -191,16 +190,8 @@ export default function App() {
     const menus = useAppStore(s => s.menus);
     const setMenus = useAppStore(s => s.setMenus);
 
-    const [savedViews, setSavedViews] = useState(() => {
-        const saved = localStorage.getItem('colo-saved-views');
-        if (saved) try { return JSON.parse(saved); } catch (e) { console.error(e); }
-        return {};
-    });
-    const [currentViewName, setCurrentViewName] = useState(() => localStorage.getItem('colo-current-view-name') || '');
-
     const [isNavOpen, setIsNavOpen] = useState(false);
     const [isAlertsOpen, setIsAlertsOpen] = useState(false);
-    const [isAdminMode, setIsAdminMode] = useState(() => localStorage.getItem('colo-admin-mode') === 'true');
     const [isAttendanceEnabled, setIsAttendanceEnabled] = useState(() => localStorage.getItem('colo-attendance-enabled') === 'true');
     const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'error'
@@ -422,8 +413,7 @@ export default function App() {
                     fetchJson(`${API_URL}/inventory/items`, []),
                     fetchJson(`${API_URL}/auth/profiles`, []),
                     fetchJson(`${API_URL}/state/menus`, {}),
-                    fetchJson(`${API_URL}/state/transmissions`, []),
-                    fetchJson(`${API_URL}/state/savedViews`, [])
+                    fetchJson(`${API_URL}/state/transmissions`, [])
                 ]);
 
                 const newGroups = data[0]; const newParticipants = data[1];
@@ -436,7 +426,6 @@ export default function App() {
                 setStaffUsers(data[8] || []);
                 setMenus(data[9] || {});
                 setTransmissions(Array.isArray(data[10]) ? data[10] : []);
-                setSavedViews(Array.isArray(data[11]) ? data[11] : []);
 
                 isDataLoaded.current = true;
                 setConnectionStatus('connected');
@@ -769,9 +758,8 @@ export default function App() {
                                 : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editHealth} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
                                 : activeTab === 'settings' ? <Settings
                                     participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)}
-                                    activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} savedViews={savedViews} setSavedViews={(v) => mutateCollection(`${API_URL}/state/savedViews`, setSavedViews, v, savedViews)}
-                                    isAdminMode={isAdminMode} setIsAdminMode={setIsAdminMode} isAttendanceEnabled={isAttendanceEnabled}
-                                    setIsAttendanceEnabled={setIsAttendanceEnabled}
+                                    activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)}
+                                    isAttendanceEnabled={isAttendanceEnabled} setIsAttendanceEnabled={setIsAttendanceEnabled}
                                     accessControl={accessControl} setAccessControl={(v) => mutateCollection(`${API_URL}/state/accessControl`, setAccessControl, v, accessControl)}
                                     actorHeaders={actorHeaders} currentUser={activeUser} permissions={permissions} isMobile={isMobile}
                                 /> : null}

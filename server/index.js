@@ -970,7 +970,6 @@ const STATE_READ_PERMISSIONS = {
     // ses propres permissions. Le restreindre casserait les rôles non-admin.
     accessControl: null,
     menus: ['viewSchedule', 'viewSettings'],
-    savedViews: ['viewDirectory', 'viewSchedule', 'viewSettings'],
     transmissions: ['viewHealth', 'viewSchedule', 'viewSettings', 'manageAccess']
 };
 
@@ -993,7 +992,6 @@ app.post('/api/state/:key', async (req, res) => {
         const permissionByKey = {
             menus: 'editSchedule',
             accessControl: 'manageAccess',
-            savedViews: 'editDirectory',
             transmissions: 'editHealth'
         };
         const permission = permissionByKey[req.params.key];

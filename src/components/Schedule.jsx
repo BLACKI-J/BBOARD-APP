@@ -4,6 +4,7 @@ import {
     Users, X, Trash2, Edit2, Repeat, Star, Tag, CheckCircle2, Circle, Printer, Utensils,
     Coffee, Sun, Zap, Moon, Check
 } from 'lucide-react';
+import useIsMobile from '../utils/useIsMobile';
 import { v4 as uuidv4 } from 'uuid';
 import Menus from './Menus';
 import { useUi } from '../ui/UiProvider';
@@ -260,15 +261,7 @@ export default function Schedule({ activities, setActivities, participants, grou
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [calendarMonth, setCalendarMonth] = useState(new Date());
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
-    
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
-
-    const isMobile = windowWidth < 1024;
+    const isMobile = useIsMobile();
     const { scrollRef: schedScrollRef, isScrolled: schedScrolled, onScroll: schedOnScroll } = useScrollCollapse(60);
 
     const navigateDay = (dir) => {
