@@ -463,11 +463,46 @@ export default function App() {
             setConnectionStatus('error');
         });
 
-        socket.on('data_updated', refreshData);
+        // Refetch CIBLÉ : ne recharge que la collection changée (le serveur envoie
+        // le `type`). Évite de retélécharger les 11 collections (dont participants
+        // avec photos) à chaque mutation. Type inconnu ou échec → repli complet.
+        const refreshOne = async (payload) => {
+            const type = payload?.type;
+            try {
+                switch (type) {
+                    case 'participants':
+                        setParticipants(await fetchJson(`${API_URL}/participants`, []));
+                        fetchJson(`${API_URL}/auth/profiles`, []).then((p) => setStaffUsers(p || [])).catch(() => {});
+                        break;
+                    case 'groups': setGroups(await fetchJson(`${API_URL}/groups`, [])); break;
+                    case 'activities': setActivities(await fetchJson(`${API_URL}/activities`, [])); break;
+                    case 'exitsheets': setExitSheets(await fetchJson(`${API_URL}/exit-sheets`, []) || []); break;
+                    case 'incidentsheets': setIncidentSheets(await fetchJson(`${API_URL}/incident-sheets`, []) || []); break;
+                    case 'meetingrecaps': setMeetingRecaps(await fetchJson(`${API_URL}/meeting-recaps`, []) || []); break;
+                    case 'inventory': setInventoryItems(await fetchJson(`${API_URL}/inventory/items`, []) || []); break;
+                    case 'state': {
+                        const key = payload?.key;
+                        if (key === 'accessControl') setAccessControl(mergeAccessControl(await fetchJson(`${API_URL}/state/accessControl`, {})));
+                        else if (key === 'menus') setMenus(await fetchJson(`${API_URL}/state/menus`, {}) || {});
+                        else if (key === 'transmissions') { const t = await fetchJson(`${API_URL}/state/transmissions`, []); setTransmissions(Array.isArray(t) ? t : []); }
+                        else refreshData();
+                        break;
+                    }
+                    default: refreshData(); // type inconnu → refresh complet (sécurité)
+                }
+                setLastSyncAt(Date.now());
+            } catch (err) {
+                if (err.status === 401) { clearAuthenticatedSession(); return; }
+                refreshData(); // échec du refetch ciblé → repli complet
+            }
+        };
+
+        socket.on('data_updated', refreshOne);
         refreshDataRef.current = refreshData;
 
-        // 10-second health check polling
+        // 10-second health check polling — pausé en arrière-plan (économie batterie/data mobile)
         const healthCheck = setInterval(async () => {
+            if (typeof document !== 'undefined' && document.hidden) return;
             try {
                 const response = await fetch(`${API_URL}/health`);
                 if (response.ok) {
@@ -481,7 +516,7 @@ export default function App() {
         }, 10000);
 
         return () => {
-            socket.off('data_updated', refreshData);
+            socket.off('data_updated', refreshOne);
             socket.disconnect();
             clearInterval(healthCheck);
             clearTimeout(retryTimer);

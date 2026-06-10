@@ -5,12 +5,17 @@ import { UiProvider } from './ui/UiProvider.jsx';
 import './index.css';
 import './App.css';
 
-import { polyfill } from "mobile-drag-drop";
-import { scrollBehaviourDragImageTranslateOverride } from "mobile-drag-drop/scroll-behaviour";
 import "mobile-drag-drop/default.css";
 
-polyfill({
-    dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride
+// Polyfill drag-drop tactile chargé en différé (utilisé seulement par le Planning) :
+// hors du bundle initial → démarrage plus léger sur mobile.
+window.addEventListener('load', () => {
+    Promise.all([
+        import("mobile-drag-drop"),
+        import("mobile-drag-drop/scroll-behaviour"),
+    ]).then(([{ polyfill }, { scrollBehaviourDragImageTranslateOverride }]) => {
+        polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+    }).catch(() => {});
 });
 
 if ('serviceWorker' in navigator) {
