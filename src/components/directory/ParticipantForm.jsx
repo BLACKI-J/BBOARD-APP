@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sunrise, Sun, Apple, Moon, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check, Lock } from 'lucide-react';
+import { Sunrise, Sun, Apple, Moon, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check, Lock, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../../ui/UiProvider';
 import { useUnsavedGuard } from '../../utils/unsavedGuard';
@@ -93,8 +93,15 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                 display: 'flex',
                 flexDirection: 'row',
                 boxShadow: '0 25px 80px oklch(0% 0 0 / 0.25)',
-                border: '1.5px solid var(--glass-border)'
+                border: '1.5px solid var(--glass-border)',
+                position: 'relative'
             }}>
+
+                {/* Bouton fermer (toujours visible — indispensable sur mobile, la sidebar est masquée) */}
+                <button type="button" onClick={requestClose} aria-label="Fermer" title="Fermer"
+                    style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 20, width: '44px', height: '44px', borderRadius: '14px', background: 'rgba(255,255,255,0.85)', border: '1.5px solid var(--glass-border)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', backdropFilter: 'blur(8px)' }}>
+                    <X size={20} strokeWidth={2.5} />
+                </button>
 
                 {/* Sidebar Context */}
                 <div style={{
@@ -129,7 +136,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                 </div>
 
                 {/* Scrollable Form */}
-                <div style={{ flex: 1, maxHeight: '90vh', overflowY: 'auto', padding: '3rem' }} className="no-scrollbar">
+                <div style={{ flex: 1, maxHeight: '90vh', overflowY: 'auto' }} className="no-scrollbar pform-scroll">
                     <form onSubmit={onSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
 
                         {/* Role Selection */}
@@ -569,8 +576,10 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                 <style>{`
                     .form-label { font-size: 11px; font-weight: 950; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.5rem; display: block; }
                     .glass-input:focus { border-color: ${roleColor} !important; background: white !important; box-shadow: 0 0 0 4px oklch(from ${roleColor} l c h / 0.1) !important; outline: none; }
+                    .pform-scroll { padding: 3rem; padding-top: 3.75rem; }
                     @media (max-width: 1024px) {
                         .hide-mobile { display: none !important; }
+                        .pform-scroll { padding: 1.25rem; padding-top: 3.5rem; }
                     }
                 `}</style>
             </div>

@@ -408,7 +408,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem', paddingBottom: '4rem' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem', paddingBottom: '4rem' }}>
                                 {sortedParticipants.map((p, idx) => (
                                     <ParticipantCard
                                         key={p.id}

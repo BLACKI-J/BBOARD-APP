@@ -733,6 +733,26 @@ select.glass-input {
   pointer-events: none;
 }
 
+/* Mobile : les blobs flous (blur 100-120px) + animation infinie coûtent très
+   cher au GPU des téléphones milieu de gamme. On les retire sous 1024px. */
+@media (max-width: 1024px) {
+  .morph-blob,
+  .morph-blob-2 { display: none; }
+}
+
+/* Respecte la préférence système « réduire les animations » : coupe les
+   animations infinies (morphing, shine, pulse…) et les transitions longues. */
+@media (prefers-reduced-motion: reduce) {
+  .morph-blob,
+  .morph-blob-2 { display: none; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 .animate-fade-in {
   animation: fadeIn var(--transition-normal) ease-out;
 }
