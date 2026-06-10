@@ -4,6 +4,7 @@ import WebcamPhotoCapture from './directory/WebcamPhotoCapture';
 import confetti from 'canvas-confetti';
 import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
+import { compressImage, fileToDataUrl } from '../utils/image';
 
 export default function Attendance({ participants, setParticipants, groups, canEdit = true, isMobile }) {
     const ui = useUi();
@@ -101,17 +102,19 @@ export default function Attendance({ participants, setParticipants, groups, canE
         setParticipants(participants.map(p => groupMembersIds.includes(p.id) ? { ...p, isPresent: true } : p));
     };
 
-    const handlePhotoUpload = (e, participantId) => {
+    const handlePhotoUpload = async (e, participantId) => {
         if (!canEdit) return;
         const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setParticipants(participants.map(p => p.id === participantId ? { ...p, photo: reader.result } : p));
-            };
-            reader.readAsDataURL(file);
-        }
         e.target.value = ''; // allow re-pick same file
+        if (!file) return;
+        try {
+            // Compresse avant stockage : une photo brute de tél = 3-8 Mo de base64.
+            const dataUrl = await fileToDataUrl(file);
+            const compressed = await compressImage(dataUrl, 768, 0.7);
+            setParticipants(participants.map(p => p.id === participantId ? { ...p, photo: compressed } : p));
+        } catch {
+            ui.toast('Échec du traitement de la photo.', { type: 'error' });
+        }
     };
 
     // Photo choice sheet actions

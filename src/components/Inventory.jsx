@@ -3,36 +3,9 @@ import { Camera, Search, Plus, Trash2, Package, Upload, X, ChevronRight, Layers,
 import WebcamPhotoCapture from './directory/WebcamPhotoCapture';
 import { useUi } from '../ui/UiProvider';
 import { apiSend } from '../utils/api';
+import { compressImage, fileToDataUrl } from '../utils/image';
 
 const CATEGORIES = ['vêtement', 'chaussures', 'hygiène', 'accessoire', 'autre'];
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-async function compressImage(dataUrl, maxSize = 1024, quality = 0.8) {
-    return new Promise((resolve, reject) => {
-        const img = new Image();
-        img.onload = () => {
-            const ratio = Math.min(maxSize / img.width, maxSize / img.height, 1);
-            const canvas = document.createElement('canvas');
-            canvas.width = Math.round(img.width * ratio);
-            canvas.height = Math.round(img.height * ratio);
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            resolve(canvas.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = reject;
-        img.src = dataUrl;
-    });
-}
-
-function fileToDataUrl(file) {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = reject;
-        reader.readAsDataURL(file);
-    });
-}
 
 // ─── Sub-Components ──────────────────────────────────────────────────────────
 
@@ -253,17 +226,18 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
     const [isSearchingAi, setIsSearchingAi] = useState(false);
     const [aiResults, setAiResults] = useState([]);
 
-    // ── Unified photo capture: native camera on mobile (works over HTTP/LAN),
-    //    in-app webcam on desktop (getUserMedia needs HTTPS/localhost) ──
+    // ── Capture photo unifiée, choisie par CAPACITÉ (pas par largeur d'écran) :
+    //    contexte sécurisé + getUserMedia → webcam intégrée ; sinon (HTTP/LAN) → appli photo native.
     const [webcamOpen, setWebcamOpen] = useState(false);
     const photoCbRef = useRef(null);
     const nativeCamRef = useRef(null);
 
     const requestCapture = useCallback((cb) => {
         photoCbRef.current = cb;
-        if (isMobile) nativeCamRef.current?.click();
-        else setWebcamOpen(true);
-    }, [isMobile]);
+        const canUseWebcam = typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
+        if (canUseWebcam) setWebcamOpen(true);
+        else nativeCamRef.current?.click();
+    }, []);
 
     const onNativeCapture = async (e) => {
         const file = e.target.files?.[0];

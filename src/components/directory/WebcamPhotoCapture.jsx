@@ -22,16 +22,34 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
         if (!isOpen) return;
         setIsLoading(true);
         setError(null);
+        // getUserMedia exige un contexte sécurisé (HTTPS ou localhost). En HTTP/LAN il est absent.
+        if (!navigator.mediaDevices?.getUserMedia) {
+            setError("Caméra intégrée indisponible ici (nécessite HTTPS). Sur réseau local, utilisez « Galerie » ou l'appli photo du téléphone.");
+            setIsLoading(false);
+            return;
+        }
         try {
             stopCamera();
-            const mediaStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 1024 }, height: { ideal: 1024 } }
-            });
+            let mediaStream;
+            try {
+                mediaStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } }
+                });
+            } catch {
+                // Fallback : n'importe quelle caméra (certains appareils refusent la contrainte facingMode).
+                mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            }
             streamRef.current = mediaStream;
             setStream(mediaStream);
-            if (videoRef.current) videoRef.current.srcObject = mediaStream;
+            const v = videoRef.current;
+            if (v) {
+                v.srcObject = mediaStream;
+                // iOS/Safari : lecture explicite requise (sinon écran noir malgré autoPlay).
+                v.onloadedmetadata = () => { v.play().catch(() => {}); };
+                v.play().catch(() => {});
+            }
         } catch (err) {
-            setError("Impossible d'accéder à la caméra. Vérifiez les permissions.");
+            setError("Impossible d'accéder à la caméra. Autorisez l'accès dans les réglages du navigateur, puis réessayez.");
         } finally {
             setIsLoading(false);
         }
@@ -40,6 +58,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
     React.useEffect(() => {
         if (isOpen && stream && videoRef.current && videoRef.current.srcObject !== stream) {
             videoRef.current.srcObject = stream;
+            videoRef.current.play?.().catch(() => {});
         }
     }, [isOpen, stream]);
 
@@ -56,13 +75,15 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
             const video = videoRef.current;
             const canvas = canvasRef.current;
             const size = Math.min(video.videoWidth, video.videoHeight);
-            canvas.width = size;
-            canvas.height = size;
+            // Plafonne la sortie à 768px : évite un base64 énorme (mémoire/réseau sur tél).
+            const out = Math.min(size, 768);
+            canvas.width = out;
+            canvas.height = out;
             const ctx = canvas.getContext('2d');
             const startX = (video.videoWidth - size) / 2;
             const startY = (video.videoHeight - size) / 2;
-            ctx.drawImage(video, startX, startY, size, size, 0, 0, size, size);
-            setCapturedImage(canvas.toDataURL('image/jpeg', 0.85));
+            ctx.drawImage(video, startX, startY, size, size, 0, 0, out, out);
+            setCapturedImage(canvas.toDataURL('image/jpeg', 0.75));
         }
     };
 
@@ -100,7 +121,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                             </div>
                         )}
                         {!capturedImage ? (
-                            <video ref={videoRef} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <video ref={videoRef} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         ) : (
                             <img src={capturedImage} alt="Capture" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         )}
