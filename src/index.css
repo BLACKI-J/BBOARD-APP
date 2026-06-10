@@ -321,6 +321,18 @@ button {
   select {
     font-size: 16px !important;
   }
+  /* Cibles tactiles : min 44px. min-* bat les width/height inline trop petits. */
+  .btn-icon,
+  .btn-icon-ref {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  /* Cases à cocher plus grandes au doigt (défaut ~13px). */
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 22px;
+    height: 22px;
+  }
 }
 
 .glass-input:focus {

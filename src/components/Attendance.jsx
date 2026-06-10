@@ -119,14 +119,16 @@ export default function Attendance({ participants, setParticipants, groups, canE
     const choosePicCamera = () => {
         const target = photoMenuFor;
         setPhotoMenuFor(null);
-        if (isMobile) {
-            // Native camera app — works over HTTP/LAN (getUserMedia requires HTTPS)
-            fileTargetId.current = target;
-            setTimeout(() => cameraInputRef.current?.click(), 50);
-        } else {
-            // Desktop: in-app webcam (HTTPS/localhost OK)
+        // Choix par CAPACITÉ, pas par largeur d'écran :
+        // - contexte sécurisé (HTTPS/localhost) + getUserMedia → webcam intégrée (preview + cadrage)
+        // - sinon (HTTP/LAN, ou pas de getUserMedia) → appli photo native via <input capture>
+        const canUseWebcam = typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
+        if (canUseWebcam) {
             setSelectedParticipantId(target);
             setIsCameraOpen(true);
+        } else {
+            fileTargetId.current = target;
+            setTimeout(() => cameraInputRef.current?.click(), 50);
         }
     };
     const choosePicGallery = () => {
@@ -185,7 +187,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                             className="glass-input"
                         />
                         {searchTerm && (
-                            <button onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: '0.85rem', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-muted)', borderRadius: '50%', width: '22px', height: '22px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                            <button aria-label="Effacer la recherche" onClick={() => setSearchTerm('')} style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.05)', border: 'none', color: 'var(--text-muted)', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                 <X size={12} />
                             </button>
                         )}
@@ -196,15 +198,15 @@ export default function Attendance({ participants, setParticipants, groups, canE
                         <button onClick={() => markAllVisible(true)} className="btn btn-primary" style={{ flex: isMobile ? 1 : 'none', padding: '0.65rem 1rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '900', gap: '0.5rem' }}>
                             <UserCheck size={16} strokeWidth={2.5} /> Tout cocher
                         </button>
-                        <button onClick={() => markAllVisible(false)} className="btn btn-secondary" style={{ width: '40px', height: '40px', padding: '0', borderRadius: '12px', justifyContent: 'center' }} title="Réinitialiser">
+                        <button aria-label="Réinitialiser le pointage" onClick={() => markAllVisible(false)} className="btn btn-secondary" style={{ width: '44px', height: '44px', padding: '0', borderRadius: '12px', justifyContent: 'center' }} title="Réinitialiser">
                             <UserMinus size={18} strokeWidth={2.5} />
                         </button>
                         
                         <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.06)', padding: '4px', borderRadius: '12px', backdropFilter: 'blur(10px)', marginLeft: isMobile ? 'auto' : '0.5rem' }}>
-                            <button onClick={() => setViewMode('grid')} style={{ width: '32px', height: '32px', borderRadius: '8px', background: viewMode === 'grid' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'grid' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}>
+                            <button aria-label="Vue grille" onClick={() => setViewMode('grid')} style={{ width: '40px', height: '40px', borderRadius: '8px', background: viewMode === 'grid' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'grid' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}>
                                 <LayoutGrid size={16} color={viewMode === 'grid' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={2.5} />
                             </button>
-                            <button onClick={() => setViewMode('list')} style={{ width: '32px', height: '32px', borderRadius: '8px', background: viewMode === 'list' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'list' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}>
+                            <button aria-label="Vue liste" onClick={() => setViewMode('list')} style={{ width: '40px', height: '40px', borderRadius: '8px', background: viewMode === 'list' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'list' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}>
                                 <LayoutList size={16} color={viewMode === 'list' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={2.5} />
                             </button>
                         </div>
@@ -419,8 +421,8 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                                 {canEdit && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); openPhotoMenu(child.id); }}
-                                                        style={{ position: 'absolute', bottom: isMobile ? '-4px' : '-6px', right: isMobile ? '-4px' : '-6px', width: isMobile ? '26px' : '30px', height: isMobile ? '26px' : '30px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '9px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.08)', zIndex: 10 }}
-                                                        title="Modifier la photo">
+                                                        style={{ position: 'absolute', bottom: isMobile ? '-4px' : '-6px', right: isMobile ? '-4px' : '-6px', width: isMobile ? '32px' : '30px', height: isMobile ? '32px' : '30px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '9px', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 8px rgba(0,0,0,0.08)', zIndex: 10 }}
+                                                        title="Modifier la photo" aria-label="Modifier la photo">
                                                         <Camera size={isMobile ? 13 : 15} strokeWidth={2.5} />
                                                     </button>
                                                 )}

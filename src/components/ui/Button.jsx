@@ -21,7 +21,7 @@ export const Button = ({
         sm: { height: '36px', padding: '0 0.875rem', fontSize: '0.78rem', borderRadius: '10px' },
         md: { height: '44px', padding: '0 1.25rem', fontSize: '0.85rem', borderRadius: '12px' },
         lg: { height: '52px', padding: '0 1.75rem', fontSize: '0.95rem', borderRadius: '16px' },
-        icon: { width: '40px', height: '40px', padding: '0', borderRadius: '10px' },
+        icon: { width: '44px', height: '44px', padding: '0', borderRadius: '10px' },
     };
     const actualSize = variant === 'icon' ? 'icon' : size;
     const dims = sizeMap[actualSize] || sizeMap.md;
