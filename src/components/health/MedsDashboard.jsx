@@ -270,7 +270,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
             {displayChildren.length === 0 ? (
                 <EmptyState icon={<span style={{ fontSize: '3rem' }}>{activeConfig.icon}</span>} title="Aucun traitement prévu pour ce créneau." />
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1rem' }}>
                     {displayChildren.map(child => {
                         const validated = getValidated(child);
                         const slotData = validated[activeSlot];

@@ -432,6 +432,7 @@ export default function App() {
 
                 isDataLoaded.current = true;
                 setConnectionStatus('connected');
+                clearTimeout(retryTimer); // un refresh réussi annule tout retry en attente
                 retryCountRef.current = 0;
                 setRetryCount(0);
                 setLastSyncAt(Date.now());
@@ -447,6 +448,7 @@ export default function App() {
                 if (retryCountRef.current < 5) {
                     retryCountRef.current += 1;
                     setRetryCount(retryCountRef.current); // affichage uniquement
+                    clearTimeout(retryTimer); // jamais deux timers en vol
                     retryTimer = setTimeout(refreshData, 3000);
                 }
             } finally {
@@ -853,7 +855,7 @@ export default function App() {
                         )}
 
                         {/* Bottom bar */}
-                        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, height: '64px', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'stretch', paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -4px 20px rgba(0,0,0,0.07)' }}>
+                        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, height: 'calc(64px + env(safe-area-inset-bottom))', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'stretch', paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -4px 20px rgba(0,0,0,0.07)' }}>
                             {primaryItems.map(item => {
                                 const isActive = activeTab === item.id;
                                 const badge = navBadges[item.id] || 0;

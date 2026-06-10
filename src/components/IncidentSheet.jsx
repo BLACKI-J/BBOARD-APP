@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { AlertTriangle, Save, Printer, Trash2, Eye, ArrowLeft, Plus, History, Sparkles, CheckCircle2, ShieldAlert, FileText, ChevronRight, Users, MapPin, User, Calendar, Clock, Check } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { useUnsavedGuard } from '../utils/unsavedGuard';
@@ -36,16 +36,19 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
 
     // Aperçu Cerfa : page A4 fixe de 210mm (~794px) → scale écran pour tenir sur mobile.
     // N'affecte que l'aperçu (.no-print) ; la copie .print-view imprimée reste intacte.
+    // Le scale se base sur la largeur RÉELLE du conteneur (padding + sidebar déduits),
+    // pas sur window.innerWidth qui rognait le bord gauche sur certaines largeurs.
     const a4Ref = useRef(null);
-    const [previewScale, setPreviewScale] = useState(() =>
-        typeof window !== 'undefined' ? Math.min(1, (window.innerWidth - 32) / 794) : 1
-    );
+    const previewWrapperRef = useRef(null);
+    const [previewScale, setPreviewScale] = useState(1);
     const [a4Height, setA4Height] = useState(0);
-    useEffect(() => {
-        const onResize = () => setPreviewScale(Math.min(1, (window.innerWidth - 32) / 794));
-        window.addEventListener('resize', onResize);
-        return () => window.removeEventListener('resize', onResize);
-    }, []);
+    useLayoutEffect(() => {
+        const computeScale = () =>
+            setPreviewScale(Math.min(1, (previewWrapperRef.current?.clientWidth || window.innerWidth) / 794));
+        computeScale();
+        window.addEventListener('resize', computeScale);
+        return () => window.removeEventListener('resize', computeScale);
+    }, [showPreview]);
     useEffect(() => {
         if (showPreview && a4Ref.current) setA4Height(a4Ref.current.offsetHeight);
     }, [showPreview, form, previewScale]);
@@ -512,10 +515,13 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                             <button onClick={handlePrint} className="btn btn-primary" style={{ padding: '0.625rem 1.5rem' }}><Printer size={18} strokeWidth={2.5} /> Imprimer Maintenant</button>
                         </div>
                     </div>
-                    {/* Wrapper dimensionné à la taille visuelle (le transform ne réduit pas la boîte de layout) */}
-                    <div style={{ width: `${794 * previewScale}px`, height: a4Height ? `${a4Height * previewScale}px` : 'auto', overflow: 'visible' }}>
-                        <div className="fei-a4-holder" ref={a4Ref} style={{ width: '794px', transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
-                            <PrintContent data={form} />
+                    {/* Mesure de la largeur réellement disponible (sert au calcul du scale) */}
+                    <div ref={previewWrapperRef} style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
+                        {/* Wrapper dimensionné à la taille visuelle (le transform ne réduit pas la boîte de layout) */}
+                        <div style={{ width: `${794 * previewScale}px`, height: a4Height ? `${a4Height * previewScale}px` : 'auto', overflow: 'visible' }}>
+                            <div className="fei-a4-holder" ref={a4Ref} style={{ width: '794px', transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
+                                <PrintContent data={form} />
+                            </div>
                         </div>
                     </div>
                 </div>

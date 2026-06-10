@@ -282,16 +282,17 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                                         }}>
                                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                                 <span style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)' }}>{med.name}</span>
-                                                                <button 
+                                                                <button
                                                                     type="button"
+                                                                    aria-label="Supprimer le médicament"
                                                                     onClick={() => {
                                                                         const list = [...currentMeds];
                                                                         list.splice(idx, 1);
                                                                         setFormData({ ...formData, medications: list });
                                                                     }}
-                                                                    style={{ 
-                                                                        background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)', 
-                                                                        border: 'none', borderRadius: '8px', width: '28px', height: '28px',
+                                                                    style={{
+                                                                        background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)',
+                                                                        border: 'none', borderRadius: '8px', width: '40px', height: '40px',
                                                                         display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                                                                     }}
                                                                 >
@@ -387,16 +388,17 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                                         border: '1.5px solid oklch(62% 0.22 145 / 0.3)'
                                                     }}>
                                                         <span style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--text-main)' }}>{med}</span>
-                                                        <button 
+                                                        <button
                                                             type="button"
+                                                            aria-label="Supprimer le médicament"
                                                             onClick={() => {
                                                                 const list = formData.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean);
                                                                 list.splice(idx, 1);
                                                                 setFormData({ ...formData, sibesoin: list.join('\n') });
                                                             }}
-                                                            style={{ 
-                                                                background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)', 
-                                                                border: 'none', borderRadius: '8px', width: '28px', height: '28px',
+                                                            style={{
+                                                                background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)',
+                                                                border: 'none', borderRadius: '8px', width: '40px', height: '40px',
                                                                 display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
                                                             }}
                                                         >
@@ -555,7 +557,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                                     <span style={{ fontWeight: '950', color: 'var(--danger-color)' }}>-{tx.amount.toFixed(2)} €</span>
-                                                    <button type="button" onClick={() => removePocketExpense(tx.id)} style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: 'none', color: 'var(--danger-color)', width: '32px', height: '32px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <button type="button" aria-label="Supprimer la dépense" onClick={() => removePocketExpense(tx.id)} style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: 'none', color: 'var(--danger-color)', width: '40px', height: '40px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                         <Trash2 size={16} strokeWidth={2} />
                                                     </button>
                                                 </div>

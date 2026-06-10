@@ -412,7 +412,11 @@ export default function Settings({
         ui.toast('Restauration réussie.', { type: 'success' });
     };
 
-    const handleExportCsv = () => exportParticipantsCsv(participants, groups, roleLabels);
+    const handleExportCsv = () => {
+        // Mêmes PII enfants que l'export JSON → même gate.
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        exportParticipantsCsv(participants, groups, roleLabels);
+    };
 
     // Sauvegarde complète .zip (données + photos + CSV). Réservé Direction.
     const handleFullArchiveExport = async () => {
@@ -430,8 +434,11 @@ export default function Settings({
     };
 
     // Restauration complète depuis un .zip (remplace tout). Réservé Direction.
+    // Exige AUSSI manageUsers : le serveur le demande pour remplacer le staff —
+    // sinon l'import écraserait les permissions puis échouerait sur les participants
+    // (état mixte destructeur).
     const handleFullArchiveImport = async (file) => {
-        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        if (!canManageAccess || !canManageUsers) { ui.toast('Droits insuffisants (gestion des accès ET des utilisateurs requis).', { type: 'error' }); return; }
         if (archiveBusy) return; // pas de double restauration entrelacée
         const ok = await ui.confirm({
             title: 'Tout importer',
@@ -1012,7 +1019,7 @@ export default function Settings({
                                             <small>Archive .zip (données + photos)</small>
                                         </button>
                                     )}
-                                    {canManageAccess && (
+                                    {canManageAccess && canManageUsers && (
                                         <label className="btn-maintenance outline" style={archiveBusy ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
                                             <Upload size={32} strokeWidth={2} />
                                             <span>{archiveBusy ? 'En cours…' : 'Tout importer'}</span>

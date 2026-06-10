@@ -58,7 +58,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                     </div>
 
                     <div style={{ flex: 1, overflowY: isMobile ? 'visible' : 'auto', paddingRight: isMobile ? '0' : '0.5rem' }} className="no-scrollbar">
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1.5rem' }}>
                             {MEALS.map((m, idx) => (
                                 <div key={m.id} className="card-glass animate-fade-in" style={{
                                     '--i': idx, animationDelay: `calc(var(--i) * 50ms)`,

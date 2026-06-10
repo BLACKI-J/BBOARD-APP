@@ -13,9 +13,9 @@ export default function PullToRefresh({ onRefresh, disabled = false, className, 
     const [pull, setPull] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
-    // Le wrapper lui-même ne scrolle jamais (chaque onglet a son scroller interne).
-    // On cherche donc le VRAI scroller sous le doigt : sans ça, le pull-to-refresh
-    // se déclenche en plein milieu d'une liste.
+    // Cherche le VRAI scroller sous le doigt : la plupart des onglets ont leur
+    // scroller interne, mais certains (Accueil, Réglages) scrollent via le wrapper
+    // lui-même — le wrapper est donc inclus comme dernier candidat.
     const findScroller = (target) => {
         let el = target;
         while (el && el !== scrollRef.current) {
@@ -25,7 +25,7 @@ export default function PullToRefresh({ onRefresh, disabled = false, className, 
             }
             el = el.parentElement;
         }
-        return null;
+        return scrollRef.current; // pas de scroller interne → le wrapper est le scroller
     };
 
     const onTouchStart = (e) => {
@@ -38,8 +38,10 @@ export default function PullToRefresh({ onRefresh, disabled = false, className, 
 
     const onTouchMove = (e) => {
         if (startY.current == null) return;
-        // Si le scroller interne a commencé à défiler, ce geste est un scroll, pas un pull.
-        if (innerScroller.current && innerScroller.current.scrollTop > 0) {
+        // Si le scroller effectif OU le wrapper (scroll chaining des listes imbriquées)
+        // a commencé à défiler, ce geste est un scroll, pas un pull.
+        if ((innerScroller.current && innerScroller.current.scrollTop > 0)
+            || (scrollRef.current && scrollRef.current.scrollTop > 0)) {
             startY.current = null;
             setPull(0);
             return;

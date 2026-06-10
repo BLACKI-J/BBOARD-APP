@@ -379,7 +379,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                         <div style={{
                             display: viewMode === 'grid' ? 'grid' : 'flex',
                             flexDirection: 'column',
-                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))',
                             gap: isMobile ? '0.75rem' : '1.25rem',
                             paddingBottom: isMobile ? '2rem' : '4rem'
                         }}>
@@ -485,7 +485,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
             {/* Photo choice bottom sheet */}
             {photoMenuFor && (
                 <div onClick={() => setPhotoMenuFor(null)} style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', padding: isMobile ? '0' : '2rem' }}>
-                    <div onClick={(e) => e.stopPropagation()} className="animate-scale-in" style={{ width: '100%', maxWidth: '440px', background: 'white', borderRadius: isMobile ? '24px 24px 0 0' : '24px', padding: '1.5rem', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: isMobile ? '0' : 'auto' }}>
+                    <div onClick={(e) => e.stopPropagation()} className="animate-scale-in" style={{ width: '100%', maxWidth: '440px', background: 'white', borderRadius: isMobile ? '24px 24px 0 0' : '24px', padding: '1.5rem', paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: isMobile ? '0' : 'auto' }}>
                         <div style={{ textAlign: 'center', marginBottom: '0.5rem' }}>
                             <div style={{ fontWeight: '950', fontSize: '1.05rem', color: 'var(--text-main)' }}>Photo du vacancier</div>
                             <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'var(--text-muted)', marginTop: '2px' }}>Prendre une nouvelle photo ou en choisir une</div>

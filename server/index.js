@@ -201,7 +201,7 @@ function serverError(req, res, err) {
 
 function mergeAccessControl(raw) {
     const source = raw && typeof raw === 'object' ? raw : {};
-    return {
+    const merged = {
         ...defaultAccessControl,
         ...source,
         hiddenSections: { ...defaultAccessControl.hiddenSections, ...(source.hiddenSections || {}) },
@@ -215,6 +215,19 @@ function mergeAccessControl(raw) {
         userPermissions: { ...defaultAccessControl.userPermissions, ...(source.userPermissions || {}) },
         disabledUsers: { ...defaultAccessControl.disabledUsers, ...(source.disabledUsers || {}) }
     };
+    // Anti-lockout appliqué à CHAQUE merge (boot, lecture, écriture, restauration) :
+    // la Direction garde toujours ses permissions d'administration, n'est jamais
+    // désactivable, et aucun override utilisateur ne peut les retirer (getActor
+    // applique userPermissions PAR-DESSUS le rôle).
+    merged.rolePermissions.direction = {
+        ...merged.rolePermissions.direction,
+        viewSettings: true,
+        manageUsers: true,
+        manageAccess: true
+    };
+    delete merged.disabledUsers.director;
+    delete merged.userPermissions.director;
+    return merged;
 }
 
 async function getStateValue(database, key, fallback = null) {
@@ -692,6 +705,9 @@ startServer();
 const loginRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 const adminRateLimiter = createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 });
 const aiRateLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 10 });
+// Quota séparé pour la recherche inventaire : une rafale de scans (jour d'arrivée)
+// ne doit pas épuiser le quota de réécriture FEI du même poste.
+const inventorySearchRateLimiter = createRateLimiter({ windowMs: 60 * 1000, max: 20 });
 
 io.use(async (socket, next) => {
     try {
@@ -862,19 +878,22 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
         // et renvoie un 403 explicite au lieu d'un 500 générique.
         if (!canManageStaff) {
             const payloadById = new Map(participants.filter((p) => p && p.id).map((p) => [p.id, p]));
+            // Comparaison BRUTE rôle entrant vs rôle stocké : un rôle inchangé n'est
+            // jamais du tampering, même s'il est devenu orphelin (rôle custom supprimé
+            // d'accessControl) — sinon un éditeur sans manageUsers serait bloqué sur
+            // TOUTE sauvegarde (pointage, santé) tant qu'un rôle orphelin existe.
             const escalation = participants.some((p) => {
                 if (!p || !p.id) return false;
-                const role = validRoles.has(p.role) ? p.role : 'child';
-                if (role === 'child') return false;
                 const prior = existingById.get(p.id);
-                return !prior || prior.role !== role; // création ou promotion
+                if (prior && (p.role || '') === prior.role) return false; // inchangé
+                const role = validRoles.has(p.role) ? p.role : 'child';
+                return role !== 'child'; // création ou promotion vers un rôle staff
             });
             const staffTampering = existingRows.some((row) => {
                 if (row.role === 'child') return false;
                 const incoming = payloadById.get(row.id);
                 if (!incoming) return true; // staff supprimé du lot
-                const incomingRole = validRoles.has(incoming.role) ? incoming.role : 'child';
-                return incomingRole !== row.role; // démotion (ou changement de rôle staff)
+                return (incoming.role || '') !== row.role; // démotion / changement de rôle
             });
             if (escalation || staffTampering) {
                 return res.status(403).json({ error: 'Permission manageUsers requise pour créer, modifier ou supprimer un membre du staff.' });
@@ -890,8 +909,12 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
                     if (!p || !p.id) return;
                     const cleanParticipant = sanitizeParticipant(p);
                     const prior = existingById.get(p.id);
-                    // Rôle inconnu → ramené à 'child' (jamais de rôle arbitraire)
-                    const role = validRoles.has(cleanParticipant.role) ? cleanParticipant.role : 'child';
+                    // Rôle inchangé → préservé tel quel (même orphelin : pas de démotion
+                    // silencieuse en « child » à chaque sauvegarde). Rôle NOUVEAU inconnu
+                    // → ramené à 'child' (jamais de rôle arbitraire).
+                    const role = (prior && (cleanParticipant.role || '') === prior.role)
+                        ? prior.role
+                        : (validRoles.has(cleanParticipant.role) ? cleanParticipant.role : 'child');
                     cleanParticipant.role = role;
                     // PIN modifiable seulement via manageUsers ; sinon on garde l'existant.
                     // Un staff sans PIN est autorisé (il ne pourra juste pas se connecter).
@@ -1042,23 +1065,13 @@ app.post('/api/state/:key', async (req, res) => {
         if (!req.actor?.permissions?.[permission]) return res.status(403).json({ error: 'Permission denied' });
         let value = req.body;
         if (req.params.key === 'accessControl') {
-            // Normalise + garde-fous anti-lockout : structure garantie via mergeAccessControl,
-            // rôles de base toujours présents, compte Direction jamais désactivable.
+            // Normalise (mergeAccessControl porte aussi l'anti-lockout Direction)
+            // + rôles de base toujours présents dans la liste.
             value = mergeAccessControl(value);
             if (!Array.isArray(value.roles)) value.roles = defaultAccessControl.roles;
             for (const baseRole of defaultAccessControl.roles) {
                 if (!value.roles.some((r) => r && r.id === baseRole.id)) value.roles.push(baseRole);
             }
-            if (value.disabledUsers) delete value.disabledUsers.director;
-            // La Direction garde TOUJOURS ses permissions d'administration : sinon un
-            // décochage dans l'UI (ou une restauration) verrouille l'app sans retour possible.
-            value.rolePermissions = value.rolePermissions || {};
-            value.rolePermissions.direction = {
-                ...(value.rolePermissions.direction || {}),
-                viewSettings: true,
-                manageUsers: true,
-                manageAccess: true
-            };
         }
         await db.run('INSERT OR REPLACE INTO app_state (key, value) VALUES (?, ?)', req.params.key, JSON.stringify(value));
         io.emit('data_updated', { type: 'state', key: req.params.key });
@@ -1334,7 +1347,7 @@ app.delete('/api/inventory/photos/:photoId', requireAnyPermission('editInventory
     }
 });
 
-app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), aiRateLimiter, async (req, res) => {
+app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), inventorySearchRateLimiter, async (req, res) => {
     try {
         const { imageBase64, topK = 5 } = req.body || {};
         if (!imageBase64) return res.status(400).json({ error: 'imageBase64 is required' });

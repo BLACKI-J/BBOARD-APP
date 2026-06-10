@@ -152,7 +152,7 @@ export default function Home({
                         <MessageSquareText size={18} style={{ color: 'var(--primary-color)' }} /> Messages & Alertes
                     </h3>
                     {canPost && (
-                        <button onClick={() => setMsgOpen(o => !o)} style={{ background: msgOpen ? 'var(--primary-light)' : 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', padding: '5px 10px', borderRadius: '10px' }}>
+                        <button onClick={() => setMsgOpen(o => !o)} style={{ background: msgOpen ? 'var(--primary-light)' : 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', minHeight: '40px', padding: '0.5rem 0.85rem', borderRadius: '10px' }}>
                             <Plus size={13} /> {msgOpen ? 'Fermer' : 'Écrire'}
                         </button>
                     )}
@@ -315,7 +315,7 @@ export default function Home({
 
             {/* ── Bento grid ── */}
             {blocks.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1.25rem', alignItems: 'start' }}>
                     {blocks}
                 </div>
             ) : (

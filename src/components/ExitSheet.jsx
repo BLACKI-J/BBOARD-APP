@@ -342,7 +342,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                                 value={filterGroup}
                                                 onChange={e => setFilterGroup(e.target.value)}
                                                 style={{
-                                                    padding: '0.4rem 0.6rem', fontSize: '11px', fontWeight: '800',
+                                                    padding: '0.4rem 0.6rem', minHeight: '44px', fontSize: '11px', fontWeight: '800',
                                                     border: '1px solid var(--border-color)', borderRadius: '8px',
                                                     background: 'white', color: 'var(--text-main)', outline: 'none', flex: isMobile ? 1 : 'none'
                                                 }}

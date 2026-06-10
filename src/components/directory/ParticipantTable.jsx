@@ -43,7 +43,7 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
             )}
             {/* Foreground row */}
             <div
-                onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+                onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd} onTouchCancel={onTouchEnd}
                 onClick={onRowClick}
                 style={{
                     position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem',

@@ -20,7 +20,7 @@ const Toast = ({ toast, onClose }) => {
 
     return (
         <div className="card-glass animate-scale-in" style={{
-            minWidth: '320px', maxWidth: '480px', background: 'white',
+            minWidth: 'min(320px, calc(100vw - 2rem))', maxWidth: 'min(480px, calc(100vw - 2rem))', background: 'white',
             border: `1.5px solid var(--glass-border)`, borderRadius: '20px',
             boxShadow: '0 20px 40px rgba(0,0,0,0.1)', padding: '1.25rem',
             display: 'flex', alignItems: 'flex-start', gap: '1rem',
@@ -124,7 +124,7 @@ export function UiProvider({ children }) {
         <UiContext.Provider value={value}>
             {children}
 
-            <div style={{ position: 'fixed', top: '1.5rem', right: '1.5rem', zIndex: 2500, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ position: 'fixed', top: 'calc(1.5rem + env(safe-area-inset-top))', right: '1rem', zIndex: 2500, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {toasts.map((item) => <Toast key={item.id} toast={item} onClose={() => dismissToast(item.id)} />)}
             </div>
 

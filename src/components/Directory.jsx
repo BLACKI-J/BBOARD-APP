@@ -379,17 +379,17 @@ export default function Directory({ participants = [], setParticipants, groups =
                         {sortedParticipants.length} membre{sortedParticipants.length !== 1 ? 's' : ''}
                     </span>
                     {filterRole !== 'all' && (
-                        <button onClick={() => setFilterRole('all')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', cursor: 'pointer' }}>
+                        <button onClick={() => setFilterRole('all')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', minHeight: '36px', padding: '0.4rem 0.85rem', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', cursor: 'pointer' }}>
                             {({ child: 'Enfants', animator: 'Animateurs', direction: 'Direction' }[filterRole])} ✕
                         </button>
                     )}
                     {filterGroup !== 'all' && (
-                        <button onClick={() => setFilterGroup('all')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', cursor: 'pointer' }}>
+                        <button onClick={() => setFilterGroup('all')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', minHeight: '36px', padding: '0.4rem 0.85rem', borderRadius: '100px', background: 'var(--primary-light)', color: 'var(--primary-color)', border: '1px solid var(--primary-color)', cursor: 'pointer' }}>
                             {filterGroup === 'none' ? 'Sans groupe' : (safeGroups.find(g => g.id === filterGroup)?.name || 'Groupe')} ✕
                         </button>
                     )}
                     {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--glass-border)', cursor: 'pointer' }}>
+                        <button onClick={() => setSearchTerm('')} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', minHeight: '36px', padding: '0.4rem 0.85rem', borderRadius: '100px', background: 'var(--bg-secondary)', color: 'var(--text-muted)', border: '1px solid var(--glass-border)', cursor: 'pointer' }}>
                             "{searchTerm}" ✕
                         </button>
                     )}

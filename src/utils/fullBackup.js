@@ -42,8 +42,12 @@ export async function exportFullArchive({ headers, roleLabels = {} } = {}) {
     const data = {};
     const failures = [];
     for (const c of COLLECTIONS) {
-        try { data[c.key] = await getJson(c.url, headers); }
-        catch { failures.push(c.key); }
+        try {
+            const result = await getJson(c.url, headers);
+            // Une clé state jamais écrite renvoie null → forme vide explicite, sinon
+            // la section serait silencieusement sautée à l'import.
+            data[c.key] = result ?? c.empty;
+        } catch { failures.push(c.key); }
     }
     // Échec dur : une archive avec des sections silencieusement vides serait
     // ré-importable et EFFACERAIT les collections concernées.
@@ -83,7 +87,8 @@ export async function exportFullArchive({ headers, roleLabels = {} } = {}) {
         '',
         'Restauration : Paramètres > Maintenance > Tout importer, puis choisir ce fichier .zip.',
         '',
-        'Non inclus : le journal d\'activité (trace d\'audit, non restaurable) et les codes PIN.',
+        'Non inclus : le journal d\'activité (trace d\'audit, non restaurable), les codes PIN',
+        'et l\'historique des validations de la recherche IA (matériel).',
         '',
         'IMPORTANT — codes PIN : les PIN du staff ne sont jamais exportés (sécurité).',
         'Restauré sur la MÊME base, chaque staff garde son PIN. Restauré sur une base',
@@ -116,12 +121,23 @@ export async function importFullArchive(file, { headers, actorId } = {}) {
         throw new Error('Archive invalide : contenu de sauvegarde non reconnu.');
     }
 
-    // Garde-fou : un staff réel qui restaure une archive ne contenant pas son propre
-    // compte serait SUPPRIMÉ en plein import (déconnexion + restauration partielle).
+    // Garde-fous : un staff réel qui restaure une archive ne contenant pas son propre
+    // compte (ou le désactivant) serait SUPPRIMÉ/verrouillé en plein import.
     // Le compte virtuel « director » survit toujours, lui.
-    if (actorId && actorId !== 'director' && Array.isArray(backup.participants)
-        && !backup.participants.some((p) => p && p.id === actorId)) {
-        throw new Error("Cette archive ne contient pas votre compte : vous seriez déconnecté en plein import. Connectez-vous avec le profil Direction pour restaurer.");
+    if (actorId && actorId !== 'director') {
+        const selfMissing = Array.isArray(backup.participants)
+            && !backup.participants.some((p) => p && p.id === actorId);
+        const selfDisabled = !!backup.accessControl?.disabledUsers?.[actorId];
+        if (selfMissing || selfDisabled) {
+            throw new Error("Cette archive supprimerait ou désactiverait votre propre compte en plein import. Connectez-vous avec le profil Direction pour restaurer.");
+        }
+    }
+
+    // Les participants ne peuvent être restaurés sans les permissions de l'archive :
+    // le serveur rétrograderait tout rôle custom inconnu en « enfant ».
+    const acShapeOk = backup.accessControl && typeof backup.accessControl === 'object' && !Array.isArray(backup.accessControl);
+    if (Array.isArray(backup.participants) && backup.participants.length && !acShapeOk) {
+        throw new Error('Archive sans permissions valides : les rôles du staff ne pourraient pas être restaurés correctement.');
     }
 
     // Ordre IMPORTANT : accessControl en PREMIER. Le serveur valide les rôles des
@@ -149,10 +165,10 @@ export async function importFullArchive(file, { headers, actorId } = {}) {
             restored.push(label);
         } catch (err) {
             failed.push({ label, error: err.message });
-            // Si les Permissions échouent, IMPORTER QUAND MÊME les participants les
-            // rétrograderait (rôles custom inconnus du serveur → « enfant »). On s'arrête.
-            if (label === 'Permissions' && backup.accessControl) {
-                failed.push({ label: 'Import interrompu', error: 'les permissions n\'ont pas pu être restaurées — le reste aurait été corrompu' });
+            // Étapes critiques : sans Permissions, les rôles custom seraient rétrogradés ;
+            // sans Participants, tout le reste référencerait des comptes absents. On s'arrête.
+            if (label === 'Permissions' || label === 'Participants') {
+                failed.push({ label: 'Import interrompu', error: `l'étape « ${label} » a échoué — la suite aurait produit un état incohérent` });
                 return { restored, failed };
             }
         }
@@ -186,7 +202,7 @@ export async function importFullArchive(file, { headers, actorId } = {}) {
                         if (!ph?.image_base64) continue;
                         try {
                             await apiSend('POST', `/api/inventory/items/${item.id}/photos`, {
-                                headers, body: { participantId: item.participant_id, imageBase64: ph.image_base64 },
+                                headers, body: { participantId: ph.participant_id || item.participant_id, imageBase64: ph.image_base64 },
                             });
                         } catch { photoFails++; }
                     }

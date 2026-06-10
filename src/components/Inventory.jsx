@@ -596,10 +596,14 @@ const ControlHub = ({
 }) => {
     const ui = useUi();
     const nameInputRef = useRef(null);
+    const focusScrollTimer = useRef(null);
 
     useEffect(() => {
         if (newItem.photo && !newItem.label && !isSearchingAi) { nameInputRef.current?.focus(); }
     }, [newItem.photo, isSearchingAi, newItem.label]);
+
+    // Nettoyage du timer de scroll au démontage (évite un scrollIntoView orphelin)
+    useEffect(() => () => clearTimeout(focusScrollTimer.current), []);
 
     return (
         <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
@@ -650,7 +654,12 @@ const ControlHub = ({
                             <input 
                                 className="glass-input" placeholder={isSearchingAi ? "L'intelligence artificielle analyse..." : "Désignation (ex: T-shirt bleu)..."}
                                 ref={nameInputRef} value={newItem.label} onChange={(e) => setNewItem(p => ({ ...p, label: e.target.value }))}
-                                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250)}
+                                onFocus={(e) => {
+                                    // Recentrage utile uniquement sur mobile/tablette (clavier virtuel)
+                                    if (!window.matchMedia('(max-width: 1024px)').matches) return;
+                                    clearTimeout(focusScrollTimer.current);
+                                    focusScrollTimer.current = setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250);
+                                }}
                                 style={{ height: '52px', background: 'white', borderRadius: '16px', border: '1.5px solid var(--glass-border)', paddingLeft: '1.25rem', fontWeight: '800' }}
                             />
                         </div>
