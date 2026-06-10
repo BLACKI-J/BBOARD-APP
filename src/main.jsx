@@ -14,7 +14,13 @@ window.addEventListener('load', () => {
         import("mobile-drag-drop"),
         import("mobile-drag-drop/scroll-behaviour"),
     ]).then(([{ polyfill }, { scrollBehaviourDragImageTranslateOverride }]) => {
-        polyfill({ dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride });
+        polyfill({
+            dragImageTranslateOverride: scrollBehaviourDragImageTranslateOverride,
+            // Sans holdToDrag, poser le doigt sur un élément draggable pour SCROLLER
+            // démarre un drag → scroll du Planning cassé sur tactile. 400 ms d'appui
+            // long pour déclencher un vrai drag.
+            holdToDrag: 400,
+        });
     }).catch(() => {});
 });
 

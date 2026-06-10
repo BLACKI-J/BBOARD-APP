@@ -9,17 +9,41 @@ const MAX_PULL = 100;   // px cap on the visual pull distance
 export default function PullToRefresh({ onRefresh, disabled = false, className, style, children }) {
     const scrollRef = useRef(null);
     const startY = useRef(null);
+    const innerScroller = useRef(null);
     const [pull, setPull] = useState(0);
     const [refreshing, setRefreshing] = useState(false);
 
+    // Le wrapper lui-même ne scrolle jamais (chaque onglet a son scroller interne).
+    // On cherche donc le VRAI scroller sous le doigt : sans ça, le pull-to-refresh
+    // se déclenche en plein milieu d'une liste.
+    const findScroller = (target) => {
+        let el = target;
+        while (el && el !== scrollRef.current) {
+            if (el.scrollHeight > el.clientHeight + 1) {
+                const oy = getComputedStyle(el).overflowY;
+                if (oy === 'auto' || oy === 'scroll') return el;
+            }
+            el = el.parentElement;
+        }
+        return null;
+    };
+
     const onTouchStart = (e) => {
         if (disabled || refreshing) return;
-        const el = scrollRef.current;
-        startY.current = el && el.scrollTop <= 0 ? e.touches[0].clientY : null;
+        const scroller = findScroller(e.target);
+        innerScroller.current = scroller;
+        const atTop = !scroller || scroller.scrollTop <= 0;
+        startY.current = atTop ? e.touches[0].clientY : null;
     };
 
     const onTouchMove = (e) => {
         if (startY.current == null) return;
+        // Si le scroller interne a commencé à défiler, ce geste est un scroll, pas un pull.
+        if (innerScroller.current && innerScroller.current.scrollTop > 0) {
+            startY.current = null;
+            setPull(0);
+            return;
+        }
         const dy = e.touches[0].clientY - startY.current;
         if (dy <= 0) { setPull(0); return; }
         setPull(Math.min(dy * 0.5, MAX_PULL)); // resistance

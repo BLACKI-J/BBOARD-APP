@@ -196,6 +196,7 @@ export default function App() {
     const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState('connecting'); // 'connecting', 'connected', 'error'
     const [retryCount, setRetryCount] = useState(0);
+    const retryCountRef = useRef(0);
     const [lastSyncAt, setLastSyncAt] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
@@ -259,6 +260,7 @@ export default function App() {
     }, [activeTab, permissions.viewSettings, canAccessSection, navItems]);
 
     useEffect(() => { localStorage.setItem('colo-active-tab', activeTab); }, [activeTab]);
+    useEffect(() => { localStorage.setItem('colo-attendance-enabled', String(isAttendanceEnabled)); }, [isAttendanceEnabled]);
 
     const applyAuthenticatedSession = useCallback((payload) => {
         setSessionUser(payload.user);
@@ -430,6 +432,7 @@ export default function App() {
 
                 isDataLoaded.current = true;
                 setConnectionStatus('connected');
+                retryCountRef.current = 0;
                 setRetryCount(0);
                 setLastSyncAt(Date.now());
             } catch (err) {
@@ -439,8 +442,12 @@ export default function App() {
                     return;
                 }
                 setConnectionStatus('error');
-                if (retryCount < 5) {
-                    retryTimer = setTimeout(() => setRetryCount((prev) => prev + 1), 3000);
+                // Retry via timer direct (PAS via le state en dépendance d'effet :
+                // ça détruisait/recréait le socket à chaque tentative).
+                if (retryCountRef.current < 5) {
+                    retryCountRef.current += 1;
+                    setRetryCount(retryCountRef.current); // affichage uniquement
+                    retryTimer = setTimeout(refreshData, 3000);
                 }
             } finally {
                 setIsSyncing(false);
@@ -499,7 +506,19 @@ export default function App() {
             }
         };
 
-        socket.on('data_updated', refreshOne);
+        // Anti-rafale : une restauration d'archive (ou un import) émet des dizaines de
+        // data_updated du même type en quelques secondes → on regroupe par type (400 ms).
+        const pendingRefresh = new Map();
+        const debouncedRefreshOne = (payload) => {
+            const key = `${payload?.type || '?'}:${payload?.key || ''}`;
+            clearTimeout(pendingRefresh.get(key));
+            pendingRefresh.set(key, setTimeout(() => {
+                pendingRefresh.delete(key);
+                refreshOne(payload);
+            }, 400));
+        };
+
+        socket.on('data_updated', debouncedRefreshOne);
         refreshDataRef.current = refreshData;
 
         // 10-second health check polling — pausé en arrière-plan (économie batterie/data mobile)
@@ -519,13 +538,14 @@ export default function App() {
 
         return () => {
             intentionalClose = true; // empêche le handler 'disconnect' de passer en erreur
-            socket.off('data_updated', refreshOne);
+            socket.off('data_updated', debouncedRefreshOne);
+            pendingRefresh.forEach((t) => clearTimeout(t));
             socket.disconnect();
             clearInterval(healthCheck);
             clearTimeout(retryTimer);
             if (refreshDataRef.current === refreshData) refreshDataRef.current = null;
         };
-    }, [clearAuthenticatedSession, isAuthenticated, retryCount]);
+    }, [clearAuthenticatedSession, isAuthenticated]);
 
     const mutateCollection = useCallback(async (endpoint, setter, update, currentValue) => {
         const finalValue = typeof update === 'function' ? update(currentValue) : update;
@@ -787,8 +807,8 @@ export default function App() {
                             <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                 {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} onNavigate={guardedNavigate} isMobile={isMobile} />
                                 : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} menus={menus} setMenus={setSyncedMenus} />
-                                : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
+                                : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, useAppStore.getState().exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
+                                : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, useAppStore.getState().meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)} canEdit={permissions.editDirectory} isMobile={isMobile} roles={accessControl.roles} />
                                 : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
