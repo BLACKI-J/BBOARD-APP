@@ -9,25 +9,38 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handlePinChange = (digit) => {
-        if (!isSubmitting && pin.length < 4) {
-            const newPin = pin + digit;
-            setPin(newPin);
-            if (newPin.length === 4) {
-                setIsSubmitting(true);
-                onLogin(selectedUser, newPin).catch(() => {
-                    setError(true);
-                    setTimeout(() => {
-                        setPin('');
-                        setError(false);
-                    }, 800);
-                }).finally(() => setIsSubmitting(false));
-            }
+        if (isSubmitting || pin.length >= 4) return;
+        if (navigator.vibrate) navigator.vibrate(8); // retour haptique léger
+        const newPin = pin + digit;
+        setPin(newPin);
+        if (newPin.length === 4) {
+            setIsSubmitting(true);
+            onLogin(selectedUser, newPin).catch(() => {
+                setError(true);
+                if (navigator.vibrate) navigator.vibrate([50, 40, 50]); // buzz d'erreur
+                setTimeout(() => {
+                    setPin('');
+                    setError(false);
+                }, 800);
+            }).finally(() => setIsSubmitting(false));
         }
     };
 
     const handleDelete = () => {
-        setPin(pin.slice(0, -1));
+        if (navigator.vibrate) navigator.vibrate(8);
+        setPin((p) => p.slice(0, -1));
     };
+
+    // Clavier physique (PC) : chiffres pour saisir, Backspace pour effacer.
+    useEffect(() => {
+        if (!showPinEntry) return undefined;
+        const onKey = (e) => {
+            if (e.key >= '0' && e.key <= '9') handlePinChange(e.key);
+            else if (e.key === 'Backspace') handleDelete();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [showPinEntry, pin, isSubmitting, selectedUser]);
 
     return (
         <div className="login-page" style={{
@@ -116,17 +129,19 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                         </div>
 
                         {/* PIN View */}
-                        <div className="pin-dots" style={{ display: 'flex', gap: '1rem', margin: '1rem 0' }}>
-                            {[0, 1, 2, 3].map(i => (
-                                <div key={i} style={{
-                                    width: '16px', height: '16px', borderRadius: '50%',
-                                    background: pin.length > i ? 'var(--primary-color)' : 'var(--glass-border)',
-                                    transform: error && pin.length > i ? 'translateX(0)' : 'none',
-                                    transition: 'all 0.2s',
-                                    border: pin.length > i ? '2px solid var(--primary-light)' : 'none',
-                                    boxShadow: pin.length > i ? '0 0 12px var(--shadow-color)' : 'none'
-                                }} />
-                            ))}
+                        <div className={`pin-dots ${error ? 'shake' : ''}`} style={{ display: 'flex', gap: '1rem', margin: '1rem 0' }}>
+                            {[0, 1, 2, 3].map(i => {
+                                const filled = pin.length > i;
+                                return (
+                                    <div key={i} className={`pin-dot ${filled ? 'filled' : ''}`} style={{
+                                        width: '16px', height: '16px', borderRadius: '50%',
+                                        background: filled ? (error ? 'var(--danger-color)' : 'var(--primary-color)') : 'var(--glass-border)',
+                                        transition: 'background 0.2s, border 0.2s',
+                                        border: filled ? `2px solid ${error ? 'var(--danger-color)' : 'var(--primary-light)'}` : 'none',
+                                        boxShadow: filled ? '0 0 12px var(--shadow-color)' : 'none'
+                                    }} />
+                                );
+                            })}
                         </div>
 
                         {error && (
@@ -201,7 +216,19 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                     color: var(--primary-color);
                     transform: translateY(-2px);
                 }
-                .numpad-btn:active { transform: scale(0.95); }
+                .numpad-btn:active { transform: scale(0.92); background: var(--primary-light); border-color: var(--primary-color); }
+                @keyframes loginShake {
+                    0%, 100% { transform: translateX(0); }
+                    20%, 60% { transform: translateX(-9px); }
+                    40%, 80% { transform: translateX(9px); }
+                }
+                .pin-dots.shake { animation: loginShake 0.4s var(--ease-out-expo); }
+                @keyframes dotPop {
+                    0% { transform: scale(0.3); }
+                    60% { transform: scale(1.3); }
+                    100% { transform: scale(1); }
+                }
+                .pin-dot.filled { animation: dotPop 0.25s var(--ease-out-expo); }
                 .profile-item:hover {
                     border-color: var(--primary-color);
                     transform: translateY(-4px);
