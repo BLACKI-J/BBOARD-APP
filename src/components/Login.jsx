@@ -42,6 +42,7 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
 
             <div className="card-glass animate-scale-in" style={{
                 width: '100%', maxWidth: '440px', padding: '2.5rem',
+                maxHeight: 'calc(100dvh - 1.5rem)', overflowY: 'auto',
                 borderRadius: '32px', boxShadow: '0 40px 100px rgba(0,0,0,0.12)',
                 background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(40px)',
                 display: 'flex', flexDirection: 'column', gap: '2rem',
@@ -150,30 +151,23 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                     </div>
                 )}
 
-                <footer style={{ marginTop: 'auto', textAlign: 'center', fontSize: '0.75rem', fontWeight: '900', color: 'var(--text-softer)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-                    <ShieldCheck size={14} /> Connexion sécurisée
+                {/* Pied de carte : statut serveur (en flux, ne chevauche jamais le pavé) */}
+                <footer style={{ marginTop: 'auto', paddingTop: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.6rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                        <div style={{
+                            width: '10px', height: '10px', borderRadius: '50%',
+                            background: connectionStatus === 'connected' ? '#22c55e' : '#ef4444',
+                            boxShadow: connectionStatus === 'connected' ? '0 0 12px rgba(34, 197, 94, 0.5)' : '0 0 12px rgba(239, 68, 68, 0.5)',
+                            animation: connectionStatus === 'connected' ? 'pulse-green 2s infinite' : 'pulse-red 2s infinite'
+                        }} />
+                        <span style={{ fontSize: '0.8rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
+                            Serveur Backend : {connectionStatus === 'connected' ? 'Connecté' : 'Non disponible'}
+                        </span>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', fontWeight: '900', color: 'var(--text-softer)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <ShieldCheck size={13} /> Connexion sécurisée
+                    </div>
                 </footer>
-            </div>
-
-            {/* Backend Connection Indicator */}
-            <div style={{
-                position: 'fixed', bottom: '2rem', left: '2rem',
-                zIndex: 1100, display: 'flex', alignItems: 'center', gap: '0.75rem',
-                padding: '0.75rem 1.25rem', borderRadius: '100px',
-                background: 'rgba(255, 255, 255, 0.8)', backdropFilter: 'blur(12px)',
-                border: '1.5px solid var(--glass-border)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.05)',
-                transition: 'all 0.3s ease'
-            }} className="animate-fade-in">
-                <div style={{
-                    width: '10px', height: '10px', borderRadius: '50%',
-                    background: connectionStatus === 'connected' ? '#22c55e' : '#ef4444',
-                    boxShadow: connectionStatus === 'connected' ? '0 0 12px rgba(34, 197, 94, 0.5)' : '0 0 12px rgba(239, 68, 68, 0.5)',
-                    animation: connectionStatus === 'connected' ? 'pulse-green 2s infinite' : 'pulse-red 2s infinite'
-                }} />
-                <span style={{ fontSize: '0.8rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-                    Serveur Backend : {connectionStatus === 'connected' ? 'Connecté' : 'Non disponible'}
-                </span>
             </div>
 
             <style>{`
