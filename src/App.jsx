@@ -742,7 +742,7 @@ export default function App() {
                     onRefresh={onRefresh}
                     disabled={!isMobile}
                     className="no-scrollbar"
-                    style={{ flex: 1, padding: isMobile ? `var(--space-sm) var(--space-sm) 84px` : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }}
+                    style={{ flex: 1, padding: isMobile ? `var(--space-sm) var(--space-sm) calc(84px + env(safe-area-inset-bottom))` : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }}
                 >
                     <Suspense fallback={loadingShell}>
                         <ErrorBoundary key={activeTab}>

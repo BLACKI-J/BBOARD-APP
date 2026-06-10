@@ -312,6 +312,17 @@ button {
   appearance: none;
 }
 
+/* Anti-zoom iOS : Safari zoome au focus si la police d'un champ < 16px.
+   Forcé sur mobile/tablette (≤1024px), avec !important pour battre les styles
+   inline ponctuels (champs de recherche, etc.). Cases à cocher exclues. */
+@media (max-width: 1024px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 .glass-input:focus {
   border-color: var(--primary-color);
   background: white;
