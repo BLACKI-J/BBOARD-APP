@@ -158,7 +158,9 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
             timestamp: new Date().toISOString()
         };
 
-        setExitSheets([...exitSheets, sheetData]);
+        // Updater fonctionnel : résolu contre l'état FRAIS du store (mutateCollection),
+        // pas la prop du render — les maj concurrentes (autre appareil) ne sont plus écrasées.
+        setExitSheets(prev => [...prev, sheetData]);
 
         if (!silent) {
             setSaveStatus('saved');
@@ -188,7 +190,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
             danger: true
         });
         if (!ok) return;
-        setExitSheets(exitSheets.filter(s => s.id !== id));
+        setExitSheets(prev => prev.filter(s => s.id !== id));
         ui.toast('Fiche supprimee.', { type: 'success' });
     };
 

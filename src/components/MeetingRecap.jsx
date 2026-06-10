@@ -34,14 +34,16 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
     const todayStr = new Date().toISOString().split('T')[0];
 
     // ── Todo actions ──
+    // Updaters fonctionnels : résolus contre l'état FRAIS du store (mutateCollection),
+    // pas la prop du render — deux actions rapprochées ne s'écrasent plus.
     const addTodo = (e) => {
         e.preventDefault();
         if (!canEdit || !newTodo.trim()) return;
-        setMeetingRecaps([...meetingRecaps, { id: uuidv4(), type: 'todo', text: newTodo.trim(), completed: false, date: selectedDate, priority: newPriority }]);
+        setMeetingRecaps(prev => [...prev, { id: uuidv4(), type: 'todo', text: newTodo.trim(), completed: false, date: selectedDate, priority: newPriority }]);
         setNewTodo(''); setNewPriority('normal');
     };
-    const toggleTodo = (id) => { if (canEdit) setMeetingRecaps(meetingRecaps.map(t => t.id === id ? { ...t, completed: !t.completed } : t)); };
-    const deleteTodo = (id) => { if (canEdit) setMeetingRecaps(meetingRecaps.filter(t => t.id !== id)); };
+    const toggleTodo = (id) => { if (canEdit) setMeetingRecaps(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t)); };
+    const deleteTodo = (id) => { if (canEdit) setMeetingRecaps(prev => prev.filter(t => t.id !== id)); };
 
     // ── Note: local draft + debounced save (avoids a POST on every keystroke) ──
     const [noteDraft, setNoteDraft] = useState('');
@@ -58,11 +60,13 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
     }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const commitNote = (content, date) => {
-        const list = recapsRef.current;
         const noteId = `note_${date}`;
-        const existing = list.find(p => p.id === noteId);
-        if (existing) setMeetingRecaps(list.map(p => p.id === noteId ? { ...p, content } : p));
-        else setMeetingRecaps([...list, { id: noteId, type: 'note', date, content }]);
+        setMeetingRecaps(prev => {
+            const existing = prev.find(p => p.id === noteId);
+            return existing
+                ? prev.map(p => p.id === noteId ? { ...p, content } : p)
+                : [...prev, { id: noteId, type: 'note', date, content }];
+        });
         setNoteSaved(true);
     };
 
