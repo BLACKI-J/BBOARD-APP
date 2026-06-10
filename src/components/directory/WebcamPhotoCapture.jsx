@@ -22,6 +22,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
         if (!isOpen) return;
         setIsLoading(true);
         setError(null);
+        setCapturedImage(null); // reset entre deux ouvertures (sinon on garde la photo précédente)
         // getUserMedia exige un contexte sécurisé (HTTPS ou localhost). En HTTP/LAN il est absent.
         if (!navigator.mediaDevices?.getUserMedia) {
             setError("Caméra intégrée indisponible ici (nécessite HTTPS). Sur réseau local, utilisez « Galerie » ou l'appli photo du téléphone.");
@@ -64,7 +65,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
 
     React.useEffect(() => {
         if (isOpen) startCamera();
-        else stopCamera();
+        else { stopCamera(); setCapturedImage(null); }
         return () => stopCamera();
     }, [isOpen, startCamera, stopCamera]);
 
