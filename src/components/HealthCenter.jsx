@@ -12,9 +12,9 @@ import InfoVacSection   from './health/InfoVacSection';
 import RegistreInfi     from './health/RegistreInfi';
 
 const HEALTH_TABS = [
-    { id: 'infovac',    label: 'Fiches & Suivi',    icon: <FileText size={20} />,        color: 'oklch(52% 0.2 272)',  bg: 'oklch(96% 0.05 272)' },
-    { id: 'meds',       label: 'Médicaments',       icon: <Zap size={20} />,             color: 'oklch(55% 0.22 30)',  bg: 'oklch(96% 0.06 30)' },
-    { id: 'registre',   label: 'Registre',          icon: <ClipboardList size={20} />,   color: 'oklch(52% 0.22 310)', bg: 'oklch(96% 0.05 310)' },
+    { id: 'infovac',    label: 'Fiches & Suivi',    short: 'Fiches',       icon: <FileText size={20} />,        color: 'oklch(52% 0.2 272)',  bg: 'oklch(96% 0.05 272)' },
+    { id: 'meds',       label: 'Médicaments',       short: 'Médicaments',  icon: <Zap size={20} />,             color: 'oklch(55% 0.22 30)',  bg: 'oklch(96% 0.06 30)' },
+    { id: 'registre',   label: 'Registre',          short: 'Registre',     icon: <ClipboardList size={20} />,   color: 'oklch(52% 0.22 310)', bg: 'oklch(96% 0.05 310)' },
 ];
 
 export default function HealthCenter({ participants = [], setParticipants, groups = [], canEdit = true, isMobile, transmissions = [], setTransmissions, activeUser }) {
@@ -82,36 +82,34 @@ export default function HealthCenter({ participants = [], setParticipants, group
                 </header>
             )}
 
-            {/* ── Mobile: compact sticky tab bar ── */}
+            {/* ── Mobile: segmented tab bar (3 cases égales, sans scroll) ── */}
             {isMobile && (
                 <div style={{
                     position: 'sticky', top: 0, zIndex: 10,
                     background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(16px)',
                     borderBottom: '1px solid var(--glass-border)',
-                    overflowX: 'auto', WebkitOverflowScrolling: 'touch',
-                    scrollbarWidth: 'none', msOverflowStyle: 'none',
-                    display: 'flex', gap: '0.375rem', padding: '0.625rem 1rem',
+                    display: 'flex', gap: '0.375rem', padding: '0.5rem 0.75rem',
                     flexShrink: 0
-                }} className="no-scrollbar">
+                }}>
                     {HEALTH_TABS.map(tab => {
                         const isActive = activeTab === tab.id;
                         return (
                             <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                                display: 'flex', alignItems: 'center', gap: '0.375rem',
-                                padding: '0.5rem 0.875rem', borderRadius: '100px',
-                                border: '1.5px solid', cursor: 'pointer', flexShrink: 0,
+                                flex: 1, minWidth: 0,
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.2rem',
+                                padding: '0.45rem 0.3rem', borderRadius: '14px',
+                                border: '1.5px solid', cursor: 'pointer', minHeight: '48px',
                                 transition: 'all 0.2s',
                                 borderColor: isActive ? tab.color : 'var(--glass-border)',
                                 background: isActive ? tab.color : 'white',
                                 color: isActive ? 'white' : 'var(--text-muted)',
-                                fontWeight: '900', fontSize: '0.78rem',
-                                whiteSpace: 'nowrap', minHeight: '36px',
+                                fontWeight: '900', fontSize: '0.7rem', lineHeight: 1.1,
                                 boxShadow: isActive ? `0 2px 10px ${tab.color}40` : 'none',
                             }}>
-                                <span style={{ display: 'flex', opacity: isActive ? 1 : 0.7 }}>
-                                    {React.cloneElement(tab.icon, { size: 15 })}
+                                <span style={{ display: 'flex', opacity: isActive ? 1 : 0.75 }}>
+                                    {React.cloneElement(tab.icon, { size: 18 })}
                                 </span>
-                                {tab.label}
+                                <span style={{ whiteSpace: 'nowrap' }}>{tab.short || tab.label}</span>
                             </button>
                         );
                     })}
