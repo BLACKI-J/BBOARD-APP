@@ -1,8 +1,9 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
-import { AlertTriangle, Save, Printer, Trash2, Eye, ArrowLeft, Plus, History, Sparkles, CheckCircle2, ShieldAlert, FileText, ChevronRight, Users, MapPin, User, Calendar, Clock, Check } from 'lucide-react';
+import { AlertTriangle, Save, Printer, Trash2, Eye, ArrowLeft, Plus, History, Sparkles, CheckCircle2, ShieldAlert, ChevronRight, Users, MapPin, User, Calendar, Clock, Check } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { useUnsavedGuard } from '../utils/unsavedGuard';
 import Button from './ui/Button';
+import SectionHeader from './common/SectionHeader';
 
 // Imports harmonisés depuis le sous-dossier incidents/
 import PrintContent from './incidents/IncidentPrint';
@@ -216,17 +217,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                 justifyContent: 'space-between',
                                 gap: '1.25rem'
                             }}>
-                                <div className="fei-header-title-block" style={{ display: 'flex', alignItems: 'center', gap: '1rem', width: '100%' }}>
-                                    <div style={{ background: 'var(--primary-gradient)', borderRadius: '14px', padding: isMobile ? '0.75rem' : '1rem', display: 'flex', color: 'white', flexShrink: 0 }}>
-                                        <AlertTriangle size={isMobile ? 24 : 32} strokeWidth={2.5} />
-                                    </div>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                        <h1 style={{ margin: 0, fontSize: isMobile ? '1.2rem' : '1.8rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.03em', lineHeight: '1.2', overflowWrap: 'break-word', wordBreak: 'break-word' }}>Feuille d'Événement Indésirable</h1>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'var(--text-muted)', fontSize: isMobile ? '0.8rem' : '0.95rem', fontWeight: '800', marginTop: '0.25rem' }}>
-                                            <FileText size={isMobile ? 14 : 16} /> Questionaire FEI
-                                        </div>
-                                    </div>
-                                </div>
+                                <SectionHeader hue="var(--sec-fei)" icon={AlertTriangle} title="Feuille d'Événement Indésirable" subtitle="Questionaire FEI" />
                                 <div className="fei-header-actions-block" style={{ display: 'flex', gap: '0.75rem', width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }}>
                                     <Button 
                                         variant="secondary" 

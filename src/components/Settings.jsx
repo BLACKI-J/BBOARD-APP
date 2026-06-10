@@ -1,10 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, EyeOff, FileClock, Settings2, AlertCircle, Eye, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, Activity, Trash, History, Plus, X } from 'lucide-react';
+import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, EyeOff, FileClock, Settings2, AlertCircle, Eye, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, Trash, History, Plus, X } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { apiSend } from '../utils/api';
 import { exportParticipantsCsv } from '../utils/participantsCsv';
 import { exportFullArchive, importFullArchive } from '../utils/fullBackup';
+import SectionHeader from './common/SectionHeader';
 
 const SECTION_LABELS = {
     home: 'Tableau de bord',
@@ -498,19 +499,7 @@ export default function Settings({
                 border: '1.5px solid var(--glass-border)',
                 gap: '1rem'
             }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.75rem' : '1.25rem' }}>
-                    <div style={{ background: 'var(--primary-gradient)', borderRadius: '12px', padding: isMobile ? '0.5rem' : '0.75rem', color: 'white', display: 'flex' }}>
-                        <ShieldCheck size={isMobile ? 22 : 28} strokeWidth={2.5} />
-                    </div>
-                    <div>
-                        <h2 style={{ margin: 0, fontWeight: '950', fontSize: isMobile ? '1.1rem' : '1.5rem', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.03em' }}>
-                            Paramètres
-                        </h2>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '850' }}>
-                            <Activity size={10} strokeWidth={3} /> {currentUser?.firstName}
-                        </div>
-                    </div>
-                </div>
+                <SectionHeader hue="var(--sec-params)" icon={ShieldCheck} title="Paramètres" subtitle={currentUser?.firstName} />
                 <div style={{ display: 'flex', gap: '0.75rem', width: isMobile ? '100%' : 'auto' }}>
                     <button className="btn btn-secondary" style={{ flex: isMobile ? 1 : 'none', padding: '0.625rem 1rem', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem', minHeight: '44px' }} onClick={() => setIsUnlocked(false)}>
                         <Lock size={16} strokeWidth={2.5} /> Verrouiller

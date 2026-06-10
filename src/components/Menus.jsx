@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { Utensils, AlertCircle, Wheat, Clock, Sparkles, ChefHat, Coffee, Sun, Moon } from 'lucide-react';
+import SectionHeader from './common/SectionHeader';
 
 const DEFAULT_DAY = { matin: '', midi: '', gouter: '', soir: '' };
 
@@ -38,19 +39,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                 {/* Repas du jour */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: isMobile ? 'visible' : 'hidden' }}>
                     <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '1.5rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'white', gap: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
-                            <div style={{ background: 'var(--primary-gradient)', borderRadius: '14px', padding: '0.75rem', color: 'white', display: 'flex' }}>
-                                <Utensils size={24} strokeWidth={2.5} />
-                            </div>
-                            <div>
-                                <h2 style={{ margin: 0, fontSize: isMobile ? '1.25rem' : '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.03em' }}>
-                                    Menu du {currentDayName}
-                                </h2>
-                                <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: '2px' }}>
-                                    Synchronisé entre tous les appareils
-                                </div>
-                            </div>
-                        </div>
+                        <SectionHeader hue="var(--sec-menus)" icon={Utensils} title={`Menu du ${currentDayName}`} subtitle="Synchronisé entre tous les appareils" />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)' }}>
                             <Clock size={16} strokeWidth={2.5} style={{ color: 'var(--primary-color)' }} />
                             <span style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>

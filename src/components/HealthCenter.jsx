@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
+import SectionHeader from './common/SectionHeader';
 
 // ─── Sub-component imports ────────────────────────────────────────────────
 import TransmissionComposer from './health/TransmissionComposer';
@@ -54,15 +55,7 @@ export default function HealthCenter({ participants = [], setParticipants, group
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     gap: '1rem', zIndex: 10
                 }}>
-                    <div className="u-flex u-items-center u-gap-md">
-                        <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '12px', padding: '0.625rem', color: 'oklch(62% 0.18 20)' }}>
-                            <Activity size={24} strokeWidth={2.5} />
-                        </div>
-                        <div>
-                            <h1 style={{ fontSize: '1.3rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, letterSpacing: '-0.03em' }}>Pôle Santé</h1>
-                            <p className="u-text-muted u-font-bold" style={{ margin: 0, fontSize: '0.75rem' }}>Assistant Sanitaire & Suivi Médical</p>
-                        </div>
-                    </div>
+                    <SectionHeader hue="var(--sec-sante)" icon={Activity} title="Pôle Santé" subtitle="Assistant Sanitaire & Suivi Médical" />
                     {/* Desktop tabs */}
                     <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px' }}>
                         {HEALTH_TABS.map(tab => (

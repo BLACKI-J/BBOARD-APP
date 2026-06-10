@@ -5,6 +5,7 @@ import {
     CheckSquare, Square, ChevronDown, FileText
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
+import SectionHeader from './common/SectionHeader';
 
 function PrintContent({ date, destination, startTime, endTime, selectedChildren, selectedAnimatorList, referent, checklistItems, isVanUsed, vanId, kmStart, kmEnd }) {
     return (
@@ -241,15 +242,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                             marginBottom: '1.5rem', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between',
                             alignItems: isMobile ? 'stretch' : 'center', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-lg)', gap: isMobile ? '1.25rem' : '1rem'
                         }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ background: 'var(--primary-gradient)', borderRadius: '12px', padding: '0.625rem', display: 'flex' }}>
-                                    <MapPin size={22} color="white" />
-                                </div>
-                                <div>
-                                    <h1 style={{ fontSize: isMobile ? '1.15rem' : '1.3rem', fontWeight: '950', color: 'var(--text-main)', margin: 0, letterSpacing: '-0.03em' }}>Fiche de Sortie</h1>
-                                    <p style={{ color: 'var(--text-muted)', margin: 0, fontSize: '0.75rem', fontWeight: '700' }}>Édition rapide</p>
-                                </div>
-                            </div>
+                            <SectionHeader hue="var(--sec-sorties)" icon={MapPin} title="Fiche de Sortie" subtitle="Édition rapide" />
                             <div className="es-header-actions" style={{ display: 'flex', gap: '0.5rem', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
                                 <button
                                     onClick={() => setShowPreview(true)}

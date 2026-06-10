@@ -50,17 +50,32 @@
   --text-3xl: clamp(1.8rem, 3vw, 3.5rem);
 
   /* Frosted warm glass */
-  --glass-bg: rgba(253, 249, 243, 0.62);
-  --glass-bg-hover: rgba(253, 249, 243, 0.82);
-  --glass-border: oklch(83% 0.03 55 / 0.4);
-  --glass-blur: 20px;
+  /* V2 « éditorial » : verre atténué, bordures nettes — les cartes se
+     détachent par le trait et la couleur, plus par le flou. */
+  --glass-bg: rgba(253, 249, 243, 0.78);
+  --glass-bg-hover: rgba(253, 249, 243, 0.92);
+  --glass-border: oklch(82% 0.035 55 / 0.65);
+  --glass-blur: 12px;
 
-  /* Elevation & Depth — warm terracotta */
-  --shadow-sm: 0 4px 12px oklch(38% 0.05 45 / 0.07);
-  --shadow-md: 0 12px 32px oklch(38% 0.06 45 / 0.10);
-  --shadow-lg: 0 24px 64px oklch(38% 0.07 42 / 0.16);
-  --shadow-color: oklch(58% 0.14 40 / 0.22);
-  --shadow-glass: inset 0 1px 1px rgba(255, 255, 255, 0.6), 0 8px 24px oklch(40% 0.06 45 / 0.10);
+  /* Elevation & Depth — discret (terracotta chaud) */
+  --shadow-sm: 0 2px 8px oklch(38% 0.05 45 / 0.06);
+  --shadow-md: 0 8px 24px oklch(38% 0.06 45 / 0.08);
+  --shadow-lg: 0 18px 48px oklch(38% 0.07 42 / 0.12);
+  --shadow-color: oklch(58% 0.14 40 / 0.18);
+  --shadow-glass: 0 4px 16px oklch(40% 0.06 45 / 0.07);
+
+  /* Couleur d'identité par section (teinte OKLCH) — en-têtes, accents, badges */
+  --sec-home: 40;          /* terracotta */
+  --sec-sante: 20;         /* corail */
+  --sec-planning: 232;     /* bleu */
+  --sec-pointage: 145;     /* vert */
+  --sec-annuaire: 62;      /* ocre */
+  --sec-coordination: 200; /* cyan */
+  --sec-sorties: 120;      /* olive */
+  --sec-fei: 25;           /* rouge */
+  --sec-inventaire: 310;   /* magenta */
+  --sec-menus: 75;         /* miel */
+  --sec-params: 55;        /* brun neutre */
 
   --radius-xs: 0.375rem;
   --radius-sm: 0.625rem;
@@ -258,12 +273,75 @@ button {
 }
 
 .card-glass {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border: 1px solid oklch(85% 0.02 55 / 0.35);
+  /* V2 : carte quasi pleine, trait net, ombre légère — plus lisible, moins de
+     coût GPU (le blur n'est gardé que très atténué pour la profondeur). */
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid oklch(85% 0.025 55 / 0.55);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-glass);
+}
+
+/* ─── V2 éditorial ─────────────────────────────────────────────────────────── */
+
+/* Sur-titre façon magazine (petites capitales espacées, couleur de section) */
+.kicker {
+  font-size: 11px;
+  font-weight: 950;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* En-tête de section : pavé icône en aplat + titre Bricolage + barre d'accent */
+.section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  min-width: 0;
+}
+.section-head .sh-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  flex-shrink: 0;
+  transform: rotate(-3deg);
+  box-shadow: 0 6px 16px oklch(40% 0.08 45 / 0.18);
+}
+.section-head .sh-title {
+  margin: 0;
+  font-family: 'Bricolage Grotesque', sans-serif;
+  font-weight: 950;
+  font-size: 1.45rem;
+  letter-spacing: -0.04em;
+  line-height: 1.05;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.section-head .sh-sub {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--text-muted);
+}
+/* Barre d'accent sous le titre (touche magazine) */
+.section-head .sh-bar {
+  display: inline-block;
+  width: 34px;
+  height: 4px;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+@media (max-width: 1024px) {
+  .section-head .sh-icon { width: 40px; height: 40px; border-radius: 12px; }
+  .section-head .sh-title { font-size: 1.2rem; }
 }
 
 .input-field {

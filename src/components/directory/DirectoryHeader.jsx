@@ -1,6 +1,7 @@
 import React from 'react';
 import { Users, User, Shield, Trash2, Plus, Download, Upload, Printer, FileSpreadsheet } from 'lucide-react';
 import { StatBadge } from '../common/Badges';
+import SectionHeader from '../common/SectionHeader';
 
 const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleExportCsv, handleImport, handleImportCsv, isMobile, canEdit }) => {
     return (
@@ -16,7 +17,11 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
         }}>
             {/* Left: Section Title & Stats */}
             <div style={{ flex: isMobile ? '1' : 'none', minWidth: isMobile ? '0' : 'auto' }}>
-                {!isMobile && <h2 style={{ fontSize: '2.5rem', fontWeight: '950', marginBottom: '1.25rem', letterSpacing: '-0.05em' }}>Annuaire</h2>}
+                {!isMobile && (
+                    <div style={{ marginBottom: '1.25rem' }}>
+                        <SectionHeader hue="var(--sec-annuaire)" icon={Users} title="Annuaire" />
+                    </div>
+                )}
                 <div className="dh-stats no-scrollbar" style={{
                     display: 'flex',
                     gap: isMobile ? '0.5rem' : '0.85rem',

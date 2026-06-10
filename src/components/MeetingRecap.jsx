@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../ui/UiProvider';
+import SectionHeader from './common/SectionHeader';
 
 const PRIORITY_CONFIG = {
     normal:    { label: 'Normal',    color: 'oklch(58% 0.10 var(--brand-hue))', icon: <Circle size={13} /> },
@@ -105,6 +106,8 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
     return (
         <div style={{ height: '100%', overflowY: 'auto', background: 'transparent' }} className="no-scrollbar">
             <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: isMobile ? '1rem' : '1.5rem' }}>
+
+                {!isMobile && <SectionHeader hue="var(--sec-coordination)" icon={FileText} title="Coordination" />}
 
                 {/* ── Day bar ── */}
                 <div style={{ background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '18px', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>

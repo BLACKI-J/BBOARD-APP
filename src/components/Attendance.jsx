@@ -5,6 +5,7 @@ import confetti from 'canvas-confetti';
 import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
 import { compressImage, fileToDataUrl } from '../utils/image';
+import SectionHeader from './common/SectionHeader';
 
 export default function Attendance({ participants, setParticipants, groups, canEdit = true, isMobile }) {
     const ui = useUi();
@@ -161,6 +162,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                 transition: 'max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease',
                 padding: (isMobile && isScrolled) ? '0 1rem' : isMobile ? '0.75rem 1rem' : '1rem 2.5rem'
             }}>
+                {!isMobile && <SectionHeader hue="var(--sec-pointage)" icon={UserCheck} title="Pointage" />}
                 <div style={{ display: 'flex', gap: isMobile ? '0.75rem' : '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     {/* Search */}
                     <div style={{ flex: isMobile ? '1 1 100%' : '1', minWidth: isMobile ? '0' : '280px', position: 'relative', order: isMobile ? 2 : 1 }}>

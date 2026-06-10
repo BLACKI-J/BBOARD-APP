@@ -293,10 +293,10 @@ export default function Home({
 
             {/* ── Header ── */}
             <div>
-                <span className="glass-pill hero-up" style={{ marginBottom: isMobile ? '0.25rem' : '0.6rem', animationDelay: '0ms' }}>
-                    <Clock size={14} /> {formattedDate}
+                <span className="kicker hero-up" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', color: 'oklch(52% 0.13 var(--sec-home))', marginBottom: isMobile ? '0.35rem' : '0.7rem', animationDelay: '0ms' }}>
+                    <Clock size={13} strokeWidth={3} /> {formattedDate}
                 </span>
-                <h2 className="hero-up" style={{ fontSize: isMobile ? '1.5rem' : 'clamp(1.8rem, 5vw, 2.8rem)', fontWeight: '800', margin: 0, letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '0.625rem', animationDelay: '90ms' }}>
+                <h2 className="hero-up" style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontSize: isMobile ? '1.6rem' : 'clamp(1.9rem, 5vw, 3rem)', fontWeight: '950', margin: 0, letterSpacing: '-0.045em', display: 'flex', alignItems: 'center', gap: '0.625rem', animationDelay: '90ms' }}>
                     <span className="hero-greet">{greeting}{firstName}</span>
                     <GreetIcon className="hero-icon" size={isMobile ? 22 : 30} strokeWidth={2.5} style={{ color: 'var(--cta-color)', flexShrink: 0 }} />
                 </h2>
