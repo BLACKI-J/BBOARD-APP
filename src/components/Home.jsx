@@ -197,7 +197,7 @@ export default function Home({
                                             {PRIORITY[t.priority]?.label || 'Info'}{t.author ? ` · ${t.author}` : ''}
                                         </div>
                                     </div>
-                                    <button onClick={() => dismiss(t.id)} title="Vu" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '10px', border: `1.5px solid ${p.color}40`, background: 'white', color: p.color, fontWeight: '900', fontSize: '0.7rem', cursor: 'pointer' }}>
+                                    <button onClick={() => dismiss(t.id)} title="Vu" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', minHeight: '40px', padding: '0.5rem 0.75rem', borderRadius: '10px', border: `1.5px solid ${p.color}40`, background: 'white', color: p.color, fontWeight: '900', fontSize: '0.7rem', cursor: 'pointer' }}>
                                         <Check size={12} strokeWidth={3} /> Vu
                                     </button>
                                 </div>
@@ -222,7 +222,7 @@ export default function Home({
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: '800', margin: 0 }}>
                         <Pill size={18} style={{ color: 'oklch(55% 0.18 232)' }} /> À donner ({medSlot})
                     </h3>
-                    {onNavigate && <button onClick={() => onNavigate('health')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem' }}>Santé <ChevronRight size={13} /></button>}
+                    {onNavigate && <button onClick={() => onNavigate('health')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', padding: '0.5rem 0.75rem', minHeight: '40px', margin: '-0.5rem -0.75rem' }}>Santé <ChevronRight size={13} /></button>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {medsNow.map((m, i) => (
@@ -243,7 +243,7 @@ export default function Home({
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: '800', margin: 0 }}>
                     <Calendar size={18} style={{ color: 'var(--primary-color)' }} /> {periodActivities.list.length > 0 && periodActivities.isFallback ? 'À venir' : periodLabel}
                 </h3>
-                {onNavigate && <button onClick={() => onNavigate('schedule')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem' }}>Planning <ChevronRight size={13} /></button>}
+                {onNavigate && <button onClick={() => onNavigate('schedule')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', padding: '0.5rem 0.75rem', minHeight: '40px', margin: '-0.5rem -0.75rem' }}>Planning <ChevronRight size={13} /></button>}
             </div>
             {periodActivities.list.length === 0 ? (
                 <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.85rem' }}>Rien de prévu {period === 'matin' ? 'ce matin' : period === 'aprem' ? 'cet après-midi' : 'ce soir'}.</div>
@@ -271,7 +271,7 @@ export default function Home({
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: '800', margin: 0 }}>
                     <Utensils size={18} style={{ color: 'oklch(60% 0.18 25)' }} /> Repas du jour
                 </h3>
-                {onNavigate && <button onClick={() => onNavigate('schedule')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem' }}>Modifier <ChevronRight size={13} /></button>}
+                {onNavigate && <button onClick={() => onNavigate('schedule')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', padding: '0.5rem 0.75rem', minHeight: '40px', margin: '-0.5rem -0.75rem' }}>Modifier <ChevronRight size={13} /></button>}
             </div>
             {!hasMeals ? (
                 <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontWeight: '700', fontSize: '0.85rem' }}>Menus non renseignés pour {dayName.toLowerCase()}.</div>
@@ -315,7 +315,7 @@ export default function Home({
 
             {/* ── Bento grid ── */}
             {blocks.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1.25rem', alignItems: 'start' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem', alignItems: 'start' }}>
                     {blocks}
                 </div>
             ) : (

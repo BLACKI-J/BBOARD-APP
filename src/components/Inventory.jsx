@@ -439,9 +439,10 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                 </div>
                 <div style={{ 
                     flex: 1, 
-                    overflowY: isMobile ? 'hidden' : 'auto', 
+                    overflowY: isMobile ? 'hidden' : 'auto',
                     overflowX: isMobile ? 'auto' : 'hidden',
-                    padding: '1.25rem', display: 'flex', 
+                    WebkitOverflowScrolling: 'touch',
+                    padding: '1.25rem', display: 'flex',
                     flexDirection: isMobile ? 'row' : 'column', gap: '0.75rem'
                 }} className="no-scrollbar">
                     {children.map(child => (
@@ -555,8 +556,9 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                     {isControlHubOpen && <div className="modal-overlay animate-fade-in" style={{ zIndex: 100 }} onClick={() => setIsControlHubOpen(false)} />}
                     <div style={{ 
                         position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', 
-                        zIndex: 101, transform: isControlHubOpen ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.4s var(--ease-out-expo)', 
-                        maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 -20px 60px oklch(0% 0 0 / 0.15)' 
+                        zIndex: 101, transform: isControlHubOpen ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.4s var(--ease-out-expo)',
+                        maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 -20px 60px oklch(0% 0 0 / 0.15)',
+                        paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'
                     }} className="no-scrollbar">
                         <div style={{ width: '40px', height: '5px', background: 'var(--bg-secondary)', borderRadius: '10px', margin: '1rem auto', opacity: 0.5 }} />
                         <div style={{ padding: '0 2rem 2rem 2rem' }}>
@@ -635,7 +637,7 @@ const ControlHub = ({
                                     <div style={{ background: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950', color: 'var(--primary-color)' }}>
                                         {isSearchingAi ? 'Analyse IA...' : 'Objet détecté'}
                                     </div>
-                                    <button onClick={() => setNewItem(prev => ({ ...prev, photo: '', label: '' }))} style={{ background: 'white', color: 'var(--danger-color)', border: 'none', borderRadius: '50%', width: '28px', height: '28px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <button onClick={() => setNewItem(prev => ({ ...prev, photo: '', label: '' }))} aria-label="Retirer la photo" style={{ background: 'white', color: 'var(--danger-color)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                         <X size={18} strokeWidth={3} />
                                     </button>
                                 </div>
@@ -646,8 +648,9 @@ const ControlHub = ({
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                         <div style={{ position: 'relative' }}>
                             <input 
-                                className="glass-input" placeholder={isSearchingAi ? "L'intelligence artificielle analyse..." : "Désignation (ex: T-shirt bleu)..."} 
-                                ref={nameInputRef} value={newItem.label} onChange={(e) => setNewItem(p => ({ ...p, label: e.target.value }))} 
+                                className="glass-input" placeholder={isSearchingAi ? "L'intelligence artificielle analyse..." : "Désignation (ex: T-shirt bleu)..."}
+                                ref={nameInputRef} value={newItem.label} onChange={(e) => setNewItem(p => ({ ...p, label: e.target.value }))}
+                                onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250)}
                                 style={{ height: '52px', background: 'white', borderRadius: '16px', border: '1.5px solid var(--glass-border)', paddingLeft: '1.25rem', fontWeight: '800' }}
                             />
                         </div>

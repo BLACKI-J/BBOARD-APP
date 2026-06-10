@@ -215,8 +215,9 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
                     <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, marginTop: isMobile ? '0.5rem' : 0, justifyContent: isMobile ? 'flex-end' : 'flex-start' }}>
                         <button
                             onClick={() => onToggleDone(activity.id)}
-                            style={{ 
-                                width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', borderRadius: '12px', 
+                            aria-label={isDone ? 'Marquer comme non faite' : 'Marquer comme faite'}
+                            style={{
+                                width: '44px', height: '44px', borderRadius: '12px',
                                 border: '2px solid',
                                 borderColor: isDone ? 'var(--success-color)' : 'var(--glass-border)',
                                 background: isDone ? 'var(--success-color)' : 'white',
@@ -611,7 +612,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     {editingId ? 'Modifier l\'activité' : 'Nouvelle Activité'}
                                 </h3>
                             </div>
-                            <button aria-label="Fermer" onClick={() => setIsFormOpen(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '12px', padding: '0.5rem', cursor: 'pointer', color: 'white' }}>
+                            <button aria-label="Fermer" onClick={() => setIsFormOpen(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '12px', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
                                 <X size={20} />
                             </button>
                         </div>
@@ -644,9 +645,9 @@ export default function Schedule({ activities, setActivities, participants, grou
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.5fr 1fr 1fr', gap: '1rem' }}>
                                 <div>
                                     <label className="form-label">Date</label>
-                                    <input type="date" required value={formData.date} disabled={!!editingId}
+                                    <input type="date" required value={formData.date}
                                         onChange={e => setFormData({ ...formData, date: e.target.value })}
-                                        style={{ width: '100%', padding: '0.85rem', borderRadius: '16px', border: '1.5px solid var(--glass-border)', fontWeight: '700', background: editingId ? 'var(--bg-secondary)' : 'white' }}
+                                        style={{ width: '100%', padding: '0.85rem', borderRadius: '16px', border: '1.5px solid var(--glass-border)', fontWeight: '700', background: 'white' }}
                                     />
                                 </div>
                                 <div>
@@ -702,8 +703,10 @@ export default function Schedule({ activities, setActivities, participants, grou
             )}
 
             <style>{`
-                .sc-activity-item:hover {
-                    transform: translateX(10px);
+                @media (hover: hover) {
+                    .sc-activity-item:hover {
+                        transform: translateX(10px);
+                    }
                 }
                 .form-label {
                     display: block;

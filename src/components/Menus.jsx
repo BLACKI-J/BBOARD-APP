@@ -58,11 +58,11 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                     </div>
 
                     <div style={{ flex: 1, overflowY: isMobile ? 'visible' : 'auto', paddingRight: isMobile ? '0' : '0.5rem' }} className="no-scrollbar">
-                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(360px, 1fr))', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.5rem' }}>
                             {MEALS.map((m, idx) => (
                                 <div key={m.id} className="card-glass animate-fade-in" style={{
                                     '--i': idx, animationDelay: `calc(var(--i) * 50ms)`,
-                                    padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'white',
+                                    padding: 'clamp(1rem, 3vw, 2rem)', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'white',
                                     border: '1.5px solid var(--glass-border)', position: 'relative', overflow: 'hidden'
                                 }}>
                                     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: m.gradient.replace('/ 0.1)', '/ 1)') }} />

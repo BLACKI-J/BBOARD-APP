@@ -270,7 +270,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
             {displayChildren.length === 0 ? (
                 <EmptyState icon={<span style={{ fontSize: '3rem' }}>{activeConfig.icon}</span>} title="Aucun traitement prévu pour ce créneau." />
             ) : (
-                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
                     {displayChildren.map(child => {
                         const validated = getValidated(child);
                         const slotData = validated[activeSlot];
@@ -312,7 +312,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                                 const isMedDone = isAllLegacyDone || (slotData && slotData[med]);
                                                 return (
                                                     <div key={idx} onClick={() => toggleMed(child, activeSlot, med)} style={{
-                                                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                        display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
                                                         padding: '0.6rem 0.8rem', background: isMedDone ? activeConfig.colorLight : 'var(--bg-main)',
                                                         borderRadius: '12px', cursor: canEdit ? 'pointer' : 'default',
                                                         border: `1.5px solid ${isMedDone ? activeConfig.color : 'transparent'}`
@@ -354,7 +354,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                                 const isMedDone = slotData && slotData[prnKey];
                                                 return (
                                                     <div key={idx} onClick={() => toggleSiBesoin(child, activeSlot, prnKey)} style={{
-                                                        display: 'flex', alignItems: 'center', gap: '0.75rem',
+                                                        display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
                                                         padding: '0.6rem 0.8rem', background: isMedDone ? 'oklch(62% 0.22 145 / 0.15)' : 'white',
                                                         borderRadius: '12px', cursor: canEdit ? 'pointer' : 'default',
                                                         border: `1.5px solid ${isMedDone ? 'oklch(52% 0.22 145)' : 'var(--glass-border)'}`

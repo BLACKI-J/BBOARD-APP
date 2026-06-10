@@ -34,9 +34,10 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                         </div>
                         <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.02em' }}>Gestion des Groupes</h3>
                     </div>
-                    <button 
+                    <button
                         onClick={onClose}
-                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', color: 'white', borderRadius: '10px', padding: '6px', display: 'flex' }}
+                        aria-label="Fermer"
+                        style={{ background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', color: 'white', borderRadius: '10px', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
                         <X size={20} strokeWidth={2.5} />
                     </button>
@@ -107,7 +108,8 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                                             onClick={() => onDeleteGroup(group.id)}
                                             className="btn-icon-ref danger"
                                             title="Supprimer le groupe"
-                                            style={{ width: '36px', height: '36px', borderRadius: '10px' }}
+                                            aria-label="Supprimer le groupe"
+                                            style={{ width: '44px', height: '44px', borderRadius: '12px' }}
                                         >
                                             <Trash2 size={16} strokeWidth={2.5} />
                                         </button>

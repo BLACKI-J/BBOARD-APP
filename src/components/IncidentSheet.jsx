@@ -34,6 +34,22 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
     const [activeTab, setActiveTab] = useState('infos');
     const [autocomplete, setAutocomplete] = useState({ section: null, index: null, results: [] });
 
+    // Aperçu Cerfa : page A4 fixe de 210mm (~794px) → scale écran pour tenir sur mobile.
+    // N'affecte que l'aperçu (.no-print) ; la copie .print-view imprimée reste intacte.
+    const a4Ref = useRef(null);
+    const [previewScale, setPreviewScale] = useState(() =>
+        typeof window !== 'undefined' ? Math.min(1, (window.innerWidth - 32) / 794) : 1
+    );
+    const [a4Height, setA4Height] = useState(0);
+    useEffect(() => {
+        const onResize = () => setPreviewScale(Math.min(1, (window.innerWidth - 32) / 794));
+        window.addEventListener('resize', onResize);
+        return () => window.removeEventListener('resize', onResize);
+    }, []);
+    useEffect(() => {
+        if (showPreview && a4Ref.current) setA4Height(a4Ref.current.offsetHeight);
+    }, [showPreview, form, previewScale]);
+
     // Baseline of the form at its last clean point (initial / saved / reset / loaded).
     // Used to warn about unsaved edits before leaving the section or closing the tab.
     const cleanSnapshot = useRef(JSON.stringify(defaultForm()));
@@ -369,7 +385,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                             <select className="glass-input" style={{ width: '130px', padding: '0.5rem', borderRadius: '10px', fontSize: '0.8rem', background: 'var(--bg-secondary)', border: 'none', fontWeight: '800' }} value={row.role} onChange={e => updatePerson('reporters', i, 'role', e.target.value)}>
                                                                 {ROLE_OPTIONS.filter(r => r !== 'Vacancier').map(role => <option key={role} value={role}>{role}</option>)}
                                                             </select>
-                                                            <button onClick={() => removePerson('reporters', i)} style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '0.5rem', display: 'flex', alignItems: 'center', opacity: 0.6, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}>
+                                                            <button onClick={() => removePerson('reporters', i)} aria-label="Supprimer" style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '0.875rem', display: 'flex', alignItems: 'center', opacity: 0.85 }}>
                                                                 <Trash2 size={16} />
                                                             </button>
                                                         </div>
@@ -412,7 +428,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                             <select className="glass-input" style={{ width: '130px', padding: '0.5rem', borderRadius: '10px', fontSize: '0.8rem', background: 'oklch(58% 0.2 var(--brand-hue) / 0.05)', border: 'none', fontWeight: '800', color: 'var(--primary-color)' }} value={row.role} onChange={e => updatePerson('concerned', i, 'role', e.target.value)}>
                                                                 {ROLE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
                                                             </select>
-                                                            <button onClick={() => removePerson('concerned', i)} style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '0.5rem', display: 'flex', alignItems: 'center', opacity: 0.6, transition: 'opacity 0.2s' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.6'}>
+                                                            <button onClick={() => removePerson('concerned', i)} aria-label="Supprimer" style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '0.875rem', display: 'flex', alignItems: 'center', opacity: 0.85 }}>
                                                                 <Trash2 size={16} />
                                                             </button>
                                                         </div>
@@ -438,20 +454,16 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                     <label className="fei-label">Détails de l'événement & Actions entreprises</label>
-                                    <div style={{ position: 'relative' }}>
-                                        <textarea className="glass-input custom-textarea" rows={12} value={form.details} onChange={e => setForm(prev => ({ ...prev, details: e.target.value }))} 
-                                            placeholder="Ex: L'enfant a fait une crise lors du repas... Nous avons isolé l'enfant au calme..." 
-                                            style={{ width: '100%', padding: '1.5rem', borderRadius: '24px', background: 'var(--bg-secondary)', resize: 'vertical', border: '2px solid var(--glass-border)', fontSize: '1rem', color: 'var(--text-main)', transition: 'border-color 0.2s' }} />
-                                        
-                                        <div style={{ position: 'absolute', bottom: '1.5rem', right: '1.5rem', display: 'flex', gap: '0.75rem' }}>
-                                            <div style={{ display: 'flex', background: 'white', padding: '6px', borderRadius: '14px', border: '1px solid var(--glass-border)', boxShadow: '0 8px 30px oklch(0% 0 0 / 0.1)' }}>
-                                                <button type="button" onClick={() => requestRewrite(form.details)} disabled={isRewriting}
-                                                    className="btn-magic"
-                                                    style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', color: 'white', border: 'none', borderRadius: '10px', fontWeight: '950', fontSize: '0.85rem', cursor: 'pointer', opacity: isRewriting ? 0.7 : 1 }}>
-                                                    <Sparkles size={16} /> {isRewriting ? 'Reformulation...' : 'Ajuster le ton pour le Cerfa'}
-                                                </button>
-                                            </div>
-                                        </div>
+                                    <textarea className="glass-input custom-textarea" rows={12} value={form.details} onChange={e => setForm(prev => ({ ...prev, details: e.target.value }))}
+                                        placeholder="Ex: L'enfant a fait une crise lors du repas... Nous avons isolé l'enfant au calme..."
+                                        style={{ width: '100%', padding: '1.5rem', borderRadius: '24px', background: 'var(--bg-secondary)', resize: 'vertical', border: '2px solid var(--glass-border)', fontSize: '1rem', color: 'var(--text-main)', transition: 'border-color 0.2s' }} />
+
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
+                                        <button type="button" onClick={() => requestRewrite(form.details)} disabled={isRewriting}
+                                            className="btn-magic"
+                                            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 1.2rem', minHeight: '44px', color: 'white', border: 'none', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem', cursor: 'pointer', opacity: isRewriting ? 0.7 : 1, boxShadow: '0 8px 30px oklch(0% 0 0 / 0.1)' }}>
+                                            <Sparkles size={16} /> {isRewriting ? 'Reformulation...' : 'Ajuster le ton pour le Cerfa'}
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -478,7 +490,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                 <div style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)', marginBottom: '4px' }}>{incident.eventDate}</div>
                                                 <div style={{ fontWeight: '950', color: 'var(--text-main)', fontSize: '0.9rem', marginBottom: '6px' }}>{incident.stayName || 'Sans titre'}</div>
                                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{incident.details}</div>
-                                                <button onClick={(e) => { e.stopPropagation(); deleteIncident(e, incident.id); }} style={{ position: 'absolute', top: '10px', right: '10px', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
+                                                <button onClick={(e) => { e.stopPropagation(); deleteIncident(e, incident.id); }} aria-label="Supprimer" style={{ position: 'absolute', top: 0, right: 0, width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><Trash2 size={14} /></button>
                                             </div>
                                         ))
                                     )}
@@ -492,7 +504,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                     </div>
                 </div>
             ) : (
-                <div className="no-print" style={{ flex: 1, overflowY: 'auto', background: 'oklch(20% 0.05 40)', padding: '2.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <div className="no-print" style={{ flex: 1, overflowY: 'auto', background: 'oklch(20% 0.05 40)', padding: 'clamp(1rem, 3vw, 2.5rem)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <div style={{ maxWidth: '920px', width: '100%', background: 'white', borderRadius: '24px', padding: '1rem 2rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 20px 40px oklch(0% 0 0 / 0.2)' }}>
                         <button onClick={() => setShowPreview(false)} className="btn btn-secondary" style={{ padding: '0.625rem 1rem' }}><ArrowLeft size={18} /> Retour Édition</button>
                         <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>Aperçu du Cerfa FEI</div>
@@ -500,8 +512,11 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                             <button onClick={handlePrint} className="btn btn-primary" style={{ padding: '0.625rem 1.5rem' }}><Printer size={18} strokeWidth={2.5} /> Imprimer Maintenant</button>
                         </div>
                     </div>
-                    <div className="fei-a4-holder">
-                        <PrintContent data={form} />
+                    {/* Wrapper dimensionné à la taille visuelle (le transform ne réduit pas la boîte de layout) */}
+                    <div style={{ width: `${794 * previewScale}px`, height: a4Height ? `${a4Height * previewScale}px` : 'auto', overflow: 'visible' }}>
+                        <div className="fei-a4-holder" ref={a4Ref} style={{ width: '794px', transform: `scale(${previewScale})`, transformOrigin: 'top left' }}>
+                            <PrintContent data={form} />
+                        </div>
                     </div>
                 </div>
             )}

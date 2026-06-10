@@ -85,7 +85,7 @@ const InfoVacSection = ({ children, groups, updateParticipantHealth, addHealthLo
                 </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(360px, 1fr))', gap: '0.875rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.875rem' }}>
                 {filtered.map(child => (
                     <ChildCard key={child.id} child={child} groups={groups} onOpen={setSelectedId} />
                 ))}

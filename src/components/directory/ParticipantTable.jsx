@@ -52,11 +52,14 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
                     border: `1.5px solid ${isSelected ? 'var(--primary-color)' : 'var(--glass-border)'}`,
                     borderRadius: '16px', boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
                     transform: `translateX(${offset}px)`, transition: startX.current == null ? 'transform 0.25s var(--ease-out-expo)' : 'none',
+                    touchAction: 'pan-y',
                 }}>
                 {canEdit && (
                     <div onClick={(e) => { e.stopPropagation(); toggleSelection(p.id); }}
-                        style={{ flexShrink: 0, width: '24px', height: '24px', borderRadius: '7px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isSelected ? 'var(--primary-color)' : 'white', border: '1.5px solid var(--glass-border)', color: 'white' }}>
-                        {isSelected && <Check size={15} strokeWidth={3} />}
+                        style={{ flexShrink: 0, width: '44px', height: '44px', margin: '-8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isSelected ? 'var(--primary-color)' : 'white', border: '1.5px solid var(--glass-border)', color: 'white' }}>
+                            {isSelected && <Check size={16} strokeWidth={3} />}
+                        </div>
                     </div>
                 )}
                 <Avatar participant={p} size={42} />
@@ -127,15 +130,19 @@ const ParticipantTable = ({ participants, selectedParticipants, toggleSelection,
                         <th style={{ width: '64px', padding: '1.25rem' }}>
                             <div
                                 onClick={toggleSelectAll}
-                                style={{ 
-                                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    width: '28px', height: '28px', borderRadius: '8px',
-                                    background: selectedParticipants.length > 0 && selectedParticipants.length === participants.length ? 'var(--primary-color)' : 'white',
-                                    border: '1.5px solid var(--glass-border)',
-                                    color: 'white', transition: 'all 0.2s'
-                                }}
+                                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', margin: '-8px' }}
                             >
-                                {selectedParticipants.length > 0 && selectedParticipants.length === participants.length && <Check size={18} strokeWidth={3} />}
+                                <div
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        width: '28px', height: '28px', borderRadius: '8px',
+                                        background: selectedParticipants.length > 0 && selectedParticipants.length === participants.length ? 'var(--primary-color)' : 'white',
+                                        border: '1.5px solid var(--glass-border)',
+                                        color: 'white', transition: 'all 0.2s'
+                                    }}
+                                >
+                                    {selectedParticipants.length > 0 && selectedParticipants.length === participants.length && <Check size={18} strokeWidth={3} />}
+                                </div>
                             </div>
                         </th>
                         <th onClick={() => requestSort('firstName')} className="th-sortable">
@@ -156,15 +163,19 @@ const ParticipantTable = ({ participants, selectedParticipants, toggleSelection,
                                 <td style={{ padding: '1.25rem' }}>
                                     <div
                                         onClick={(e) => { e.stopPropagation(); toggleSelection(p.id); }}
-                                        style={{ 
-                                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                            width: '28px', height: '28px', borderRadius: '8px',
-                                            background: isSelected ? 'var(--primary-color)' : 'white',
-                                            border: '1.5px solid var(--glass-border)',
-                                            color: 'white', transition: 'all 0.2s'
-                                        }}
+                                        style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '44px', height: '44px', margin: '-8px' }}
                                     >
-                                        {isSelected && <Check size={18} strokeWidth={3} />}
+                                        <div
+                                            style={{
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                width: '28px', height: '28px', borderRadius: '8px',
+                                                background: isSelected ? 'var(--primary-color)' : 'white',
+                                                border: '1.5px solid var(--glass-border)',
+                                                color: 'white', transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            {isSelected && <Check size={18} strokeWidth={3} />}
+                                        </div>
                                     </div>
                                 </td>
                                 <td>

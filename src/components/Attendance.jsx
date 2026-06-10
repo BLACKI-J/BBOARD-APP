@@ -14,7 +14,6 @@ export default function Attendance({ participants, setParticipants, groups, canE
     const [statusFilter, setStatusFilter] = useState('all'); // all, present, absent
     const [sortBy, setSortBy] = useState('lastName'); // firstName, lastName
     const [viewMode, setViewMode] = useState('grid'); // grid, list
-    const searchInputRef = useRef(null);
 
     // Photo capture states
     const [isCameraOpen, setIsCameraOpen] = useState(false);
@@ -25,12 +24,6 @@ export default function Attendance({ participants, setParticipants, groups, canE
     const fileTargetId = useRef(null);
 
     const children = participants.filter(p => p.role === 'child');
-
-    useEffect(() => {
-        if (searchInputRef.current) {
-            searchInputRef.current.focus();
-        }
-    }, []);
 
     const filteredChildren = children.filter(child => {
         const fullName = (child.firstName + ' ' + child.lastName).toLowerCase();
@@ -68,6 +61,8 @@ export default function Attendance({ participants, setParticipants, groups, canE
                 confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.4), y: Math.random() - 0.2 } });
                 confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.6, 0.9), y: Math.random() - 0.2 } });
             }, 300);
+
+            return () => clearInterval(interval);
         }
     }, [progress, totalCount]);
 
@@ -171,7 +166,6 @@ export default function Attendance({ participants, setParticipants, groups, canE
                     <div style={{ flex: isMobile ? '1 1 100%' : '1', minWidth: isMobile ? '0' : '280px', position: 'relative', order: isMobile ? 2 : 1 }}>
                         <Search size={16} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
                         <input
-                            ref={searchInputRef}
                             type="text"
                             placeholder={isMobile ? "Rechercher..." : "Rechercher un enfant..."}
                             value={searchTerm}
@@ -385,7 +379,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                         <div style={{
                             display: viewMode === 'grid' ? 'grid' : 'flex',
                             flexDirection: 'column',
-                            gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(340px, 1fr))',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
                             gap: isMobile ? '0.75rem' : '1.25rem',
                             paddingBottom: isMobile ? '2rem' : '4rem'
                         }}>
@@ -510,11 +504,13 @@ export default function Attendance({ participants, setParticipants, groups, canE
             )}
 
             <style>{`
-                .attendance-card:hover {
-                    transform: translateY(-4px) scale(1.02);
-                    background: white !important;
-                    box-shadow: 0 20px 40px oklch(0% 0 0 / 0.08) !important;
-                    border-color: var(--primary-color) !important;
+                @media (hover: hover) {
+                    .attendance-card:hover {
+                        transform: translateY(-4px) scale(1.02);
+                        background: white !important;
+                        box-shadow: 0 20px 40px oklch(0% 0 0 / 0.08) !important;
+                        border-color: var(--primary-color) !important;
+                    }
                 }
                 .attendance-card:active {
                     transform: scale(0.98);

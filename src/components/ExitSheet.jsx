@@ -306,7 +306,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                                         onClick={() => toggleAnimator(anim.id)}
                                                         className={sel ? 'btn-primary' : 'btn-glass'}
                                                         style={{
-                                                            padding: '0.4rem 0.75rem', borderRadius: '10px',
+                                                            padding: '0.5rem 0.75rem', minHeight: '44px', borderRadius: '10px',
                                                             fontSize: '0.8rem', fontWeight: '750',
                                                             display: 'flex', alignItems: 'center', gap: '0.35rem',
                                                             border: 'none', cursor: 'pointer', transition: 'all 0.2s',
@@ -353,7 +353,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                             <button
                                                 onClick={toggleAllVisible}
                                                 className="btn-glass"
-                                                style={{ padding: '0.4rem 0.8rem', fontSize: '11px', fontWeight: '800', flex: isMobile ? 1 : 'none' }}
+                                                style={{ padding: '0.5rem 0.8rem', minHeight: '44px', fontSize: '11px', fontWeight: '800', flex: isMobile ? 1 : 'none' }}
                                             >
                                                 Tout cocher
                                             </button>
@@ -441,16 +441,12 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                         {/* Van Tracking Integrated */}
                                         <div style={{ marginTop: '0.5rem', paddingTop: '1rem', borderTop: '1px dashed var(--glass-border)' }}>
                                             <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', marginBottom: isVanUsed ? '1rem' : '0' }}>
-                                                <div
-                                                    onClick={() => setIsVanUsed(!isVanUsed)}
-                                                    style={{
-                                                        width: '20px', height: '20px', borderRadius: '6px', border: '2px solid var(--primary-color)',
-                                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                                        background: isVanUsed ? 'var(--primary-color)' : 'transparent', transition: 'all 0.2s'
-                                                    }}
-                                                >
-                                                    {isVanUsed && <CheckSquare size={14} color="white" strokeWidth={3} />}
-                                                </div>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isVanUsed}
+                                                    onChange={e => setIsVanUsed(e.target.checked)}
+                                                    style={{ width: '20px', height: '20px', margin: 0, accentColor: 'var(--primary-color)', cursor: 'pointer', flexShrink: 0 }}
+                                                />
                                                 <span style={{ fontSize: '0.85rem', fontWeight: '900', color: isVanUsed ? 'var(--primary-color)' : 'var(--text-main)' }}>Utiliser un VAN / Véhicule</span>
                                             </label>
 
@@ -514,8 +510,8 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                                                 </div>
                                                 <button
                                                     onClick={e => deleteSheet(e, sheet.id)}
-                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px', display: 'flex' }}
-                                                    className="delete-icon-hover"
+                                                    aria-label="Supprimer"
+                                                    style={{ background: 'none', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '0.9375rem', display: 'flex' }}
                                                 >
                                                     <Trash2 size={14} />
                                                 </button>
@@ -587,10 +583,6 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                     border-color: var(--primary-color) !important;
                     background: white !important;
                     transform: translateX(4px);
-                }
-
-                .delete-icon-hover:hover {
-                    color: var(--danger-color) !important;
                 }
 
                 /* ── MOBILE RESPONSIVE ── */

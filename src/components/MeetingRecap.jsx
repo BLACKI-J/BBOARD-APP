@@ -118,9 +118,9 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                     {calOpen && (
                         <div className="animate-fade-in" style={{ borderTop: '1px solid var(--glass-border)', padding: '0.75rem 1rem 1rem' }}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                                <button onClick={() => shiftMonth(-1)} className="btn-icon-ref" style={{ width: '30px', height: '30px', borderRadius: '9px', background: 'var(--bg-secondary)' }}><ChevronLeft size={15} /></button>
+                                <button onClick={() => shiftMonth(-1)} aria-label="Mois précédent" className="btn-icon-ref" style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--bg-secondary)' }}><ChevronLeft size={16} /></button>
                                 <div style={{ fontWeight: '900', fontSize: '0.9rem', textTransform: 'capitalize' }}>{monthName}</div>
-                                <button onClick={() => shiftMonth(1)} className="btn-icon-ref" style={{ width: '30px', height: '30px', borderRadius: '9px', background: 'var(--bg-secondary)' }}><ChevronRight size={15} /></button>
+                                <button onClick={() => shiftMonth(1)} aria-label="Mois suivant" className="btn-icon-ref" style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--bg-secondary)' }}><ChevronRight size={16} /></button>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '3px', textAlign: 'center', marginBottom: '4px' }}>
                                 {WEEKDAYS.map((d, i) => <div key={i} style={{ fontSize: '0.62rem', fontWeight: '950', color: 'var(--text-muted)', padding: '4px 0' }}>{d}</div>)}
@@ -205,7 +205,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                                 const prio = PRIORITY_CONFIG[todo.priority || 'normal'];
                                 return (
                                     <div key={todo.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '14px', opacity: todo.completed ? 0.55 : 1 }}>
-                                        <button onClick={() => toggleTodo(todo.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: todo.completed ? 'var(--success-color)' : 'var(--text-muted)', display: 'flex', flexShrink: 0, padding: 0 }}>
+                                        <button onClick={() => toggleTodo(todo.id)} aria-label="Marquer comme fait(e)" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: todo.completed ? 'var(--success-color)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: '44px', height: '44px', padding: 0, margin: '-0.5rem 0 -0.5rem -10px' }}>
                                             {todo.completed ? <CheckCircle2 size={24} strokeWidth={2.5} /> : <Circle size={24} strokeWidth={2.5} />}
                                         </button>
                                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -217,7 +217,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
                                             )}
                                         </div>
                                         {canEdit && (
-                                            <button onClick={() => deleteTodo(todo.id)} className="btn-icon-ref danger" style={{ width: '36px', height: '36px', borderRadius: '10px', background: 'var(--bg-secondary)', flexShrink: 0 }}><Trash2 size={16} strokeWidth={2.5} /></button>
+                                            <button onClick={() => deleteTodo(todo.id)} aria-label="Supprimer la tâche" className="btn-icon-ref danger" style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'var(--bg-secondary)', flexShrink: 0 }}><Trash2 size={16} strokeWidth={2.5} /></button>
                                         )}
                                     </div>
                                 );
