@@ -40,9 +40,8 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
             <div className="morph-blob" style={{ top: '-10%', left: '-5%', width: '800px', height: '800px', opacity: 0.2 }} />
             <div className="morph-blob-2" style={{ bottom: '-10%', right: '-5%', width: '600px', height: '600px', opacity: 0.15 }} />
 
-            <div className="card-glass animate-scale-in" style={{
+            <div className="card-glass animate-scale-in login-card" style={{
                 width: '100%', maxWidth: '440px', padding: '2.5rem',
-                maxHeight: 'calc(100dvh - 1.5rem)', overflowY: 'auto',
                 borderRadius: '32px', boxShadow: '0 40px 100px rgba(0,0,0,0.12)',
                 background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(40px)',
                 display: 'flex', flexDirection: 'column', gap: '2rem',
@@ -117,7 +116,7 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                         </div>
 
                         {/* PIN View */}
-                        <div style={{ display: 'flex', gap: '1rem', margin: '1rem 0' }}>
+                        <div className="pin-dots" style={{ display: 'flex', gap: '1rem', margin: '1rem 0' }}>
                             {[0, 1, 2, 3].map(i => (
                                 <div key={i} style={{
                                     width: '16px', height: '16px', borderRadius: '50%',
@@ -137,7 +136,7 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                         )}
 
                         {/* Numpad */}
-                        <div style={{
+                        <div className="numpad-grid" style={{
                             display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
                             gap: '1rem', width: '100%'
                         }}>
@@ -207,6 +206,17 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                     border-color: var(--primary-color);
                     transform: translateY(-4px);
                     box-shadow: var(--shadow-md);
+                }
+                /* Écran court/petit : tout compacter pour tenir SANS scroll. */
+                @media (max-height: 780px), (max-width: 480px) {
+                    .login-card { padding: 1.4rem 1.25rem !important; gap: 0.85rem !important; }
+                    .numpad-grid { gap: 0.6rem !important; }
+                    .numpad-btn { height: 50px; border-radius: 14px; font-size: 1.1rem; }
+                    .pin-dots { margin: 0.4rem 0 !important; }
+                }
+                @media (max-height: 660px) {
+                    .login-card { padding: 1rem 1rem !important; gap: 0.6rem !important; }
+                    .numpad-btn { height: 44px; font-size: 1rem; }
                 }
             `}</style>
         </div>
