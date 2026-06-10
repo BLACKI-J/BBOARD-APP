@@ -108,7 +108,9 @@ const corsOptions = {
 
 const io = new Server(httpServer, { cors: corsOptions });
 app.use(cors(corsOptions));
-app.use(express.json({ strict: false, limit: '15mb' }));
+// 25 Mo : la restauration d'archive poste la collection participants entière,
+// photos base64 incluses (compressées à ~150 Ko pièce → ~120 enfants passent).
+app.use(express.json({ strict: false, limit: '25mb' }));
 
 // Logging Middleware
 app.use((req, res, next) => {
@@ -141,7 +143,10 @@ function parseCookies(header = '') {
         if (separator === -1) return cookies;
         const key = part.slice(0, separator).trim();
         const value = part.slice(separator + 1).trim();
-        if (key) cookies[key] = decodeURIComponent(value);
+        // decodeURIComponent jette sur un cookie malformé (%zz) → ignorer plutôt que 500
+        if (key) {
+            try { cookies[key] = decodeURIComponent(value); } catch { /* cookie corrompu ignoré */ }
+        }
         return cookies;
     }, {});
 }
@@ -244,21 +249,32 @@ async function ensureAdminPin(database) {
     await database.run('DELETE FROM app_state WHERE key = ?', 'adminPin');
 }
 
+const SESSION_ABSOLUTE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // plafond absolu (TTL glissant sinon infini)
+
 function createSession(userId) {
     const token = randomBytes(32).toString('hex');
-    sessions.set(token, { userId, expiresAt: Date.now() + SESSION_TTL_MS, adminVerifiedUntil: 0 });
+    sessions.set(token, { userId, createdAt: Date.now(), expiresAt: Date.now() + SESSION_TTL_MS, adminVerifiedUntil: 0 });
     return token;
 }
 
 function getSession(token) {
     const session = token ? sessions.get(token) : null;
     if (!session) return null;
-    if (session.expiresAt <= Date.now()) {
+    const now = Date.now();
+    if (session.expiresAt <= now || now - (session.createdAt || 0) > SESSION_ABSOLUTE_TTL_MS) {
         sessions.delete(token);
         return null;
     }
-    session.expiresAt = Date.now() + SESSION_TTL_MS;
+    session.expiresAt = now + SESSION_TTL_MS;
     return session;
+}
+
+// Révoque les sessions d'un utilisateur (changement de PIN, désactivation…).
+// exceptToken : garde la session courante (celui qui change son propre PIN reste connecté).
+function invalidateUserSessions(userId, exceptToken = null) {
+    for (const [token, session] of sessions.entries()) {
+        if (session.userId === userId && token !== exceptToken) sessions.delete(token);
+    }
 }
 
 setInterval(() => {
@@ -654,6 +670,12 @@ async function startServer() {
     try {
         db = await initDb();
         console.log('Database initialized and synchronized');
+        // Rotation du journal au démarrage : garde les 5000 dernières entrées.
+        try {
+            await db.run('DELETE FROM action_logs WHERE id NOT IN (SELECT id FROM action_logs ORDER BY created_at DESC, rowid DESC LIMIT 5000)');
+        } catch (err) {
+            console.error('Action log rotation failed:', err.message);
+        }
 
         const PORT = Number(process.env.PORT) || 3001;
         httpServer.listen(PORT, '0.0.0.0', () => {
@@ -748,26 +770,36 @@ app.post('/api/auth/logout', (req, res) => {
     res.json({ success: true });
 });
 
-app.post('/api/auth/verify-admin-pin', authenticateRequest, requireAnyPermission('viewSettings'), adminRateLimiter, async (req, res) => {
-    const storedHash = await getStateValue(db, 'adminPinHash');
-    if (!verifyPin(String(req.body?.pin || ''), storedHash)) {
-        return res.status(401).json({ error: 'Invalid credentials' });
+app.post('/api/auth/verify-admin-pin', authenticateRequest, requireAnyPermission('viewSettings', 'manageAccess'), adminRateLimiter, async (req, res) => {
+    try {
+        const storedHash = await getStateValue(db, 'adminPinHash');
+        if (!verifyPin(String(req.body?.pin || ''), storedHash)) {
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        req.session.adminVerifiedUntil = Date.now() + ADMIN_VERIFICATION_TTL_MS;
+        res.json({ success: true });
+    } catch (err) {
+        serverError(req, res, err);
     }
-    req.session.adminVerifiedUntil = Date.now() + ADMIN_VERIFICATION_TTL_MS;
-    res.json({ success: true });
 });
 
 app.post('/api/auth/admin-pin', authenticateRequest, requireAnyPermission('manageAccess'), async (req, res) => {
-    const newPin = String(req.body?.newPin || '');
-    if (req.session.adminVerifiedUntil < Date.now()) {
-        return res.status(401).json({ error: 'Admin verification required' });
+    try {
+        const newPin = String(req.body?.newPin || '');
+        if (req.session.adminVerifiedUntil < Date.now()) {
+            return res.status(401).json({ error: 'Admin verification required' });
+        }
+        if (!isValidPin(newPin)) {
+            return res.status(400).json({ error: 'PIN must contain exactly 4 digits' });
+        }
+        await setStateValue(db, 'adminPinHash', hashPin(newPin));
+        req.session.adminVerifiedUntil = 0;
+        // Révoque les autres sessions Direction (appareil perdu/volé) ; garde la courante.
+        invalidateUserSessions('director', req.sessionToken);
+        res.json({ success: true });
+    } catch (err) {
+        serverError(req, res, err);
     }
-    if (!isValidPin(newPin)) {
-        return res.status(400).json({ error: 'PIN must contain exactly 4 digits' });
-    }
-    await setStateValue(db, 'adminPinHash', hashPin(newPin));
-    req.session.adminVerifiedUntil = 0;
-    res.json({ success: true });
 });
 
 app.use('/api', (req, res, next) => {
@@ -823,20 +855,29 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
         const existingRows = await db.all('SELECT id, pin_hash, role FROM participants');
         const existingById = new Map(existingRows.map((row) => [row.id, row]));
 
-        // Anti-escalade vérifiée AVANT la transaction : créer/promouvoir un staff exige
-        // manageUsers. Un éditeur sans manageUsers peut re-sauver un staff existant inchangé.
-        // Pré-valider ici évite un throw en cours de transaction (rollback de tout le lot)
+        // Anti-escalade vérifiée AVANT la transaction : sans manageUsers, on ne peut ni
+        // créer/promouvoir un staff, ni le rétrograder en enfant, ni le retirer du lot
+        // (le POST remplace toute la collection → l'omission supprimerait le compte).
+        // Pré-valider ici évite un throw en cours de transaction (rollback du lot)
         // et renvoie un 403 explicite au lieu d'un 500 générique.
         if (!canManageStaff) {
+            const payloadById = new Map(participants.filter((p) => p && p.id).map((p) => [p.id, p]));
             const escalation = participants.some((p) => {
                 if (!p || !p.id) return false;
                 const role = validRoles.has(p.role) ? p.role : 'child';
                 if (role === 'child') return false;
                 const prior = existingById.get(p.id);
-                return !prior || prior.role !== role;
+                return !prior || prior.role !== role; // création ou promotion
             });
-            if (escalation) {
-                return res.status(403).json({ error: 'Permission manageUsers requise pour créer ou modifier un membre du staff.' });
+            const staffTampering = existingRows.some((row) => {
+                if (row.role === 'child') return false;
+                const incoming = payloadById.get(row.id);
+                if (!incoming) return true; // staff supprimé du lot
+                const incomingRole = validRoles.has(incoming.role) ? incoming.role : 'child';
+                return incomingRole !== row.role; // démotion (ou changement de rôle staff)
+            });
+            if (escalation || staffTampering) {
+                return res.status(403).json({ error: 'Permission manageUsers requise pour créer, modifier ou supprimer un membre du staff.' });
             }
         }
 
@@ -890,6 +931,8 @@ app.post('/api/users/:id/pin', requireAnyPermission('manageUsers'), async (req, 
             req.params.id
         );
         if (!result.changes) return res.status(404).json({ error: 'Staff member not found' });
+        // Révoque les sessions existantes de ce staff (sauf si c'est lui qui change son PIN).
+        invalidateUserSessions(req.params.id, req.actor?.id === req.params.id ? req.sessionToken : null);
         res.json({ success: true });
     } catch (err) {
         serverError(req, res, err);
@@ -997,7 +1040,26 @@ app.post('/api/state/:key', async (req, res) => {
         const permission = permissionByKey[req.params.key];
         if (!permission) return res.status(404).json({ error: 'State key not found' });
         if (!req.actor?.permissions?.[permission]) return res.status(403).json({ error: 'Permission denied' });
-        const value = req.body;
+        let value = req.body;
+        if (req.params.key === 'accessControl') {
+            // Normalise + garde-fous anti-lockout : structure garantie via mergeAccessControl,
+            // rôles de base toujours présents, compte Direction jamais désactivable.
+            value = mergeAccessControl(value);
+            if (!Array.isArray(value.roles)) value.roles = defaultAccessControl.roles;
+            for (const baseRole of defaultAccessControl.roles) {
+                if (!value.roles.some((r) => r && r.id === baseRole.id)) value.roles.push(baseRole);
+            }
+            if (value.disabledUsers) delete value.disabledUsers.director;
+            // La Direction garde TOUJOURS ses permissions d'administration : sinon un
+            // décochage dans l'UI (ou une restauration) verrouille l'app sans retour possible.
+            value.rolePermissions = value.rolePermissions || {};
+            value.rolePermissions.direction = {
+                ...(value.rolePermissions.direction || {}),
+                viewSettings: true,
+                manageUsers: true,
+                manageAccess: true
+            };
+        }
         await db.run('INSERT OR REPLACE INTO app_state (key, value) VALUES (?, ?)', req.params.key, JSON.stringify(value));
         io.emit('data_updated', { type: 'state', key: req.params.key });
         res.json({ success: true });
@@ -1165,7 +1227,12 @@ app.get('/api/inventory/items', requireAnyPermission('viewInventory'), async (re
             ...params
         );
 
-        const photos = await db.all('SELECT id, item_id, participant_id, image_base64, created_at FROM inventory_photos ORDER BY datetime(created_at) DESC');
+        // Filtrer les photos comme les items : sinon TOUTES les photos base64 de la colo
+        // sont chargées à chaque appel filtré (poids réseau/mémoire inutile).
+        const photos = await db.all(
+            `SELECT id, item_id, participant_id, image_base64, created_at FROM inventory_photos ${where} ORDER BY datetime(created_at) DESC`,
+            ...params
+        );
         const byItem = photos.reduce((acc, photo) => {
             if (!acc[photo.item_id]) acc[photo.item_id] = [];
             acc[photo.item_id].push(photo);
@@ -1267,7 +1334,7 @@ app.delete('/api/inventory/photos/:photoId', requireAnyPermission('editInventory
     }
 });
 
-app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), async (req, res) => {
+app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), aiRateLimiter, async (req, res) => {
     try {
         const { imageBase64, topK = 5 } = req.body || {};
         if (!imageBase64) return res.status(400).json({ error: 'imageBase64 is required' });
@@ -1304,14 +1371,18 @@ app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), asy
             .slice(0, Math.min(Number(topK) || 5, 10));
 
         const searchId = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        // Ne stocker NI l'image requête NI les base64 des matches (croissance DB non bornée
+        // sinon — la table n'est relue que pour la validation). Cap à 500 lignes.
+        const slimMatches = matches.map(({ imageBase64: _img, ...rest }) => rest);
         await db.run(
             'INSERT INTO inventory_matches (id, query_image_base64, results_json, validated_item_id, validated_by) VALUES (?, ?, ?, ?, ?)',
             searchId,
-            imageBase64,
-            JSON.stringify(matches),
+            null,
+            JSON.stringify(slimMatches),
             null,
             null
         );
+        db.run("DELETE FROM inventory_matches WHERE id NOT IN (SELECT id FROM inventory_matches ORDER BY rowid DESC LIMIT 500)").catch(() => {});
 
         res.json({ searchId, matches });
     } catch (err) {
@@ -1322,8 +1393,10 @@ app.post('/api/inventory/search', requireAnyPermission('searchInventoryAI'), asy
 app.post('/api/inventory/matches/:id/validate', requireAnyPermission('searchInventoryAI'), async (req, res) => {
     try {
         const { id } = req.params;
-        const { itemId, validatedBy } = req.body || {};
-        await db.run('UPDATE inventory_matches SET validated_item_id = ?, validated_by = ? WHERE id = ?', itemId || null, validatedBy || null, id);
+        const { itemId } = req.body || {};
+        // validatedBy = acteur authentifié (pas le client, spoofable)
+        const result = await db.run('UPDATE inventory_matches SET validated_item_id = ?, validated_by = ? WHERE id = ?', itemId || null, req.actor?.id || null, id);
+        if (!result.changes) return res.status(404).json({ error: 'Recherche introuvable' });
         res.json({ success: true });
     } catch (err) {
         serverError(req, res, err);
@@ -1429,7 +1502,17 @@ app.get('/api/action-logs', requireAnyPermission('viewLogs'), async (req, res) =
 
 app.delete('/api/action-logs', requireAnyPermission('manageAccess'), async (req, res) => {
     try {
+        const before = await db.get('SELECT COUNT(*) AS n FROM action_logs');
         await db.run('DELETE FROM action_logs');
+        // La purge elle-même est journalisée (sinon trace d'audit auto-effaçable).
+        await insertActionLog({
+            actorId: req.actor?.id,
+            actorName: `${req.actor?.firstName || ''} ${req.actor?.lastName || ''}`.trim(),
+            actorRole: req.actor?.role,
+            action: 'PURGE action_logs',
+            resource: '/api/action-logs',
+            metadata: { deletedRows: before?.n ?? null }
+        });
         res.json({ success: true });
     } catch (err) {
         serverError(req, res, err);
