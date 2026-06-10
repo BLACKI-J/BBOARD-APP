@@ -386,6 +386,7 @@ export default function App() {
             reconnectionDelay: 2000,
         });
         let retryTimer;
+        let intentionalClose = false; // déconnexion volontaire (logout/démontage) → pas une panne
 
         const fetchJson = async (url, fallback) => {
             const response = await fetch(url);
@@ -455,6 +456,7 @@ export default function App() {
         });
 
         socket.on('disconnect', () => {
+            if (intentionalClose) return; // logout/démontage : ne pas signaler une panne
             console.warn('Socket disconnected');
             setConnectionStatus('error');
         });
@@ -516,6 +518,7 @@ export default function App() {
         }, 10000);
 
         return () => {
+            intentionalClose = true; // empêche le handler 'disconnect' de passer en erreur
             socket.off('data_updated', refreshOne);
             socket.disconnect();
             clearInterval(healthCheck);
