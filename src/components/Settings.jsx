@@ -4,6 +4,7 @@ import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { apiSend } from '../utils/api';
 import { exportParticipantsCsv } from '../utils/participantsCsv';
+import { exportFullArchive, importFullArchive } from '../utils/fullBackup';
 
 const SECTION_LABELS = {
     home: 'Tableau de bord',
@@ -70,6 +71,7 @@ export default function Settings({
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [newUser, setNewUser] = useState({ firstName: '', lastName: '', role: 'animator', pin: '' });
     const [pinDrafts, setPinDrafts] = useState({});
+    const [archiveBusy, setArchiveBusy] = useState(false);
     
     // Custom roles states
     const [newRoleName, setNewRoleName] = useState('');
@@ -267,9 +269,9 @@ export default function Settings({
     const handleResetAll = async () => {
         if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         const ok = await ui.confirm({
-            title: 'Réinitialisation complète',
-            message: 'Toutes les données seront effacées définitivement. Cette action est irréversible.',
-            confirmText: 'Tout supprimer',
+            title: 'Réinitialisation',
+            message: 'Participants, groupes et activités seront effacés définitivement (les fiches, l\'inventaire et le journal sont conservés). Action irréversible.',
+            confirmText: 'Supprimer',
             danger: true
         });
         if (!ok) return;
@@ -278,7 +280,7 @@ export default function Settings({
         setActivities([]);
         // Ne vider que les clés de l'app (pas localStorage.clear() qui touche tout l'origine)
         Object.keys(localStorage).filter(k => k.startsWith('colo-')).forEach(k => localStorage.removeItem(k));
-        ui.toast('Réinitialisation complète effectuée.', { type: 'success' });
+        ui.toast('Réinitialisation effectuée.', { type: 'success' });
     };
 
     const blockingAlerts = useMemo(() => {
@@ -299,8 +301,10 @@ export default function Settings({
             if (res.ok) {
                 const data = await res.json();
                 setLogs(Array.isArray(data) ? data : []);
+            } else {
+                ui.toast('Impossible de charger le journal.', { type: 'error' });
             }
-        } catch (err) { console.error(err); }
+        } catch (err) { console.error(err); ui.toast('Impossible de charger le journal.', { type: 'error' }); }
         finally { setLogsLoading(false); }
     };
 
@@ -359,12 +363,15 @@ export default function Settings({
     };
 
     const handleFullExport = () => {
+        // Annuaire complet (PII enfants) → même gate que l'archive complète.
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         const exportData = { version: '1.0', date: new Date().toISOString(), participants, groups, activities };
         const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const link = document.body.appendChild(document.createElement('a'));
         link.href = url; link.download = `colo-backup-${new Date().toISOString().split('T')[0]}.json`;
         link.click(); document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     };
 
     const handleRestoreFile = async (file) => {
@@ -407,10 +414,50 @@ export default function Settings({
 
     const handleExportCsv = () => exportParticipantsCsv(participants, groups, roleLabels);
 
+    // Sauvegarde complète .zip (données + photos + CSV). Réservé Direction.
+    const handleFullArchiveExport = async () => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        if (archiveBusy) return; // anti double-clic (export complet = lourd)
+        setArchiveBusy(true);
+        try {
+            await exportFullArchive({ headers: actorHeaders, roleLabels });
+            ui.toast('Archive complète téléchargée.', { type: 'success' });
+        } catch (err) {
+            ui.toast(`Échec de l'export : ${err.message}`, { type: 'error' });
+        } finally {
+            setArchiveBusy(false);
+        }
+    };
+
+    // Restauration complète depuis un .zip (remplace tout). Réservé Direction.
+    const handleFullArchiveImport = async (file) => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        if (archiveBusy) return; // pas de double restauration entrelacée
+        const ok = await ui.confirm({
+            title: 'Tout importer',
+            message: 'Restaurer la totalité depuis cette archive ? Les données actuelles seront remplacées.',
+            confirmText: 'Importer', danger: true,
+        });
+        if (!ok) return;
+        setArchiveBusy(true);
+        try {
+            const { restored, failed } = await importFullArchive(file, { headers: actorHeaders, actorId: currentUser?.id });
+            if (failed.length) {
+                ui.toast(`Import partiel — échecs : ${failed.map(f => f.label).join(', ')}.`, { type: 'error' });
+            } else {
+                ui.toast(`Import réussi (${restored.length} sections restaurées).`, { type: 'success' });
+            }
+        } catch (err) {
+            ui.toast(`Échec de l'import : ${err.message}`, { type: 'error' });
+        } finally {
+            setArchiveBusy(false);
+        }
+    };
+
     if (!isUnlocked) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '2rem' }}>
-                <div className="card-glass animate-scale-in" style={{ maxWidth: '440px', width: '100%', padding: '3.5rem 2.5rem', textAlign: 'center', background: 'white', borderRadius: '40px', boxShadow: '0 40px 100px oklch(0% 0 0 / 0.15)', border: '1.5px solid var(--glass-border)' }}>
+                <div className="card-glass animate-scale-in" style={{ maxWidth: '440px', width: '100%', padding: isMobile ? '2rem 1.5rem' : '3.5rem 2.5rem', textAlign: 'center', background: 'white', borderRadius: isMobile ? '28px' : '40px', boxShadow: '0 40px 100px oklch(0% 0 0 / 0.15)', border: '1.5px solid var(--glass-border)' }}>
                     <div style={{ background: 'var(--primary-gradient)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: 'white', transform: 'rotate(-5deg)', boxShadow: '0 12px 32px var(--shadow-color)' }}>
                         <Lock size={36} strokeWidth={2.5} />
                     </div>
@@ -525,7 +572,7 @@ export default function Settings({
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 400px', gap: '2rem' }}>
-                                <div className="card-glass" style={{ padding: '2rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                                <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
                                         <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--danger-color)' }}><ShieldAlert size={20} strokeWidth={2.5} /></div>
                                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Points de Vigilance</h4>
@@ -546,7 +593,7 @@ export default function Settings({
                                         )}
                                     </div>
                                 </div>
-                                <div className="card-glass" style={{ padding: '2rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                                <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
                                         <div style={{ background: 'var(--bg-secondary)', padding: '8px', borderRadius: '10px', color: 'var(--text-main)' }}><History size={20} strokeWidth={2.5} /></div>
                                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Audit Récent</h4>
@@ -714,7 +761,7 @@ export default function Settings({
 
                     {/* CREATE USER TAB */}
                     {activeTab === 'create_user' && (
-                        <div className="card-glass animate-fade-in" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)', maxWidth: '600px' }}>
+                        <div className="card-glass animate-fade-in" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)', maxWidth: '600px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                 <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Sparkles size={24} strokeWidth={2.5} /></div>
                                 <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Nouveau Membre</h3>
@@ -761,7 +808,7 @@ export default function Settings({
                     {activeTab === 'roles' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                             {/* Role management card */}
-                            <div className="card-glass" style={{ padding: '2rem', borderRadius: '28px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '10px', color: 'var(--primary-color)' }}><Sparkles size={20} strokeWidth={2.5} /></div>
                                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950' }}>Ajouter un Rôle personnalisé</h3>
@@ -818,7 +865,7 @@ export default function Settings({
                                 </div>
 
                                 {/* Permissions configuration panel */}
-                                <div className="card-glass" style={{ padding: '2rem', borderRadius: '28px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                     <div>
                                         <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                                             Configuration : {roleLabels[selectedConfigRole] || selectedConfigRole}
@@ -882,7 +929,7 @@ export default function Settings({
 
                     {/* SECTIONS TAB */}
                     {activeTab === 'sections' && (
-                        <div className="card-glass" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                        <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                 <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Settings2 size={24} strokeWidth={2.5} /></div>
                                 <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Modules de l'Interface</h3>
@@ -913,7 +960,7 @@ export default function Settings({
                     {/* SECURITY TAB */}
                     {activeTab === 'security' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <div className="card-glass" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><KeyRound size={24} strokeWidth={2.5} /></div>
                                     <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Paramètres de Sécurité</h3>
@@ -927,7 +974,7 @@ export default function Settings({
                                     <input type="checkbox" checked={isAttendanceEnabled} onChange={e => setIsAttendanceEnabled(e.target.checked)} style={{ width: '28px', height: '28px', flexShrink: 0, cursor: 'pointer', accentColor: 'var(--primary-color)' }} />
                                 </label>
 
-                                <div style={{ background: 'white', border: '2px solid var(--glass-border)', padding: '2.5rem', borderRadius: '28px' }}>
+                                <div style={{ background: 'white', border: '2px solid var(--glass-border)', padding: isMobile ? '1.25rem' : '2.5rem', borderRadius: isMobile ? '20px' : '28px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
                                         <Lock size={18} strokeWidth={2.5} style={{ color: 'var(--text-muted)' }} />
                                         <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '950' }}>Modifier le code PIN d'accès Direction</h4>
@@ -952,22 +999,43 @@ export default function Settings({
                     {/* MAINTENANCE TAB */}
                     {activeTab === 'maintenance' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <div className="card-glass" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Database size={24} strokeWidth={2.5} /></div>
                                     <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Maintenance & Data</h3>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                                    {canManageAccess && (
+                                        <button className="btn-maintenance" onClick={handleFullArchiveExport} disabled={archiveBusy} style={archiveBusy ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
+                                            <Database size={32} strokeWidth={2} />
+                                            <span>{archiveBusy ? 'En cours…' : 'Tout télécharger'}</span>
+                                            <small>Archive .zip (données + photos)</small>
+                                        </button>
+                                    )}
+                                    {canManageAccess && (
+                                        <label className="btn-maintenance outline" style={archiveBusy ? { opacity: 0.6, pointerEvents: 'none' } : undefined}>
+                                            <Upload size={32} strokeWidth={2} />
+                                            <span>{archiveBusy ? 'En cours…' : 'Tout importer'}</span>
+                                            <small>Archive .zip complète</small>
+                                            <input type="file" accept=".zip" disabled={archiveBusy} onChange={(e) => {
+                                                const file = e.target.files[0];
+                                                e.target.value = '';
+                                                if (file) handleFullArchiveImport(file);
+                                            }} style={{ display: 'none' }} />
+                                        </label>
+                                    )}
                                     <button className="btn-maintenance" onClick={handleExportCsv}>
                                         <FileSpreadsheet size={32} strokeWidth={2} />
                                         <span>Exporter CSV</span>
                                         <small>Participants (Excel)</small>
                                     </button>
-                                    <button className="btn-maintenance" onClick={handleFullExport}>
-                                        <Download size={32} strokeWidth={2} />
-                                        <span>Exporter JSON</span>
-                                        <small>Sauvegarde complète</small>
-                                    </button>
+                                    {canManageAccess && (
+                                        <button className="btn-maintenance" onClick={handleFullExport}>
+                                            <Download size={32} strokeWidth={2} />
+                                            <span>Exporter JSON</span>
+                                            <small>Participants, groupes, activités</small>
+                                        </button>
+                                    )}
                                     <label className="btn-maintenance outline">
                                         <Upload size={32} strokeWidth={2} />
                                         <span>Restaurer</span>
@@ -986,7 +1054,7 @@ export default function Settings({
                                 </div>
                             </div>
 
-                            <div className="card-glass" style={{ padding: '3rem', borderRadius: '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '12px', color: 'var(--text-main)' }}><FileClock size={24} strokeWidth={2.5} /></div>
