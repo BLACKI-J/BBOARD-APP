@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sunrise, Sun, Apple, Moon, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, GraduationCap, Check, Lock, X } from 'lucide-react';
+import { Sunrise, Sun, Apple, Moon, Plus, Trash2, Edit2, ShieldAlert, Coins, User, Users, Shield, MapPin, Phone, Mail, GraduationCap, Check, Lock, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../../ui/UiProvider';
 import { useUnsavedGuard } from '../../utils/unsavedGuard';
@@ -474,6 +474,11 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                         <input type="tel" placeholder="06..." value={formData.phone || ''} onChange={e => setFormData({ ...formData, phone: e.target.value })}
                                             className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                                     </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><Mail size={14} /> Email</label>
+                                    <input type="email" placeholder="prenom.nom@email.com" value={formData.email || ''} onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                        className="glass-input" style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }} />
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                     <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}><MapPin size={14} /> Adresse Résidentielle</label>

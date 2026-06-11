@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Plus, Pill, ClipboardList, Clipboard, Stethoscope, Trash2, Printer } from 'lucide-react';
 import { useUi } from '../../ui/UiProvider';
 import { EmptyState } from '../ui';
@@ -346,34 +346,47 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
 };
 
 // ─── RegistreInfi Container ─────────────────────────────────────────────────
-const RegistreInfi = ({ children, groups, updateParticipantHealth, canEdit, isMobile }) => {
-    const [activeSection, setActiveSection] = useState('meds');
+const RegistreInfi = ({ children, groups, updateParticipantHealth, isMobile,
+    showMeds = true, canEditMeds = true, showPassages = true, canEditPassages = true }) => {
     const TABS = [
-        { id: 'meds',    label: 'Administration & Traitements', icon: <Pill size={15} /> },
-        { id: 'passage', label: 'Suivi Passage Infi',           icon: <ClipboardList size={15} /> },
+        ...(showMeds ? [{ id: 'meds', label: 'Administration & Traitements', icon: <Pill size={15} /> }] : []),
+        ...(showPassages ? [{ id: 'passage', label: 'Suivi Passage Infi', icon: <ClipboardList size={15} /> }] : []),
     ];
+    const [activeSection, setActiveSection] = useState(TABS[0]?.id || 'meds');
+
+    // Garde l'onglet interne sur une section visible si les droits changent.
+    useEffect(() => {
+        if (TABS.length && !TABS.some(t => t.id === activeSection)) {
+            setActiveSection(TABS[0].id);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [showMeds, showPassages]);
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px', alignSelf: 'flex-start' }}>
-                {TABS.map(tab => (
-                    <button key={tab.id} onClick={() => setActiveSection(tab.id)} style={{
-                        padding: '0.55rem 1.1rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                        fontSize: '0.78rem', transition: 'all 0.2s',
-                        display: 'flex', alignItems: 'center', gap: '0.5rem',
-                        background: activeSection === tab.id ? 'white' : 'transparent',
-                        boxShadow: activeSection === tab.id ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-                        color: activeSection === tab.id ? 'var(--primary-color)' : 'var(--text-muted)',
-                        fontWeight: activeSection === tab.id ? '950' : '800'
-                    }}>
-                        {tab.icon} {tab.label}
-                    </button>
-                ))}
-            </div>
+            {TABS.length > 1 && (
+                <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px', alignSelf: 'flex-start' }}>
+                    {TABS.map(tab => (
+                        <button key={tab.id} onClick={() => setActiveSection(tab.id)} style={{
+                            padding: '0.55rem 1.1rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                            fontSize: '0.78rem', transition: 'all 0.2s',
+                            display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            background: activeSection === tab.id ? 'white' : 'transparent',
+                            boxShadow: activeSection === tab.id ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
+                            color: activeSection === tab.id ? 'var(--primary-color)' : 'var(--text-muted)',
+                            fontWeight: activeSection === tab.id ? '950' : '800'
+                        }}>
+                            {tab.icon} {tab.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
-            {activeSection === 'meds'
-                ? <RegistreMeds children={children} groups={groups} updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} isMobile={isMobile} />
-                : <SuiviPassage children={children} groups={groups} updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} isMobile={isMobile} />
+            {activeSection === 'meds' && showMeds
+                ? <RegistreMeds children={children} groups={groups} updateParticipantHealth={updateParticipantHealth} canEdit={canEditMeds} isMobile={isMobile} />
+                : activeSection === 'passage' && showPassages
+                ? <SuiviPassage children={children} groups={groups} updateParticipantHealth={updateParticipantHealth} canEdit={canEditPassages} isMobile={isMobile} />
+                : null
             }
         </div>
     );

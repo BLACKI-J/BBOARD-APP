@@ -243,9 +243,17 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
 
 // ─── Main Component ────────────────────────────────────────────────────────────
 
-export default function Schedule({ activities, setActivities, participants, groups, canEdit = true, menus = {}, setMenus }) {
+export default function Schedule({ activities, setActivities, participants, groups, canEdit = true, menus = {}, setMenus, permissions = {} }) {
     const ui = useUi();
-    const [viewMode, setViewMode] = useState('activities');
+
+    // Sous-sections du Planning : visibilité + édition par rôle (clé absente/true → autorisé).
+    const can = (key) => permissions?.[key] !== false;
+    const canViewActivities = can('viewScheduleActivities');
+    const canViewMenus = can('viewScheduleMenus');
+    const canEditActivities = canEdit && can('editScheduleActivities');
+    const canEditMenus = canEdit && can('editScheduleMenus');
+
+    const [viewMode, setViewMode] = useState(canViewActivities ? 'activities' : (canViewMenus ? 'menus' : 'activities'));
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingId, setEditingId] = useState(null);
@@ -263,6 +271,12 @@ export default function Schedule({ activities, setActivities, participants, grou
     const [suggestions, setSuggestions] = useState([]);
     const [calendarMonth, setCalendarMonth] = useState(new Date());
     const isMobile = useIsMobile();
+
+    // Bascule l'onglet courant si sa sous-section devient masquée par les droits.
+    useEffect(() => {
+        if (viewMode === 'activities' && !canViewActivities && canViewMenus) setViewMode('menus');
+        else if (viewMode === 'menus' && !canViewMenus && canViewActivities) setViewMode('activities');
+    }, [canViewActivities, canViewMenus, viewMode]);
     const { scrollRef: schedScrollRef, isScrolled: schedScrolled, onScroll: schedOnScroll } = useScrollCollapse(60);
 
     const navigateDay = (dir) => {
@@ -285,7 +299,7 @@ export default function Schedule({ activities, setActivities, participants, grou
     const progress = dayActivities.length > 0 ? (doneCount / dayActivities.length) * 100 : 0;
 
     const handleEdit = (activity) => {
-        if (!canEdit) {
+        if (!canEditActivities) {
             ui.toast('Edition non autorisée.', { type: 'error' });
             return;
         }
@@ -303,7 +317,7 @@ export default function Schedule({ activities, setActivities, participants, grou
     };
 
     const handleDelete = async (id) => {
-        if (!canEdit) return;
+        if (!canEditActivities) return;
         const ok = await ui.confirm({
             title: 'Supprimer l\'activité',
             message: 'Êtes-vous sûr de vouloir supprimer cette activité ?',
@@ -314,13 +328,13 @@ export default function Schedule({ activities, setActivities, participants, grou
     };
 
     const handleToggleDone = (id) => {
-        if (!canEdit) return;
+        if (!canEditActivities) return;
         setActivities(activities.map(a => a.id === id ? { ...a, done: !a.done } : a));
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!canEdit) return;
+        if (!canEditActivities) return;
         const baseActivity = {
             ...formData,
             time: formData.startTime,
@@ -345,7 +359,7 @@ export default function Schedule({ activities, setActivities, participants, grou
     };
 
     const handleMoveActivity = (activityId, newDateStr) => {
-        if (!canEdit) return;
+        if (!canEditActivities) return;
         setActivities(activities.map(a => a.id === activityId ? { ...a, date: newDateStr } : a));
     };
 
@@ -451,9 +465,10 @@ export default function Schedule({ activities, setActivities, participants, grou
                 pointerEvents: isMobile && schedScrolled ? 'none' : 'auto'
             }}>
                 <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.05)', padding: '5px', borderRadius: '16px', backdropFilter: 'blur(10px)' }}>
+                     {canViewActivities && (
                      <button
                         onClick={() => setViewMode('activities')}
-                        style={{ 
+                        style={{
                             padding: '0.625rem 1.25rem', borderRadius: '12px', gap: '0.5rem', display: 'flex', alignItems: 'center',
                             background: viewMode === 'activities' ? 'white' : 'transparent',
                             color: viewMode === 'activities' ? 'var(--primary-color)' : 'var(--text-muted)',
@@ -462,9 +477,11 @@ export default function Schedule({ activities, setActivities, participants, grou
                         }}>
                         <CalendarIcon size={18} strokeWidth={2.5} /> Activités
                     </button>
+                    )}
+                    {canViewMenus && (
                     <button
                         onClick={() => setViewMode('menus')}
-                        style={{ 
+                        style={{
                             padding: '0.625rem 1.25rem', borderRadius: '12px', gap: '0.5rem', display: 'flex', alignItems: 'center',
                             background: viewMode === 'menus' ? 'white' : 'transparent',
                             color: viewMode === 'menus' ? 'var(--cta-color)' : 'var(--text-muted)',
@@ -473,6 +490,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                         }}>
                         <Utensils size={18} strokeWidth={2.5} /> Menus
                     </button>
+                    )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: isMobile ? 'center' : 'flex-end', flexWrap: 'wrap' }}>
@@ -491,8 +509,8 @@ export default function Schedule({ activities, setActivities, participants, grou
             {isMobile && schedScrolled && (
                 <div style={{ position: 'sticky', top: 0, zIndex: 22, background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(16px)', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '8px 12px' }}>
                     <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.06)', padding: '3px', borderRadius: '10px', flexShrink: 0 }}>
-                        <button aria-label="Vue activités" onClick={() => setViewMode('activities')} style={{ padding: '5px 10px', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'activities' ? 'white' : 'transparent', color: viewMode === 'activities' ? 'var(--primary-color)' : 'var(--text-muted)' }}><CalendarIcon size={14} /></button>
-                        <button aria-label="Vue repas" onClick={() => setViewMode('menus')} style={{ padding: '5px 10px', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'menus' ? 'white' : 'transparent', color: viewMode === 'menus' ? 'var(--cta-color)' : 'var(--text-muted)' }}><Utensils size={14} /></button>
+                        {canViewActivities && <button aria-label="Vue activités" onClick={() => setViewMode('activities')} style={{ padding: '5px 10px', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'activities' ? 'white' : 'transparent', color: viewMode === 'activities' ? 'var(--primary-color)' : 'var(--text-muted)' }}><CalendarIcon size={14} /></button>}
+                        {canViewMenus && <button aria-label="Vue repas" onClick={() => setViewMode('menus')} style={{ padding: '5px 10px', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '900', border: 'none', cursor: 'pointer', background: viewMode === 'menus' ? 'white' : 'transparent', color: viewMode === 'menus' ? 'var(--cta-color)' : 'var(--text-muted)' }}><Utensils size={14} /></button>}
                     </div>
                     <div style={{ flex: 1, textAlign: 'center', fontSize: '0.82rem', fontWeight: '900', color: 'var(--text-main)', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {currentDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
@@ -508,7 +526,11 @@ export default function Schedule({ activities, setActivities, participants, grou
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
                 <div ref={schedScrollRef} onScroll={schedOnScroll} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: isMobile ? '1.25rem' : '2.5rem', background: 'rgba(0,0,0,0.015)', overflowY: 'auto' }} className="no-scrollbar">
                     
-                    {viewMode === 'activities' ? (
+                    {(!canViewActivities && !canViewMenus) ? (
+                        <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)', fontWeight: 800 }}>
+                            Aucune sous-section du Planning n'est accessible avec votre rôle.
+                        </div>
+                    ) : viewMode === 'activities' ? (
                         <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto' }}>
                             {/* Date Header Card */}
                             <div className="card-glass" style={{
@@ -530,7 +552,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                         </div>
                                     )}
                                 </div>
-                                {canEdit && (
+                                {canEditActivities && (
                                     <button onClick={openNewForm} className="btn btn-primary" style={{ padding: isMobile ? '0.75rem' : '0.85rem 1.5rem', fontWeight: '950', gap: '0.75rem', borderRadius: '14px', fontSize: isMobile ? '0.85rem' : '0.9rem' }}>
                                         <Plus size={isMobile ? 18 : 20} strokeWidth={3} /> Nouvelle Activité
                                     </button>
@@ -551,14 +573,14 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     {dayActivities.map((activity, idx) => (
                                         <ActivityCard key={activity.id} activity={activity} index={idx}
                                             onEdit={handleEdit} onDelete={handleDelete} onToggleDone={handleToggleDone}
-                                            isMobile={isMobile} canEdit={canEdit} participants={participants} />
+                                            isMobile={isMobile} canEdit={canEditActivities} participants={participants} />
                                     ))}
                                 </div>
                             )}
                         </div>
                     ) : (
                          <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto' }}>
-                           <Menus participants={participants} currentDate={currentDate} isMobile={isMobile} menus={menus} setMenus={setMenus} />
+                           <Menus participants={participants} currentDate={currentDate} isMobile={isMobile} menus={menus} setMenus={setMenus} canEdit={canEditMenus} />
                          </div>
                     )}
                 </div>

@@ -37,7 +37,7 @@ export default function Directory({ participants = [], setParticipants, groups =
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
         firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '', healthDocProvided: false,
-        training: '', phone: '', address: '', emergencyContact: '', pin: '',
+        training: '', phone: '', email: '', address: '', emergencyContact: '', pin: '',
         pocketMoney: { initial: 0, current: 0, history: [] }
     });
 
@@ -270,7 +270,7 @@ export default function Directory({ participants = [], setParticipants, groups =
     const resetForm = () => {
         setFormData({
             firstName: '', lastName: '', birthDate: '', allergies: '', constraints: '', photo: '', role: 'child', group: '', healthDocProvided: false,
-            training: '', phone: '', address: '', emergencyContact: '', pin: '',
+            training: '', phone: '', email: '', address: '', emergencyContact: '', pin: '',
             pocketMoney: { initial: 0, current: 0, history: [] }
         });
         setEditingId(null);
@@ -295,6 +295,7 @@ export default function Directory({ participants = [], setParticipants, groups =
             healthDocProvided: !!participant.healthDocProvided,
             training: participant.training || '',
             phone: participant.phone || '',
+            email: participant.email || '',
             address: participant.address || '',
             emergencyContact: participant.emergencyContact || '',
             pin: ''

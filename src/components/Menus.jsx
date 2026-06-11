@@ -14,7 +14,7 @@ const MEALS = [
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const DAY_MAP = [6, 0, 1, 2, 3, 4, 5]; // JS getDay() → index in DAYS
 
-export default function Menus({ participants, currentDate, isMobile, menus = {}, setMenus }) {
+export default function Menus({ participants, currentDate, isMobile, menus = {}, setMenus, canEdit = true }) {
     const childrenWithAllergies = useMemo(() =>
         (participants || []).filter(p => p.role === 'child' && p.allergies && p.allergies.trim() !== ''),
         [participants]
@@ -25,7 +25,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
     const dayMenus = menus[currentDayName] || DEFAULT_DAY;
 
     const handleChange = (mealId, value) => {
-        if (!setMenus) return;
+        if (!setMenus || !canEdit) return;
         setMenus({
             ...menus,
             [currentDayName]: { ...dayMenus, [mealId]: value }
@@ -70,7 +70,8 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                         <textarea
                                             value={dayMenus[m.id] || ''}
                                             onChange={e => handleChange(m.id, e.target.value)}
-                                            placeholder="Composer le menu..."
+                                            disabled={!canEdit}
+                                            placeholder={canEdit ? "Composer le menu..." : "Lecture seule"}
                                             className="glass-input"
                                             style={{
                                                 width: '100%', height: isMobile ? '120px' : '160px',

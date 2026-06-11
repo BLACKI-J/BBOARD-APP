@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Phone, Edit2, ShieldAlert, CheckCircle2, Coins, MapPin, GraduationCap, History } from 'lucide-react';
+import { X, Phone, Mail, Edit2, ShieldAlert, CheckCircle2, Coins, MapPin, GraduationCap, History } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { RoleBadge, GroupBadge } from '../common/Badges';
 import { getAge } from '../../utils/participantUtils';
@@ -115,6 +115,15 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                                             <div>
                                                 <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)' }}>TÉLÉPHONE</div>
                                                 <div style={{ fontWeight: '800', fontSize: '0.95rem' }}>{viewingParticipant.phone}</div>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {viewingParticipant.email && (
+                                        <div style={{ display: 'flex', gap: '1rem' }}>
+                                            <Mail size={18} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
+                                            <div>
+                                                <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)' }}>EMAIL</div>
+                                                <div style={{ fontWeight: '800', fontSize: '0.95rem', wordBreak: 'break-all' }}>{viewingParticipant.email}</div>
                                             </div>
                                         </div>
                                     )}

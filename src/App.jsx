@@ -80,18 +80,28 @@ const defaultAccessControl = {
     rolePermissions: {
         direction: {
             viewSchedule: true, editSchedule: true,
+            viewScheduleActivities: true, editScheduleActivities: true, viewScheduleMenus: true, editScheduleMenus: true,
             viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
             viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
             viewHealth: true, editHealth: true,
+            viewHealthInfovac: true, editHealthInfovac: true, viewHealthMeds: true, editHealthMeds: true,
+            viewHealthTransmissions: true, editHealthTransmissions: true,
+            viewHealthRegistreMeds: true, editHealthRegistreMeds: true,
+            viewHealthPassages: true, editHealthPassages: true,
             searchInventoryAI: true, viewSettings: true, manageUsers: true, manageAccess: true, viewLogs: true
         },
         animator: {
             viewSchedule: true, editSchedule: true,
+            viewScheduleActivities: true, editScheduleActivities: true, viewScheduleMenus: true, editScheduleMenus: true,
             viewExitSheet: true, editExitSheet: true, viewIncident: true, editIncident: true,
             viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
             viewHealth: true, editHealth: true,
+            viewHealthInfovac: true, editHealthInfovac: true, viewHealthMeds: true, editHealthMeds: true,
+            viewHealthTransmissions: true, editHealthTransmissions: true,
+            viewHealthRegistreMeds: true, editHealthRegistreMeds: true,
+            viewHealthPassages: true, editHealthPassages: true,
             searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
         },
         child: {}
@@ -808,14 +818,14 @@ export default function App() {
                         <ErrorBoundary key={activeTab}>
                             <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                 {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} onNavigate={guardedNavigate} isMobile={isMobile} />
-                                : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} menus={menus} setMenus={setSyncedMenus} />
+                                : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} permissions={permissions} menus={menus} setMenus={setSyncedMenus} />
                                 : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, useAppStore.getState().exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, useAppStore.getState().meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)} canEdit={permissions.editDirectory} isMobile={isMobile} roles={accessControl.roles} />
                                 : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
                                 : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editHealth} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
+                                : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editHealth} permissions={permissions} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
                                 : activeTab === 'settings' ? <Settings
                                     participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)}
                                     activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)}

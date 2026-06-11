@@ -20,14 +20,23 @@ const SECTION_LABELS = {
 };
 
 const SECTIONS_CONFIG = [
-    { id: 'schedule', label: 'Planning', viewKey: 'viewSchedule', editKey: 'editSchedule' },
+    { id: 'schedule', label: 'Planning', viewKey: 'viewSchedule', editKey: 'editSchedule', subSections: [
+        { viewKey: 'viewScheduleActivities', editKey: 'editScheduleActivities', label: 'Activités' },
+        { viewKey: 'viewScheduleMenus', editKey: 'editScheduleMenus', label: 'Menus / Repas' }
+    ] },
     { id: 'exitsheet', label: 'Fiches de sortie', viewKey: 'viewExitSheet', editKey: 'editExitSheet' },
     { id: 'incident', label: 'Incidents (FEI)', viewKey: 'viewIncident', editKey: 'editIncident' },
     { id: 'recap', label: 'Coordination', viewKey: 'viewRecap', editKey: 'editRecap' },
     { id: 'attendance', label: 'Pointage', viewKey: 'viewAttendance', editKey: 'editAttendance' },
     { id: 'inventory', label: 'Matériel', viewKey: 'viewInventory', editKey: 'editInventory', extra: { key: 'searchInventoryAI', label: 'Recherche IA' } },
     { id: 'directory', label: 'Annuaire', viewKey: 'viewDirectory', editKey: 'editDirectory' },
-    { id: 'health', label: 'Pôle Santé', viewKey: 'viewHealth', editKey: 'editHealth' },
+    { id: 'health', label: 'Pôle Santé', viewKey: 'viewHealth', editKey: 'editHealth', subSections: [
+        { viewKey: 'viewHealthInfovac', editKey: 'editHealthInfovac', label: 'Fiches & Suivi' },
+        { viewKey: 'viewHealthMeds', editKey: 'editHealthMeds', label: 'Médicaments' },
+        { viewKey: 'viewHealthTransmissions', editKey: 'editHealthTransmissions', label: 'Registre · Transmissions' },
+        { viewKey: 'viewHealthRegistreMeds', editKey: 'editHealthRegistreMeds', label: 'Registre · Administration & traitements' },
+        { viewKey: 'viewHealthPassages', editKey: 'editHealthPassages', label: 'Registre · Suivi passages' }
+    ] },
     { id: 'settings', label: 'Paramètres', viewKey: 'viewSettings', extraKeys: [
         { key: 'manageUsers', label: 'Gérer l\'équipe (utilisateurs & PIN)' },
         { key: 'manageAccess', label: 'Gérer les accès globaux' },
@@ -915,6 +924,30 @@ export default function Settings({
                                                         </label>
                                                     ))}
                                                 </div>
+                                                {sec.subSections && (
+                                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', paddingTop: '0.85rem', borderTop: '1px dashed var(--glass-border)' }}>
+                                                        <span style={{ fontSize: '0.72rem', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Sous-sections détaillées</span>
+                                                        {sec.subSections.map(sub => (
+                                                            <div key={sub.viewKey} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '1.25rem', paddingLeft: '0.25rem' }}>
+                                                                <span style={{ flex: '1 1 200px', fontSize: '0.82rem', fontWeight: '850', color: 'var(--text-main)' }}>{sub.label}</span>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '800' }}>
+                                                                    <input type="checkbox"
+                                                                        checked={accessControl.rolePermissions?.[selectedConfigRole]?.[sub.viewKey] !== false}
+                                                                        onChange={e => updateRolePermission(selectedConfigRole, sub.viewKey, e.target.checked)}
+                                                                    />
+                                                                    <span>Voir</span>
+                                                                </label>
+                                                                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '0.8rem', fontWeight: '800' }}>
+                                                                    <input type="checkbox"
+                                                                        checked={accessControl.rolePermissions?.[selectedConfigRole]?.[sub.editKey] !== false}
+                                                                        onChange={e => updateRolePermission(selectedConfigRole, sub.editKey, e.target.checked)}
+                                                                    />
+                                                                    <span>Modifier</span>
+                                                                </label>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
