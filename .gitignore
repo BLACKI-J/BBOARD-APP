@@ -43,6 +43,9 @@ public/logo/logo.png
 *.pdf
 !docs/*.pdf
 colo-import-*.json
+# Tableaux de recrutement / exports (N° SS, IBAN/BIC, adresses).
+*.xlsx
+*.xls
 
 # Claude Code local (transient)
 .claude/scheduled_tasks.lock

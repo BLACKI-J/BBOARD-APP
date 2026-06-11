@@ -174,14 +174,31 @@ export default function Directory({ participants = [], setParticipants, groups =
                     };
                 }).filter(p => p.firstName || p.lastName);
 
+                // Fusion non destructive + dédoublonnage (prénom + nom + date de naissance)
+                const norm = (s) => (s || '').toString().trim().toLowerCase()
+                    .normalize('NFD').replace(/\p{Diacritic}/gu, '');
+                const keyOf = (p) => `${norm(p.firstName)}|${norm(p.lastName)}|${norm(p.birthDate)}`;
+                const existingKeys = new Set(safeParticipants.map(keyOf));
+                const toAdd = [];
+                let skipped = 0;
+                for (const p of newParticipants) {
+                    const k = keyOf(p);
+                    if (existingKeys.has(k)) { skipped++; continue; }
+                    existingKeys.add(k);
+                    toAdd.push(p);
+                }
+                if (toAdd.length === 0) {
+                    ui.toast(`Aucun nouveau participant à ajouter (${skipped} déjà présent${skipped > 1 ? 's' : ''}).`);
+                    return;
+                }
                 const ok = await ui.confirm({
                     title: 'Import CSV',
-                    message: `${newParticipants.length} participant(s) détecté(s). Ajouter à la liste existante (${safeParticipants.length}) ?`,
+                    message: `Ajouter ${toAdd.length} nouveau${toAdd.length > 1 ? 'x' : ''} participant${toAdd.length > 1 ? 's' : ''} à la liste existante (${safeParticipants.length}) ?` + (skipped ? ` ${skipped} déjà présent${skipped > 1 ? 's' : ''} ignoré${skipped > 1 ? 's' : ''}.` : ''),
                     confirmText: 'Ajouter'
                 });
                 if (ok) {
-                    setParticipants([...safeParticipants, ...newParticipants]);
-                    ui.toast(`${newParticipants.length} participant(s) importé(s).`, { type: 'success' });
+                    setParticipants([...safeParticipants, ...toAdd]);
+                    ui.toast(`Import terminé : ${toAdd.length} ajouté${toAdd.length > 1 ? 's' : ''}${skipped ? `, ${skipped} ignoré${skipped > 1 ? 's' : ''}` : ''}.`, { type: 'success' });
                 }
             } catch (err) {
                 ui.alert({ title: 'Erreur', message: 'Impossible de lire le fichier CSV.' });
@@ -206,14 +223,38 @@ export default function Directory({ participants = [], setParticipants, groups =
                 // Accepte un tableau brut OU une sauvegarde { participants: [...] }
                 const imported = Array.isArray(parsed) ? parsed : (Array.isArray(parsed?.participants) ? parsed.participants : null);
                 if (imported) {
-                    const ok = await ui.confirm({
-                        title: 'Importer les participants',
-                        message: `Remplacer la liste actuelle (${safeParticipants.length}) par ${imported.length} participants importés ?`,
-                        confirmText: 'Importer Tout'
-                    });
-                    if (ok) {
-                        setParticipants(imported);
-                        ui.toast('Import terminé.', { type: 'success' });
+                    // Fusion NON destructive : on conserve la liste actuelle et on n'ajoute
+                    // que les participants absents. Dédoublonnage par prénom + nom + date de
+                    // naissance (insensible casse/accents) → ré-importer le même fichier
+                    // n'écrase rien et ne crée pas de doublon.
+                    const norm = (s) => (s || '').toString().trim().toLowerCase()
+                        .normalize('NFD').replace(/\p{Diacritic}/gu, '');
+                    const keyOf = (p) => `${norm(p.firstName)}|${norm(p.lastName)}|${norm(p.birthDate)}`;
+                    const existingKeys = new Set(safeParticipants.map(keyOf));
+                    const existingIds = new Set(safeParticipants.map((p) => p.id));
+                    const toAdd = [];
+                    let skipped = 0;
+                    for (const p of imported) {
+                        const k = keyOf(p);
+                        if (existingKeys.has(k)) { skipped++; continue; } // déjà présent → conservé tel quel
+                        existingKeys.add(k);
+                        // id unique garanti (évite toute collision avec un existant)
+                        const id = (p.id && !existingIds.has(p.id)) ? p.id : uuidv4();
+                        existingIds.add(id);
+                        toAdd.push({ ...p, id });
+                    }
+                    if (toAdd.length === 0) {
+                        ui.toast(`Aucun nouveau participant à ajouter (${skipped} déjà présent${skipped > 1 ? 's' : ''}).`);
+                    } else {
+                        const ok = await ui.confirm({
+                            title: 'Importer les participants',
+                            message: `Ajouter ${toAdd.length} nouveau${toAdd.length > 1 ? 'x' : ''} participant${toAdd.length > 1 ? 's' : ''} à la liste actuelle (${safeParticipants.length}) ?` + (skipped ? ` ${skipped} déjà présent${skipped > 1 ? 's' : ''} seront conservés.` : ''),
+                            confirmText: 'Ajouter'
+                        });
+                        if (ok) {
+                            setParticipants([...safeParticipants, ...toAdd]);
+                            ui.toast(`Import terminé : ${toAdd.length} ajouté${toAdd.length > 1 ? 's' : ''}${skipped ? `, ${skipped} conservé${skipped > 1 ? 's' : ''}` : ''}.`, { type: 'success' });
+                        }
                     }
                 } else {
                     ui.alert({ title: 'Import invalide', message: 'Le fichier doit contenir un tableau JSON, ou un objet avec une clé "participants".' });
