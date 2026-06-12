@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Plus, Pill, ClipboardList, Clipboard, Stethoscope, Trash2, Printer } from 'lucide-react';
+import { Plus, Pill, ClipboardList, Clipboard, Stethoscope, Trash2, Printer, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useUi } from '../../ui/UiProvider';
 import { EmptyState } from '../ui';
 import { printHtml } from '../../utils/printHtml';
@@ -11,6 +11,42 @@ const tdStyle = { padding: '0.875rem 1.5rem', fontSize: '0.88rem', color: 'var(-
 const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ));
+
+const toIsoDate = (d) => d.toISOString().slice(0, 10);
+const todayIso = () => toIsoDate(new Date());
+const addDays = (iso, n) => { const d = new Date(iso); d.setDate(d.getDate() + n); return toIsoDate(d); };
+const fmtDay = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+const DayNav = ({ date, onChange }) => {
+    const inputRef = React.useRef(null);
+    const openPicker = () => {
+        const el = inputRef.current;
+        if (!el) return;
+        if (el.showPicker) el.showPicker();
+        else el.click();
+    };
+    return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '14px', padding: '0 0.25rem', height: '40px' }}>
+            <button onClick={() => onChange(addDays(date, -1))} style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                <ChevronLeft size={18} strokeWidth={2.5} />
+            </button>
+            <button onClick={openPicker} style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: '950', fontSize: '0.82rem', color: 'var(--primary-color)', whiteSpace: 'nowrap', padding: '0 0.25rem', textTransform: 'capitalize', textDecoration: 'underline dotted', textUnderlineOffset: '3px' }}>
+                {fmtDay(date)}
+            </button>
+            <input
+                ref={inputRef}
+                type="date"
+                value={date}
+                max={todayIso()}
+                onChange={e => e.target.value && onChange(e.target.value)}
+                style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
+            />
+            <button onClick={() => onChange(addDays(date, 1))} disabled={date >= todayIso()} style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: date >= todayIso() ? 'default' : 'pointer', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: date >= todayIso() ? 'var(--glass-border)' : 'var(--text-muted)' }}>
+                <ChevronRight size={18} strokeWidth={2.5} />
+            </button>
+        </div>
+    );
+};
 
 // Opens an A4 print window styled like the physical infirmary register:
 // dark header band, ruled rows, blank lines to fill by hand. Portrait.
@@ -43,12 +79,62 @@ const printRegister = (title, subtitle, headers, rows, minRows = 22) => {
         </body></html>`);
 };
 
+const StaffAutocomplete = ({ value, onChange, staff, placeholder, style }) => {
+    const [open, setOpen] = React.useState(false);
+    const filtered = staff.filter(s => {
+        const name = `${s.firstName} ${s.lastName || ''}`.trim().toLowerCase();
+        return name.includes((value || '').toLowerCase());
+    });
+    return (
+        <div style={{ position: 'relative' }}>
+            <input
+                className="glass-input"
+                value={value}
+                onChange={e => onChange(e.target.value)}
+                onFocus={() => setOpen(true)}
+                onBlur={() => setTimeout(() => setOpen(false), 150)}
+                placeholder={placeholder}
+                style={style}
+                autoComplete="off"
+            />
+            {open && filtered.length > 0 && (
+                <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
+                    background: 'white', border: '1.5px solid var(--glass-border)',
+                    borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
+                    marginTop: '4px', overflow: 'hidden'
+                }}>
+                    {filtered.map(s => {
+                        const name = `${s.firstName} ${s.lastName || ''}`.trim();
+                        return (
+                            <button
+                                key={s.id}
+                                type="button"
+                                onMouseDown={() => { onChange(name); setOpen(false); }}
+                                style={{
+                                    display: 'block', width: '100%', textAlign: 'left',
+                                    padding: '0.7rem 1rem', border: 'none', background: 'none',
+                                    cursor: 'pointer', fontWeight: '800', fontSize: '0.9rem',
+                                    color: 'var(--text-main)', borderBottom: '1px solid var(--glass-border)'
+                                }}
+                            >
+                                {name}
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </div>
+    );
+};
+
 // ─── Registre Médicaments ───────────────────────────────────────────────────
-const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) => {
+const RegistreMeds = ({ children, staff = [], updateParticipantHealth, canEdit, isMobile }) => {
     const ui = useUi();
     const [showForm, setShowForm] = useState(false);
     const nowTime = () => new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
     const [form, setForm] = useState({ childId: '', heure: '', medicaments: '', traitement: '', soignant: '' });
+    const [selectedDate, setSelectedDate] = useState(todayIso);
 
     const allLogs = useMemo(() => {
         const logs = [];
@@ -59,6 +145,11 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
         });
         return logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }, [children]);
+
+    const filteredLogs = useMemo(() =>
+        allLogs.filter(log => toIsoDate(new Date(log.timestamp)) === selectedDate),
+        [allLogs, selectedDate]
+    );
 
     const handleChildSelect = (childId) => {
         const child = children.find(c => c.id === childId);
@@ -82,7 +173,7 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
     };
 
     const handleExport = () => {
-        const rows = allLogs.map(l => [
+        const rows = filteredLogs.map(l => [
             new Date(l.timestamp).toLocaleDateString('fr-FR'),
             l.heure || '',
             l.childName,
@@ -92,7 +183,7 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
         ]);
         printRegister(
             "Registre de l'infirmerie — Administration des traitements",
-            `${allLogs.length} entrée(s) — document à conserver`,
+            `${fmtDay(selectedDate)} — ${filteredLogs.length} entrée(s)`,
             ['Date', 'Heure', 'Vacancier', 'Médicaments du jour', 'Soin / Traitement donné', 'Soignant'],
             rows
         );
@@ -100,11 +191,14 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div className="u-flex u-flex-between">
-                <h3 className="u-section-title" style={{ margin: 0 }}>Registre · {allLogs.length} entrée{allLogs.length !== 1 ? 's' : ''}</h3>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={handleExport} disabled={allLogs.length === 0} title="Exporter / imprimer le registre"
-                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', cursor: allLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: allLogs.length === 0 ? 0.5 : 1 }}>
+            <div className="u-flex u-flex-between" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
+                <h3 className="u-section-title" style={{ margin: 0 }}>
+                    Registre · {filteredLogs.length} entrée{filteredLogs.length !== 1 ? 's' : ''}
+                </h3>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <DayNav date={selectedDate} onChange={setSelectedDate} />
+                    <button onClick={handleExport} disabled={filteredLogs.length === 0} title="Exporter / imprimer le registre"
+                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', cursor: filteredLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: filteredLogs.length === 0 ? 0.5 : 1 }}>
                         <Printer size={16} strokeWidth={2.5} /> Exporter PDF
                     </button>
                     {canEdit && (
@@ -131,7 +225,7 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                         </div>
                         <div>
                             <label style={labelStyle}>Soignant</label>
-                            <input className="glass-input" placeholder="Prénom du soignant" value={form.soignant} onChange={e => setForm(f => ({ ...f, soignant: e.target.value }))} style={{ height: '44px', fontWeight: '800' }} />
+                            <StaffAutocomplete value={form.soignant} onChange={v => setForm(f => ({ ...f, soignant: v }))} staff={staff} placeholder="Prénom du soignant" style={{ height: '44px', fontWeight: '800' }} />
                         </div>
                         <div>
                             <label style={labelStyle}>Médicaments du jour</label>
@@ -150,8 +244,8 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
             )}
 
             <div className="u-table-wrap">
-                {allLogs.length === 0 ? (
-                    <EmptyState icon={<Clipboard size={40} strokeWidth={1.5} />} title="Aucune entrée dans le registre." />
+                {filteredLogs.length === 0 ? (
+                    <EmptyState icon={<Clipboard size={40} strokeWidth={1.5} />} title="Aucune entrée dans le registre ce jour." />
                 ) : (
                     <table className="u-table">
                         <thead>
@@ -166,7 +260,7 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                             </tr>
                         </thead>
                         <tbody>
-                            {allLogs.map(log => (
+                            {filteredLogs.map(log => (
                                 <tr key={log.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="hover-row">
                                     <td style={tdStyle}>{new Date(log.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</td>
                                     <td style={tdStyle}><span style={{ fontWeight: '800', color: 'var(--primary-color)' }}>{log.heure || '--:--'}</span></td>
@@ -195,10 +289,11 @@ const RegistreMeds = ({ children, updateParticipantHealth, canEdit, isMobile }) 
 };
 
 // ─── Suivi Passage ──────────────────────────────────────────────────────────
-const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) => {
+const SuiviPassage = ({ children, staff = [], updateParticipantHealth, canEdit, isMobile }) => {
     const ui = useUi();
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState({ childId: '', soignant: '', nature: '', soins: '', observation: '' });
+    const [selectedDate, setSelectedDate] = useState(todayIso);
 
     const allLogs = useMemo(() => {
         const logs = [];
@@ -209,6 +304,11 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
         });
         return logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
     }, [children]);
+
+    const filteredLogs = useMemo(() =>
+        allLogs.filter(log => toIsoDate(new Date(log.timestamp)) === selectedDate),
+        [allLogs, selectedDate]
+    );
 
     const handleAdd = () => {
         if (!form.childId || !form.soignant) { ui.toast('Vacancier et soignant obligatoires.', { type: 'error' }); return; }
@@ -227,7 +327,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
     };
 
     const handleExport = () => {
-        const rows = allLogs.map(l => [
+        const rows = filteredLogs.map(l => [
             new Date(l.timestamp).toLocaleDateString('fr-FR'),
             new Date(l.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
             l.childName,
@@ -238,7 +338,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
         ]);
         printRegister(
             "Suivi des passages à l'infirmerie",
-            `${allLogs.length} passage(s) — document à conserver`,
+            `${fmtDay(selectedDate)} — ${filteredLogs.length} passage(s)`,
             ['Date', 'Heure', 'Vacancier', 'Soignant', 'Nature', 'Soins effectués', 'Observation'],
             rows
         );
@@ -246,14 +346,17 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-            <div className="u-flex u-flex-between">
+            <div className="u-flex u-flex-between" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
                 <div>
                     <h2 style={{ fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.03em', margin: 0 }}>Suivi Passage Infirmerie</h2>
-                    <p className="u-text-sm u-text-muted u-font-bold" style={{ margin: '4px 0 0' }}>{allLogs.length} passage{allLogs.length !== 1 ? 's' : ''} enregistré{allLogs.length !== 1 ? 's' : ''}</p>
+                    <p className="u-text-sm u-text-muted u-font-bold" style={{ margin: '4px 0 0' }}>
+                        {filteredLogs.length} passage{filteredLogs.length !== 1 ? 's' : ''} enregistré{filteredLogs.length !== 1 ? 's' : ''}
+                    </p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button onClick={handleExport} disabled={allLogs.length === 0} title="Exporter / imprimer le suivi"
-                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', cursor: allLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: allLogs.length === 0 ? 0.5 : 1 }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                    <DayNav date={selectedDate} onChange={setSelectedDate} />
+                    <button onClick={handleExport} disabled={filteredLogs.length === 0} title="Exporter / imprimer le suivi"
+                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', cursor: filteredLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: filteredLogs.length === 0 ? 0.5 : 1 }}>
                         <Printer size={16} strokeWidth={2.5} /> Exporter PDF
                     </button>
                     {canEdit && (
@@ -276,7 +379,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                         </div>
                         <div>
                             <label style={labelStyle}>Soignant</label>
-                            <input className="glass-input" placeholder="Prénom du soignant" value={form.soignant} onChange={e => setForm(f => ({ ...f, soignant: e.target.value }))} style={{ height: '44px', fontWeight: '800' }} />
+                            <StaffAutocomplete value={form.soignant} onChange={v => setForm(f => ({ ...f, soignant: v }))} staff={staff} placeholder="Prénom du soignant" style={{ height: '44px', fontWeight: '800' }} />
                         </div>
                         <div>
                             <label style={labelStyle}>Nature du passage</label>
@@ -299,8 +402,8 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
             )}
 
             <div className="u-table-wrap">
-                {allLogs.length === 0 ? (
-                    <EmptyState icon={<Stethoscope size={40} strokeWidth={1.5} />} title="Aucun passage enregistré." />
+                {filteredLogs.length === 0 ? (
+                    <EmptyState icon={<Stethoscope size={40} strokeWidth={1.5} />} title="Aucun passage enregistré ce jour." />
                 ) : (
                     <table className="u-table">
                         <thead>
@@ -316,7 +419,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
                             </tr>
                         </thead>
                         <tbody>
-                            {allLogs.map(log => (
+                            {filteredLogs.map(log => (
                                 <tr key={log.id} style={{ borderBottom: '1px solid var(--glass-border)' }} className="hover-row">
                                     <td style={tdStyle}>{new Date(log.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })}</td>
                                     <td style={tdStyle}><span style={{ fontWeight: '800', color: 'var(--primary-color)' }}>{new Date(log.timestamp).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span></td>
@@ -346,7 +449,7 @@ const SuiviPassage = ({ children, updateParticipantHealth, canEdit, isMobile }) 
 };
 
 // ─── RegistreInfi Container ─────────────────────────────────────────────────
-const RegistreInfi = ({ children, groups, updateParticipantHealth, isMobile,
+const RegistreInfi = ({ children, groups, staff = [], updateParticipantHealth, isMobile,
     showMeds = true, canEditMeds = true, showPassages = true, canEditPassages = true }) => {
     const TABS = [
         ...(showMeds ? [{ id: 'meds', label: 'Administration & Traitements', icon: <Pill size={15} /> }] : []),
@@ -383,9 +486,9 @@ const RegistreInfi = ({ children, groups, updateParticipantHealth, isMobile,
             )}
 
             {activeSection === 'meds' && showMeds
-                ? <RegistreMeds children={children} groups={groups} updateParticipantHealth={updateParticipantHealth} canEdit={canEditMeds} isMobile={isMobile} />
+                ? <RegistreMeds children={children} groups={groups} staff={staff} updateParticipantHealth={updateParticipantHealth} canEdit={canEditMeds} isMobile={isMobile} />
                 : activeSection === 'passage' && showPassages
-                ? <SuiviPassage children={children} groups={groups} updateParticipantHealth={updateParticipantHealth} canEdit={canEditPassages} isMobile={isMobile} />
+                ? <SuiviPassage children={children} groups={groups} staff={staff} updateParticipantHealth={updateParticipantHealth} canEdit={canEditPassages} isMobile={isMobile} />
                 : null
             }
         </div>

@@ -161,6 +161,7 @@ export default function HealthCenter({ participants = [], setParticipants, group
                         {(can('viewHealthRegistreMeds') || can('viewHealthPassages')) && (
                             <RegistreInfi
                                 children={children} groups={groups}
+                                staff={(participants || []).filter(p => p.role !== 'child')}
                                 updateParticipantHealth={updateParticipantHealth} isMobile={isMobile}
                                 showMeds={can('viewHealthRegistreMeds')} canEditMeds={canEdit && can('editHealthRegistreMeds')}
                                 showPassages={can('viewHealthPassages')} canEditPassages={canEdit && can('editHealthPassages')}

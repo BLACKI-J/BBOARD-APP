@@ -3,7 +3,7 @@ import { Users, User, Shield, Trash2, Plus, Download, Upload, Printer, FileSprea
 import { StatBadge } from '../common/Badges';
 import SectionHeader from '../common/SectionHeader';
 
-const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleExportCsv, handleImport, handleImportCsv, isMobile, canEdit }) => {
+const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleExportCsv, handleImport, handleImportCsv, openTrombiModal, hasSelection, isMobile, canEdit }) => {
     return (
         <div className="directory-header dh-wrap" style={{
             padding: isMobile ? '0.75rem 1rem' : '2.5rem 2.5rem 1.5rem',
@@ -65,6 +65,14 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button className="btn-icon-ref" style={{ background: 'white', width: '44px', height: '44px' }} onClick={() => window.print()} title="Imprimer Liste (PDF)">
                         <Printer size={18} strokeWidth={2.5} />
+                    </button>
+                    <button
+                        className="btn-icon-ref"
+                        onClick={openTrombiModal}
+                        title="Trombinoscope 🤠"
+                        style={{ background: 'white', width: '44px', height: '44px', fontSize: '20px' }}
+                    >
+                        🤠
                     </button>
                     {canEdit && !isMobile && (
                         <>

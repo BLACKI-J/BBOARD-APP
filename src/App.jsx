@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import Login from './components/Login';
 import { useUi } from './ui/UiProvider';
 import { hasUnsavedChanges } from './utils/unsavedGuard';
+import { useSwipeNav } from './utils/useSwipeNav';
 import { apiSend } from './utils/api';
 import PullToRefresh from './components/common/PullToRefresh';
 import SyncStatus from './components/common/SyncStatus';
@@ -593,6 +594,12 @@ export default function App() {
         setIsNavOpen(false);
     }, [activeTab, ui]);
 
+    const { onTouchStart: swipeTouchStart, onTouchEnd: swipeTouchEnd } = useSwipeNav({
+        tabs: navItems,
+        activeTab,
+        onNavigate: guardedNavigate,
+    });
+
     const setSyncedMenus = useCallback((v) => {
         mutateCollection(`${API_URL}/state/menus`, setMenus, v, menus);
     }, [mutateCollection, menus]);
@@ -702,7 +709,11 @@ export default function App() {
             </aside>}
 
             {/* Main Content */}
-            <main style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}>
+            <main
+                style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}
+                onTouchStart={isMobile ? swipeTouchStart : undefined}
+                onTouchEnd={isMobile ? swipeTouchEnd : undefined}
+            >
                 <div className="morph-blob" style={{ top: '-10%', right: '-5%' }} />
                 <div className="morph-blob-2" style={{ bottom: '-5%', left: '5%' }} />
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { Camera, Search, Plus, Trash2, Package, Upload, X, ChevronRight, Layers, Box, RefreshCcw, List, Sparkles, CheckCircle2, AlertCircle, ShoppingBag, ArrowRight, Users } from 'lucide-react';
 import WebcamPhotoCapture from './directory/WebcamPhotoCapture';
+import { canUseWebcam } from '../utils/camera';
 import { useUi } from '../ui/UiProvider';
 import { apiSend } from '../utils/api';
 import { compressImage, fileToDataUrl } from '../utils/image';
@@ -234,8 +235,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
 
     const requestCapture = useCallback((cb) => {
         photoCbRef.current = cb;
-        const canUseWebcam = typeof window !== 'undefined' && window.isSecureContext && !!navigator.mediaDevices?.getUserMedia;
-        if (canUseWebcam) setWebcamOpen(true);
+        if (canUseWebcam()) setWebcamOpen(true);
         else nativeCamRef.current?.click();
     }, []);
 

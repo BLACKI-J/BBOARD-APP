@@ -3,6 +3,7 @@ import { Search, Plus } from 'lucide-react';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
 import useIsMobile from '../utils/useIsMobile';
 import { exportParticipantsCsv } from '../utils/participantsCsv';
+import { printHtml } from '../utils/printHtml';
 import { v4 as uuidv4 } from 'uuid';
 import { useUi } from '../ui/UiProvider';
 
@@ -44,6 +45,9 @@ export default function Directory({ participants = [], setParticipants, groups =
     // Group Management State
     const [isGroupManagerOpen, setIsGroupManagerOpen] = useState(false);
     const [newGroupData, setNewGroupData] = useState({ name: '', color: '#c2703d' });
+
+    // Trombinoscope modal state
+    const [trombiConfig, setTrombiConfig] = useState(null);
 
     const toggleSelection = (id) => {
         if (!canEdit) {
@@ -116,6 +120,198 @@ export default function Directory({ participants = [], setParticipants, groups =
         const baseLabels = { child: 'Enfant', animator: 'Animateur', direction: 'Direction' };
         const roleLabels = { ...baseLabels, ...Object.fromEntries((roles || []).map(r => [r.id, r.label])) };
         exportParticipantsCsv(safeParticipants, safeGroups, roleLabels);
+    };
+
+    const openTrombiModal = () => {
+        const year = new Date().getFullYear();
+        setTrombiConfig({
+            title: 'Trombinoscope',
+            subtitle: `BBOARD · Session ${year}`,
+            useSelection: false,
+        });
+    };
+
+    const handlePrintTrombinoscope = (config) => {
+        const { title, subtitle, useSelection } = config;
+        const source = useSelection && selectedParticipants.length > 0
+            ? safeParticipants.filter(p => selectedParticipants.includes(p.id))
+            : safeParticipants.filter(p => p.role === 'child');
+
+        const groupMap = Object.fromEntries(safeGroups.map(g => [g.id, g]));
+        const sortAlpha = (a, b) => (a.lastName || '').localeCompare(b.lastName || '') || (a.firstName || '').localeCompare(b.firstName || '');
+
+        const grouped = {};
+        const ungrouped = [];
+        source.forEach(p => {
+            if (p.group && groupMap[p.group]) {
+                if (!grouped[p.group]) grouped[p.group] = [];
+                grouped[p.group].push(p);
+            } else {
+                ungrouped.push(p);
+            }
+        });
+
+        const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+        const STAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin:0 5px"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4 2.4-7.4L2 9.4h7.6z"/></svg>`;
+        const CACTUS_SVG = (flip) => `<svg width="44" height="62" viewBox="0 0 44 62" fill="#4a7a3a" opacity=".55" style="display:inline-block;${flip?'transform:scaleX(-1)':''}"><rect x="17" y="14" width="10" height="48" rx="5"/><rect x="3" y="26" width="17" height="8" rx="4"/><rect x="24" y="33" width="17" height="8" rx="4"/><rect x="3" y="17" width="8" height="17" rx="4"/><rect x="33" y="25" width="8" height="16" rx="4"/></svg>`;
+        const SUN_SVG = `<svg width="48" height="48" viewBox="0 0 48 48" fill="#d4a96a" opacity=".4"><circle cx="24" cy="24" r="8"/><g stroke="#d4a96a" stroke-width="3" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a=>`<line x1="${24+12*Math.cos(a*Math.PI/180)}" y1="${24+12*Math.sin(a*Math.PI/180)}" x2="${24+19*Math.cos(a*Math.PI/180)}" y2="${24+19*Math.sin(a*Math.PI/180)}"/>`).join('')}</g></svg>`;
+
+        const cardHtml = (p) => {
+            const firstName = esc(p.firstName || '');
+            const lastName = esc((p.lastName || '').toUpperCase());
+            const initials = `${p.firstName?.[0] || ''}${p.lastName?.[0] || ''}`.toUpperCase() || '?';
+            const group = groupMap[p.group];
+            const photoEl = p.photo
+                ? `<img src="${p.photo}" class="photo" alt="${firstName}" />`
+                : `<div class="initials">${esc(initials)}</div>`;
+            const badgeEl = group
+                ? `<div class="card-badge" style="background:${esc(group.color)}25;border-color:${esc(group.color)};color:${esc(group.color)}">${esc(group.name)}</div>`
+                : '';
+            return `<div class="card">${photoEl}<div class="card-name">${firstName}<br><strong>${lastName}</strong></div>${badgeEl}</div>`;
+        };
+
+        const sectionHtml = (members, groupObj) => {
+            const color = groupObj?.color || '#c2703d';
+            const name = groupObj ? esc(groupObj.name) : 'Sans groupe';
+            return `
+            <div class="section">
+                <div class="section-title" style="border-color:${esc(color)};color:${esc(color)}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="${esc(color)}" style="vertical-align:middle;margin:0 5px"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4 2.4-7.4L2 9.4h7.6z"/></svg>
+                    ${name}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="${esc(color)}" style="vertical-align:middle;margin:0 5px"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4 2.4-7.4L2 9.4h7.6z"/></svg>
+                </div>
+                <div class="grid">${[...members].sort(sortAlpha).map(cardHtml).join('')}</div>
+            </div>`;
+        };
+
+        let sectionsHtml = '';
+        safeGroups.filter(g => grouped[g.id]).forEach(g => { sectionsHtml += sectionHtml(grouped[g.id], g); });
+        if (ungrouped.length) sectionsHtml += sectionHtml(ungrouped, null);
+
+        printHtml(`<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8">
+<title>${esc(title)}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{
+    background:#f2deb8;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  body{
+    font-family:'Special Elite',Georgia,'Times New Roman',serif;
+    color:#3d2008;padding:8px;
+    background-image:
+      radial-gradient(ellipse at 15% 15%,rgba(194,112,61,.12) 0%,transparent 55%),
+      radial-gradient(ellipse at 85% 85%,rgba(194,112,61,.12) 0%,transparent 55%);
+  }
+  /* ── Page wrapper (replaces body::before fixed) ── */
+  .page{
+    border:3px solid #8b5c2a;
+    padding:14px;
+    min-height:260mm;
+    box-shadow:inset 0 0 0 2px #f2deb8,inset 0 0 0 5px #c2703d,inset 0 0 0 7px #f2deb8;
+  }
+  /* ── Header ── */
+  .header{text-align:center;margin-bottom:1.4rem;padding:0}
+  .header-inner{
+    background:#2c1505;border:4px solid #c2703d;
+    border-top:none;border-bottom:none;
+    padding:1rem 3rem;position:relative;overflow:hidden;
+  }
+  .header-inner::before,.header-inner::after{
+    content:'';position:absolute;top:0;bottom:0;width:60px;
+    background:repeating-linear-gradient(90deg,#c2703d 0,#c2703d 4px,transparent 4px,transparent 12px);
+    opacity:.35;
+  }
+  .header-inner::before{left:0}
+  .header-inner::after{right:0}
+  .header-band{
+    background:#8b5c2a;height:6px;
+    background-image:repeating-linear-gradient(90deg,#6b3d18 0,#6b3d18 8px,#a87040 8px,#a87040 16px);
+  }
+  .header-stars{color:#c2703d;font-size:11px;letter-spacing:.6em;padding:4px 0;background:#2c1505;text-align:center}
+  .main-title{
+    font-family:'Rye',Georgia,serif;font-size:42px;color:#f2deb8;
+    letter-spacing:.12em;text-transform:uppercase;line-height:1.05;
+    text-shadow:2px 2px 0 #8b5c2a;
+  }
+  .sub-title{font-size:11px;color:#d4a96a;letter-spacing:.3em;text-transform:uppercase;margin-top:4px;font-weight:bold}
+  .deco-row{display:flex;align-items:center;justify-content:space-between;padding:4px 1rem 0}
+  /* ── Section ── */
+  .section{margin-bottom:1.5rem}
+  .section-title{
+    text-align:center;font-family:'Rye',Georgia,serif;
+    font-size:14px;letter-spacing:.55em;text-transform:uppercase;
+    margin-bottom:.8rem;padding:.35rem 0;color:#5a3410;
+  }
+  .section-title::before,.section-title::after{
+    content:'';display:block;height:2px;
+    background:repeating-linear-gradient(90deg,currentColor 0,currentColor 6px,transparent 6px,transparent 12px);
+    margin:3px 0;opacity:.55;
+  }
+  /* ── Grid: auto-fill so row fills naturally ── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:1.4rem}
+  /* ── Cards ── */
+  .card{
+    text-align:center;background:#fffcf4;
+    border:2px solid #8b5c2a;border-radius:6px;
+    padding:.75rem .4rem .65rem;break-inside:avoid;
+    box-shadow:0 0 0 2px #f2deb8,0 0 0 5px #c2703d,0 0 0 7px #f2deb8,3px 4px 8px rgba(61,32,8,.25);
+    position:relative;
+  }
+  .card::after{
+    content:'';position:absolute;top:5px;left:5px;right:5px;bottom:5px;
+    border:1px dashed rgba(139,92,42,.22);border-radius:3px;pointer-events:none;
+  }
+  .photo{
+    width:80px;height:80px;border-radius:50%;object-fit:cover;
+    border:3px solid #8b5c2a;display:block;margin:0 auto .5rem;
+    filter:sepia(15%) contrast(1.05);box-shadow:0 2px 5px rgba(0,0,0,.25);
+  }
+  .initials{
+    width:80px;height:80px;border-radius:50%;
+    background:linear-gradient(135deg,#c2703d,#8b5c2a);
+    border:3px solid #5a3410;
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto .5rem;font-size:26px;font-weight:bold;color:#f2deb8;
+    font-family:'Rye',Georgia,serif;box-shadow:0 2px 5px rgba(0,0,0,.25);
+  }
+  .card-name{font-size:10.5px;color:#3d2008;letter-spacing:.04em;line-height:1.35;text-transform:uppercase;margin-bottom:4px}
+  .card-badge{display:inline-block;font-size:8px;font-weight:bold;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:100px;border:1px solid;margin-top:2px}
+  /* ── Footer ── */
+  .footer{text-align:center;margin-top:1.25rem;padding-top:.65rem;font-size:9px;color:#8b5c2a;letter-spacing:.55em;text-transform:uppercase}
+  .footer::before{content:'';display:block;height:3px;margin-bottom:.5rem;
+    background:repeating-linear-gradient(90deg,#8b5c2a 0,#8b5c2a 6px,transparent 6px,transparent 12px)}
+  @media print{
+    @page{size:A4 portrait;margin:6mm}
+    body{padding:4px}
+    .section{break-inside:avoid-page}
+    .card{break-inside:avoid}
+  }
+</style></head><body>
+<div class="page">
+  <div class="header">
+    <div class="header-band"></div>
+    <div class="header-stars">✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦</div>
+    <div class="header-inner">
+      <div class="deco-row">
+        ${CACTUS_SVG(false)}
+        <div>
+          <div class="main-title">${esc(title)}</div>
+          <div class="sub-title">${esc(subtitle)} · ${source.length} participant${source.length > 1 ? 's' : ''}</div>
+        </div>
+        ${CACTUS_SVG(true)}
+      </div>
+    </div>
+    <div class="header-stars">✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦</div>
+    <div class="header-band"></div>
+  </div>
+  ${sectionsHtml}
+  <div class="footer">✦ &nbsp; BBOARD — Plateforme de Gestion de Colonie &nbsp; ✦</div>
+</div>
+</body></html>`);
     };
 
     const handleImportCsv = (event) => {
@@ -388,6 +584,8 @@ export default function Directory({ participants = [], setParticipants, groups =
                     handleExportCsv={handleExportCsv}
                     handleImport={handleImport}
                     handleImportCsv={handleImportCsv}
+                    openTrombiModal={openTrombiModal}
+                    hasSelection={selectedParticipants.length > 0}
                     isMobile={isMobile}
                     canEdit={canEdit}
                 />
@@ -515,6 +713,57 @@ export default function Directory({ participants = [], setParticipants, groups =
                 canEdit={canEdit}
                 roles={roles}
             />
+
+            {/* ── Modal Trombinoscope ── */}
+            {trombiConfig && (
+                <div className="modal-overlay animate-fade-in" style={{ zIndex: 1100, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)' }}>
+                    <div className="modal-content animate-scale-in" style={{ background: 'white', borderRadius: '28px', padding: '2rem', maxWidth: '440px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 32px 80px rgba(0,0,0,0.25)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <div style={{ background: 'linear-gradient(135deg,#c2703d,#8b5c2a)', borderRadius: '14px', padding: '10px', color: '#f2deb8', fontSize: '22px', lineHeight: 1 }}>🤠</div>
+                            <div>
+                                <div style={{ fontWeight: '950', fontSize: '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Trombinoscope</div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700' }}>Impression thème cowboy</div>
+                            </div>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Titre principal</label>
+                                <input className="glass-input" value={trombiConfig.title} onChange={e => setTrombiConfig(c => ({ ...c, title: e.target.value }))} style={{ height: '44px', fontWeight: '850' }} />
+                            </div>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Sous-titre</label>
+                                <input className="glass-input" value={trombiConfig.subtitle} onChange={e => setTrombiConfig(c => ({ ...c, subtitle: e.target.value }))} style={{ height: '44px', fontWeight: '850' }} />
+                            </div>
+                            {selectedParticipants.length > 0 && (
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem', background: 'var(--bg-secondary)', borderRadius: '14px', cursor: 'pointer' }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={trombiConfig.useSelection}
+                                        onChange={e => setTrombiConfig(c => ({ ...c, useSelection: e.target.checked }))}
+                                        style={{ width: '18px', height: '18px', accentColor: 'var(--primary-color)', flexShrink: 0 }}
+                                    />
+                                    <span style={{ fontWeight: '850', fontSize: '0.88rem', color: 'var(--text-main)' }}>
+                                        Seulement la sélection
+                                        <span style={{ marginLeft: '0.5rem', fontSize: '0.78rem', fontWeight: '700', color: 'var(--text-muted)' }}>({selectedParticipants.length} personne{selectedParticipants.length > 1 ? 's' : ''})</span>
+                                    </span>
+                                </label>
+                            )}
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setTrombiConfig(null)} className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '900' }}>Annuler</button>
+                            <button
+                                onClick={() => { handlePrintTrombinoscope(trombiConfig); setTrombiConfig(null); }}
+                                className="btn btn-primary"
+                                style={{ padding: '0.75rem 1.5rem', borderRadius: '14px', fontWeight: '950', gap: '0.5rem' }}
+                            >
+                                🤠 Imprimer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <style>{`
                 .btn-icon-ref {
