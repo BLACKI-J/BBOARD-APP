@@ -156,9 +156,15 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                 {!error && (
                     <div style={{ width: '100%' }}>
                         {!capturedImage ? (
-                            <button onClick={capturePhoto} disabled={isLoading} className="btn btn-primary" style={{ width: '100%', padding: '1.15rem', borderRadius: '18px', fontSize: '1.1rem', fontWeight: '950', gap: '0.75rem' }}>
-                                <Camera size={24} strokeWidth={2.5} /> Prendre la photo
-                            </button>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <button onClick={capturePhoto} disabled={isLoading} className="btn btn-primary" style={{ width: '100%', padding: '1.15rem', borderRadius: '18px', fontSize: '1.1rem', fontWeight: '950', gap: '0.75rem' }}>
+                                    <Camera size={24} strokeWidth={2.5} /> Prendre la photo
+                                </button>
+                                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', borderRadius: '14px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '800', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    Écran noir ? Utiliser l'appareil
+                                    <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
+                                </label>
+                            </div>
                         ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <button onClick={() => setCapturedImage(null)} className="btn btn-secondary" style={{ padding: '1rem', borderRadius: '18px', fontWeight: '950', gap: '0.5rem' }}>
