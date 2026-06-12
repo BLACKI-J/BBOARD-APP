@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Camera, X, RefreshCw, Check, AlertCircle } from 'lucide-react';
+import { canUseWebcam } from '../../utils/camera';
 
 export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose }) {
     const videoRef = useRef(null);
@@ -8,7 +9,8 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
     const [stream, setStream] = useState(null);
     const [error, setError] = useState(null);
     const [capturedImage, setCapturedImage] = useState(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isLoading, setIsLoading] = useState(false);
+    const [isCameraRequested, setIsCameraRequested] = useState(false);
 
     const stopCamera = useCallback(() => {
         if (streamRef.current) {
@@ -23,8 +25,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
         setIsLoading(true);
         setError(null);
         setCapturedImage(null); // reset entre deux ouvertures (sinon on garde la photo précédente)
-        // getUserMedia exige un contexte sécurisé (HTTPS ou localhost). En HTTP/LAN il est absent.
-        if (!navigator.mediaDevices?.getUserMedia) {
+        if (!canUseWebcam()) {
             setError("Caméra intégrée indisponible ici (nécessite HTTPS). Sur réseau local, utilisez « Galerie » ou l'appli photo du téléphone.");
             setIsLoading(false);
             return;
@@ -37,7 +38,6 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                     video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } }
                 });
             } catch {
-                // Fallback : n'importe quelle caméra (certains appareils refusent la contrainte facingMode).
                 mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
             }
             streamRef.current = mediaStream;
@@ -45,12 +45,24 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
             const v = videoRef.current;
             if (v) {
                 v.srcObject = mediaStream;
-                // iOS/Safari : lecture explicite requise (sinon écran noir malgré autoPlay).
+                // Déclencher play() uniquement après chargement des métadonnées (évite l'écran noir sur iOS).
                 v.onloadedmetadata = () => { v.play().catch(() => {}); };
-                v.play().catch(() => {});
             }
         } catch (err) {
-            setError("Impossible d'accéder à la caméra. Autorisez l'accès dans les réglages du navigateur, puis réessayez.");
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            let msg;
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                msg = isIOS
+                    ? "Accès caméra refusé. Sur iPhone/iPad : Réglages → [votre navigateur] → Caméra → Autoriser. Puis appuyez sur « Réessayer »."
+                    : "Accès caméra refusé. Appuyez sur 🔒 dans la barre d'adresse, autorisez la caméra, puis réessayez.";
+            } else if (err.name === 'NotFoundError') {
+                msg = "Aucune caméra détectée sur cet appareil.";
+            } else if (err.name === 'NotReadableError') {
+                msg = "La caméra est utilisée par une autre application. Fermez-la puis réessayez.";
+            } else {
+                msg = "Impossible d'accéder à la caméra. Vérifiez les autorisations de votre navigateur puis réessayez.";
+            }
+            setError(msg);
         } finally {
             setIsLoading(false);
         }
@@ -64,10 +76,18 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
     }, [isOpen, stream]);
 
     React.useEffect(() => {
-        if (isOpen) startCamera();
-        else { stopCamera(); setCapturedImage(null); }
+        if (!isOpen) { 
+            setIsCameraRequested(false);
+            stopCamera(); 
+            setCapturedImage(null); 
+        }
         return () => stopCamera();
-    }, [isOpen, startCamera, stopCamera]);
+    }, [isOpen, stopCamera]);
+
+    const handleRequestCamera = () => {
+        setIsCameraRequested(true);
+        startCamera();
+    };
 
     if (!isOpen) return null;
 
@@ -125,7 +145,20 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <button onClick={startCamera} className="btn btn-primary" style={{ background: 'var(--danger-color)', boxShadow: 'none' }}>Réessayer la caméra</button>
                             <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.85rem', borderRadius: '12px', cursor: 'pointer', background: 'white', fontWeight: '850', color: 'var(--text-main)', border: '1.5px solid var(--glass-border)', margin: 0 }}>
-                                <Camera size={18} /> Prendre avec l'appareil
+                                <Camera size={18} /> Prendre avec l'appareil photo
+                                <input type="file" accept="image/*" capture="environment" onChange={handleFileUpload} style={{ display: 'none' }} />
+                            </label>
+                        </div>
+                    </div>
+                ) : !isCameraRequested && !capturedImage ? (
+                    <div style={{ padding: '2.5rem 1.5rem', background: 'oklch(96% 0.05 272)', color: 'var(--primary-color)', borderRadius: '24px', textAlign: 'center', width: '100%', border: '1.5px solid oklch(52% 0.2 272 / 0.15)' }}>
+                        <Camera size={44} strokeWidth={2.5} style={{ margin: '0 auto 1.25rem', color: 'var(--primary-color)' }} />
+                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Utiliser la caméra ?</h4>
+                        <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Nous devons demander l'autorisation à votre navigateur pour prendre la photo directement.</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button onClick={handleRequestCamera} className="btn btn-primary" style={{ width: '100%', padding: '1rem', borderRadius: '14px', fontWeight: '950' }}>Activer la caméra</button>
+                            <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.85rem', borderRadius: '14px', cursor: 'pointer', background: 'white', fontWeight: '850', color: 'var(--text-main)', border: '1.5px solid var(--glass-border)', margin: 0 }}>
+                                Choisir depuis la galerie
                                 <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
                             </label>
                         </div>
@@ -153,7 +186,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                     </div>
                 )}
 
-                {!error && (
+                {!error && (isCameraRequested || capturedImage) && (
                     <div style={{ width: '100%' }}>
                         {!capturedImage ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
