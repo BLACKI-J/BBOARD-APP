@@ -21,6 +21,7 @@ const SLOT_CONFIG = {
     'Midi':   { icon: <Sun size={18} />,     color: 'oklch(58% 0.18 85)',  colorLight: 'oklch(96% 0.06 85)',  gradient: 'linear-gradient(135deg, oklch(65% 0.2 85), oklch(70% 0.14 95))' },
     'Goûter': { icon: <Apple size={18} />,   color: 'oklch(60% 0.2 25)',   colorLight: 'oklch(96% 0.06 25)',  gradient: 'linear-gradient(135deg, oklch(62% 0.22 20), oklch(68% 0.18 35))' },
     'Soir':   { icon: <Moon size={18} />,    color: 'oklch(50% 0.2 275)',  colorLight: 'oklch(96% 0.05 275)', gradient: 'linear-gradient(135deg, oklch(52% 0.22 270), oklch(60% 0.18 285))' },
+    'Coucher':{ icon: <Moon size={18} />,    color: 'oklch(40% 0.15 285)', colorLight: 'oklch(96% 0.05 285)', gradient: 'linear-gradient(135deg, oklch(45% 0.18 280), oklch(52% 0.15 295))' },
 };
 
 const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, groups, isScrolled = false, scrollToTop }) => {
@@ -28,8 +29,9 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
         const hour = new Date().getHours();
         if (hour >= 6 && hour < 11) return 'Matin';
         if (hour >= 11 && hour < 15) return 'Midi';
-        if (hour >= 15 && hour < 18) return 'Goûter';
-        return 'Soir';
+        if (hour >= 15 && hour < 19) return 'Goûter';
+        if (hour >= 19 && hour < 21) return 'Soir';
+        return 'Coucher';
     });
 
     const today = localISO(new Date());
@@ -308,10 +310,13 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                     <div style={{ padding: '0.5rem 1.5rem' }}>
                                         <div className="u-label" style={{ margin: '0.5rem 0' }}>Traitement Quotidien</div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                            {medsForSlot.map((med, idx) => {
-                                                const isMedDone = isAllLegacyDone || (slotData && slotData[med]);
+                                            {medsForSlot.map((medName, idx) => {
+                                                const isMedDone = isAllLegacyDone || (slotData && slotData[medName]);
+                                                const specificMedObj = getMedicationsList(child).find(m => m.name === medName);
+                                                const specificDose = specificMedObj?.doses?.[activeSlot];
+                                                const doseToDisplay = specificDose || child.medDoses?.[activeSlot];
                                                 return (
-                                                    <div key={idx} onClick={() => toggleMed(child, activeSlot, med)} style={{
+                                                    <div key={idx} onClick={() => toggleMed(child, activeSlot, medName)} style={{
                                                         display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
                                                         padding: '0.6rem 0.8rem', background: isMedDone ? activeConfig.colorLight : 'var(--bg-main)',
                                                         borderRadius: '12px', cursor: canEdit ? 'pointer' : 'default',
@@ -325,7 +330,9 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                                         }}>
                                                             {isMedDone && <Check size={14} strokeWidth={4} />}
                                                         </div>
-                                                        <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isMedDone ? activeConfig.color : 'var(--text-main)' }}>{med}</span>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isMedDone ? activeConfig.color : 'var(--text-main)' }}>
+                                                            {medName} {doseToDisplay ? `(${doseToDisplay})` : ''}
+                                                        </span>
                                                     </div>
                                                 );
                                             })}

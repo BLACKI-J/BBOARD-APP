@@ -1,10 +1,14 @@
-export const ALL_SLOTS = ['Matin', 'Midi', 'Goûter', 'Soir'];
+export const ALL_SLOTS = ['Matin', 'Midi', 'Goûter', 'Soir', 'Coucher'];
 
 export const getMedicationsList = (child) => {
     // New format: child.medications is an array of { name: '...', slots: ['...', '...'] }
     if (Array.isArray(child.medications) && child.medications.length > 0) {
         // Guard: every consumer calls m.slots.includes(...), so ensure slots is always an array
-        return child.medications.map(m => ({ ...m, slots: Array.isArray(m.slots) ? m.slots : [] }));
+        // Filter out 'Si besoin' from the regular slots so it doesn't break daily dashboards
+        return child.medications.map(m => ({ 
+            ...m, 
+            slots: Array.isArray(m.slots) ? m.slots.filter(s => s !== 'Si besoin') : [] 
+        }));
     }
 
     // Legacy fallback: parse dailyMeds string and apply medSlots to all of them
@@ -18,6 +22,20 @@ export const getMedicationsList = (child) => {
 };
 
 export const getSiBesoinList = (child) => {
-    if (!child.sibesoin) return [];
-    return child.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+    let prns = [];
+    if (child.sibesoin) {
+        prns = child.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+    }
+    
+    // Also include unified medications that have 'Si besoin' checked
+    if (Array.isArray(child.medications)) {
+        child.medications.forEach(m => {
+            if (Array.isArray(m.slots) && m.slots.includes('Si besoin')) {
+                prns.push(m.name);
+            }
+        });
+    }
+    
+    return prns;
 };
+

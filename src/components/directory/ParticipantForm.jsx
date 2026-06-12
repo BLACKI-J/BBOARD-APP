@@ -228,234 +228,208 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        <label className="form-label">Médicament(s) Quotidien(s)</label>
-                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                                    {/* Formulaire d'ajout d'un traitement */}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '0.5rem' }}>
+                                        
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <label className="form-label">Nom du traitement</label>
                                             <input
                                                 type="text"
-                                                placeholder="Ex: Ventoline 100μg..."
+                                                placeholder="Ex: Ventoline 100μg, Spasfon..."
                                                 value={newMed}
                                                 onChange={e => setNewMed(e.target.value)}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        if (newMed.trim()) {
-                                                            const currentMeds = getMedicationsList(formData);
-                                                            setFormData({ ...formData, medications: [...currentMeds, { name: newMed.trim(), slots: [] }] });
-                                                            setNewMed('');
-                                                        }
-                                                    }
-                                                }}
                                                 className="glass-input"
-                                                style={{ flex: 1, background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }}
+                                                style={{ background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }}
                                             />
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    if (newMed.trim()) {
-                                                        const currentMeds = getMedicationsList(formData);
-                                                        setFormData({ ...formData, medications: [...currentMeds, { name: newMed.trim(), slots: [] }] });
-                                                        setNewMed('');
-                                                    }
-                                                }}
-                                                style={{ 
-                                                    background: 'oklch(55% 0.18 232)', color: 'white', border: 'none', 
-                                                    borderRadius: '16px', padding: '0 1.5rem', fontWeight: '950', 
-                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' 
-                                                }}
-                                            >
-                                                <Plus size={18} strokeWidth={3} /> Ajouter
-                                            </button>
                                         </div>
-                                        
-                                        {(() => {
-                                            const currentMeds = getMedicationsList(formData);
-                                            if (currentMeds.length === 0) return null;
-                                            
-                                            return (
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                                    {currentMeds.map((med, idx) => (
-                                                        <div key={idx} style={{ 
-                                                            display: 'flex', flexDirection: 'column', gap: '0.5rem',
-                                                            background: 'white', padding: '1rem', borderRadius: '16px',
-                                                            border: '1.5px solid var(--glass-border)'
-                                                        }}>
-                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                                <span style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)' }}>{med.name}</span>
-                                                                <button
-                                                                    type="button"
-                                                                    aria-label="Supprimer le médicament"
-                                                                    onClick={() => {
-                                                                        const list = [...currentMeds];
-                                                                        list.splice(idx, 1);
-                                                                        setFormData({ ...formData, medications: list });
-                                                                    }}
-                                                                    style={{
-                                                                        background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)',
-                                                                        border: 'none', borderRadius: '8px', width: '40px', height: '40px',
-                                                                        display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                                                                    }}
-                                                                >
-                                                                    <Trash2 size={14} strokeWidth={2.5} />
-                                                                </button>
-                                                            </div>
-                                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                                                {['Matin', 'Midi', 'Goûter', 'Soir'].map(slotId => {
-                                                                    const isActive = med.slots.includes(slotId);
-                                                                    return (
-                                                                        <button
-                                                                            key={slotId}
-                                                                            type="button"
-                                                                            onClick={() => {
-                                                                                const list = [...currentMeds];
-                                                                                const m = list[idx];
-                                                                                if (isActive) {
-                                                                                    m.slots = m.slots.filter(s => s !== slotId);
-                                                                                } else {
-                                                                                    m.slots = [...m.slots, slotId];
-                                                                                }
-                                                                                setFormData({ ...formData, medications: list });
-                                                                            }}
-                                                                            style={{
-                                                                                padding: '4px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: '800',
-                                                                                border: `1.5px solid ${isActive ? 'oklch(55% 0.18 232)' : 'var(--glass-border)'}`,
-                                                                                background: isActive ? 'oklch(55% 0.18 232)' : 'transparent',
-                                                                                color: isActive ? 'white' : 'var(--text-muted)',
-                                                                                cursor: 'pointer', transition: 'all 0.2s',
-                                                                                display: 'flex', alignItems: 'center', gap: '4px'
-                                                                            }}
-                                                                        >
-                                                                            {isActive && <Check size={12} strokeWidth={4} />}
-                                                                            {slotId}
-                                                                        </button>
-                                                                    );
-                                                                })}
-                                                            </div>
+
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <label className="form-label">Créneaux de prise et Doses</label>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '0.75rem' }}>
+                                                {[
+                                                    { id: 'Matin', label: 'Matin', icon: <Sunrise size={18} /> },
+                                                    { id: 'Midi', label: 'Midi', icon: <Sun size={18} /> },
+                                                    { id: 'Goûter', label: 'Goûter', icon: <Apple size={18} /> },
+                                                    { id: 'Soir', label: 'Soir', icon: <Moon size={18} /> },
+                                                    { id: 'Coucher', label: 'Coucher', icon: <Moon size={18} /> },
+                                                    { id: 'Si besoin', label: 'Si besoin', icon: <Plus size={18} /> }
+                                                ].map(slot => {
+                                                    const slots = formData.newMedSlots || [];
+                                                    const isActive = slots.includes(slot.id);
+                                                    return (
+                                                        <div key={slot.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const current = formData.newMedSlots || [];
+                                                                    const next = isActive
+                                                                        ? current.filter(s => s !== slot.id)
+                                                                        : [...current, slot.id];
+                                                                    setFormData({ ...formData, newMedSlots: next });
+                                                                }}
+                                                                style={{
+                                                                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem',
+                                                                    padding: '0.85rem 0.5rem', borderRadius: '16px', border: '2px solid',
+                                                                    cursor: 'pointer', transition: 'all 0.2s', fontWeight: '950', fontSize: '0.8rem',
+                                                                    borderColor: isActive ? 'oklch(55% 0.18 232)' : 'var(--glass-border)',
+                                                                    background: isActive ? 'oklch(55% 0.18 232)' : 'white',
+                                                                    color: isActive ? 'white' : 'var(--text-muted)',
+                                                                    boxShadow: isActive ? '0 4px 16px oklch(55% 0.18 232 / 0.3)' : 'none',
+                                                                    transform: isActive ? 'translateY(-2px)' : 'none',
+                                                                    height: '100%'
+                                                                }}
+                                                            >
+                                                                <span style={{ fontSize: '1.25rem' }}>{slot.icon}</span>
+                                                                {slot.label}
+                                                                {isActive && <Check size={14} strokeWidth={3} />}
+                                                            </button>
+                                                            
+                                                            <input
+                                                                type="text"
+                                                                placeholder="Dose (ex: 4gtt)"
+                                                                value={formData.newMedDoses?.[slot.id] || ''}
+                                                                onChange={e => {
+                                                                    setFormData({
+                                                                        ...formData,
+                                                                        newMedDoses: { ...(formData.newMedDoses || {}), [slot.id]: e.target.value }
+                                                                    });
+                                                                }}
+                                                                className="glass-input"
+                                                                style={{
+                                                                    background: 'white', border: '1.5px solid var(--glass-border)',
+                                                                    padding: '0.5rem 0.5rem', borderRadius: '10px',
+                                                                    fontSize: '0.8rem', fontWeight: '800', textAlign: 'center',
+                                                                    width: '100%',
+                                                                    opacity: isActive || (formData.newMedDoses?.[slot.id]) ? 1 : 0.4,
+                                                                    transition: 'opacity 0.2s'
+                                                                }}
+                                                            />
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            );
-                                        })()}
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+
+                                        <button 
+                                            type="button"
+                                            onClick={() => {
+                                                if (newMed.trim()) {
+                                                    const currentMeds = getMedicationsList(formData);
+                                                    setFormData({ 
+                                                        ...formData, 
+                                                        medications: [...currentMeds, { 
+                                                            name: newMed.trim(), 
+                                                            slots: formData.newMedSlots || [],
+                                                            doses: formData.newMedDoses || {}
+                                                        }],
+                                                        newMedSlots: [],
+                                                        newMedDoses: {}
+                                                    });
+                                                    setNewMed('');
+                                                }
+                                            }}
+                                            style={{ 
+                                                background: 'oklch(55% 0.18 232)', color: 'white', border: 'none', 
+                                                borderRadius: '16px', padding: '1rem', fontWeight: '950', fontSize: '1rem',
+                                                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+                                                boxShadow: '0 4px 12px oklch(55% 0.18 232 / 0.3)'
+                                            }}
+                                        >
+                                            <Plus size={20} strokeWidth={3} /> Ajouter ce traitement
+                                        </button>
                                     </div>
 
-                                    {/* Si Besoin Section */}
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '0.5rem', paddingTop: '1.25rem', borderTop: '1px solid var(--glass-border)' }}>
-                                        <label className="form-label" style={{ color: 'oklch(52% 0.22 145)' }}>Traitement "Si Besoin" (PRN)</label>
-                                        <div style={{ display: 'flex', gap: '0.75rem' }}>
-                                            <input
-                                                type="text"
-                                                placeholder="Ex: Spasfon si douleurs..."
-                                                value={newPrn}
-                                                onChange={e => setNewPrn(e.target.value)}
-                                                onKeyDown={e => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        if (newPrn.trim()) {
-                                                            const current = formData.sibesoin ? formData.sibesoin.trim() : '';
-                                                            setFormData({ ...formData, sibesoin: current ? `${current}\n${newPrn.trim()}` : newPrn.trim() });
-                                                            setNewPrn('');
-                                                        }
-                                                    }
-                                                }}
-                                                className="glass-input"
-                                                style={{ flex: 1, background: 'white', border: '1.5px solid var(--glass-border)', padding: '0.85rem 1.25rem', borderRadius: '16px', fontWeight: '700' }}
-                                            />
-                                            <button 
-                                                type="button"
-                                                onClick={() => {
-                                                    if (newPrn.trim()) {
-                                                        const current = formData.sibesoin ? formData.sibesoin.trim() : '';
-                                                        setFormData({ ...formData, sibesoin: current ? `${current}\n${newPrn.trim()}` : newPrn.trim() });
-                                                        setNewPrn('');
-                                                    }
-                                                }}
-                                                style={{ 
-                                                    background: 'oklch(62% 0.22 145)', color: 'white', border: 'none', 
-                                                    borderRadius: '16px', padding: '0 1.5rem', fontWeight: '950', 
-                                                    cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem' 
-                                                }}
-                                            >
-                                                <Plus size={18} strokeWidth={3} /> Ajouter
-                                            </button>
-                                        </div>
-                                        
-                                        {formData.sibesoin && formData.sibesoin.trim() !== '' && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                                {formData.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean).map((med, idx) => (
+                                    {/* Liste des traitements ajoutés */}
+                                    {(getMedicationsList(formData).length > 0 || (formData.sibesoin && formData.sibesoin.trim() !== '')) && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '2px dashed var(--glass-border)' }}>
+                                            <label className="form-label">Traitements enregistrés pour ce séjour</label>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                                {getMedicationsList(formData).map((med, idx) => (
                                                     <div key={idx} style={{ 
-                                                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                                                        background: 'white', padding: '0.75rem 1rem', borderRadius: '12px',
-                                                        border: '1.5px solid oklch(62% 0.22 145 / 0.3)'
+                                                        background: 'white', padding: '1rem 1.25rem', borderRadius: '16px', 
+                                                        border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' 
                                                     }}>
-                                                        <span style={{ fontWeight: '800', fontSize: '0.9rem', color: 'var(--text-main)' }}>{med}</span>
-                                                        <button
-                                                            type="button"
-                                                            aria-label="Supprimer le médicament"
-                                                            onClick={() => {
-                                                                const list = formData.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean);
-                                                                list.splice(idx, 1);
-                                                                setFormData({ ...formData, sibesoin: list.join('\n') });
-                                                            }}
-                                                            style={{
-                                                                background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)',
-                                                                border: 'none', borderRadius: '8px', width: '40px', height: '40px',
-                                                                display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
-                                                            }}
-                                                        >
-                                                            <Trash2 size={14} strokeWidth={2.5} />
-                                                        </button>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <div style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)' }}>
+                                                                {med.name}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const currentMeds = getMedicationsList(formData);
+                                                                    currentMeds.splice(idx, 1);
+                                                                    setFormData({ ...formData, medications: currentMeds });
+                                                                }}
+                                                                style={{
+                                                                    background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)',
+                                                                    border: 'none', borderRadius: '10px', width: '36px', height: '36px',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                <Trash2 size={16} strokeWidth={2.5} />
+                                                            </button>
+                                                        </div>
+                                                        {med.slots && med.slots.length > 0 && (
+                                                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                                {med.slots.map(s => (
+                                                                    <div key={s} style={{ 
+                                                                        background: 'oklch(55% 0.18 232 / 0.1)', color: 'oklch(55% 0.18 232)', 
+                                                                        padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800',
+                                                                        border: '1px solid oklch(55% 0.18 232 / 0.3)'
+                                                                    }}>
+                                                                        {s}
+                                                                        {med.doses?.[s] && (
+                                                                            <span style={{ opacity: 0.6, marginLeft: '4px' }}>
+                                                                                • {med.doses[s]}
+                                                                            </span>
+                                                                        )}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+
+                                                {/* Legacy Si Besoin */}
+                                                {formData.sibesoin && formData.sibesoin.trim() !== '' && formData.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean).map((med, idx) => (
+                                                    <div key={`legacy-${idx}`} style={{ 
+                                                        background: 'white', padding: '1rem 1.25rem', borderRadius: '16px', 
+                                                        border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' 
+                                                    }}>
+                                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                            <div style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)' }}>
+                                                                {med}
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const list = formData.sibesoin.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+                                                                    list.splice(idx, 1);
+                                                                    setFormData({ ...formData, sibesoin: list.join('\n') });
+                                                                }}
+                                                                style={{
+                                                                    background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)',
+                                                                    border: 'none', borderRadius: '10px', width: '36px', height: '36px',
+                                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                                                                }}
+                                                            >
+                                                                <Trash2 size={16} strokeWidth={2.5} />
+                                                            </button>
+                                                        </div>
+                                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                                                            <div style={{ 
+                                                                background: 'oklch(55% 0.18 232 / 0.1)', color: 'oklch(55% 0.18 232)', 
+                                                                padding: '0.4rem 0.75rem', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '800',
+                                                                border: '1px solid oklch(55% 0.18 232 / 0.3)'
+                                                            }}>
+                                                                Si besoin
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 ))}
                                             </div>
-                                        )}
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                        <label className="form-label">Créneaux de prise</label>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem' }}>
-                                            {[
-                                                { id: 'Matin', label: 'Matin', icon: <Sunrise size={16} /> },
-                                                { id: 'Midi', label: 'Midi', icon: <Sun size={16} /> },
-                                                { id: 'Goûter', label: 'Goûter', icon: <Apple size={16} /> },
-                                                { id: 'Soir', label: 'Soir', icon: <Moon size={16} /> }
-                                            ].map(slot => {
-                                                const slots = formData.medSlots || [];
-                                                const isActive = slots.includes(slot.id);
-                                                return (
-                                                    <button
-                                                        key={slot.id}
-                                                        type="button"
-                                                        onClick={() => {
-                                                            const current = formData.medSlots || [];
-                                                            const next = isActive
-                                                                ? current.filter(s => s !== slot.id)
-                                                                : [...current, slot.id];
-                                                            setFormData({ ...formData, medSlots: next });
-                                                        }}
-                                                        style={{
-                                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
-                                                            padding: '0.85rem 0.5rem', borderRadius: '16px', border: '2px solid',
-                                                            cursor: 'pointer', transition: 'all 0.2s', fontWeight: '950', fontSize: '0.75rem',
-                                                            borderColor: isActive ? 'oklch(55% 0.18 232)' : 'var(--glass-border)',
-                                                            background: isActive ? 'oklch(55% 0.18 232)' : 'white',
-                                                            color: isActive ? 'white' : 'var(--text-muted)',
-                                                            boxShadow: isActive ? '0 4px 16px oklch(55% 0.18 232 / 0.3)' : 'none',
-                                                            transform: isActive ? 'translateY(-2px)' : 'none'
-                                                        }}
-                                                    >
-                                                        <span style={{ fontSize: '1.25rem' }}>{slot.icon}</span>
-                                                        {slot.label}
-                                                        {isActive && <Check size={12} strokeWidth={3} />}
-                                                    </button>
-                                                );
-                                            })}
                                         </div>
-                                        {(formData.medSlots || []).length === 0 && (formData.dailyMeds || '').trim() !== '' && (
-                                            <div style={{ fontSize: '0.75rem', color: 'oklch(55% 0.18 45)', fontWeight: '800', padding: '0.5rem 1rem', background: 'oklch(62% 0.18 45 / 0.08)', borderRadius: '10px' }}>
-                                                Sélectionnez au moins un créneau pour que le traitement apparaisse dans le suivi.
-                                            </div>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             </>
                         )}
