@@ -13,7 +13,7 @@ import InfoVacSection   from './health/InfoVacSection';
 import RegistreInfi     from './health/RegistreInfi';
 
 const HEALTH_TABS = [
-    { id: 'infovac',    label: 'Fiches & Suivi',    short: 'Fiches',       permKey: 'viewHealthInfovac',  icon: <FileText size={20} />,        color: 'oklch(52% 0.2 272)',  bg: 'oklch(96% 0.05 272)' },
+    { id: 'infovac',    label: 'Fiches Sanitaires', short: 'Fiches',       permKey: 'viewHealthInfovac',  icon: <FileText size={20} />,        color: 'oklch(52% 0.2 272)',  bg: 'oklch(96% 0.05 272)' },
     { id: 'meds',       label: 'Médicaments',       short: 'Médicaments',  permKey: 'viewHealthMeds',     icon: <Zap size={20} />,             color: 'oklch(55% 0.22 30)',  bg: 'oklch(96% 0.06 30)' },
     { id: 'registre',   label: 'Registre',          short: 'Registre',     permKey: 'viewHealthRegistre', icon: <ClipboardList size={20} />,   color: 'oklch(52% 0.22 310)', bg: 'oklch(96% 0.05 310)' },
 ];

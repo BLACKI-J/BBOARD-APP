@@ -88,6 +88,17 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
         }
     };
 
+    const handleFileUpload = (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            setCapturedImage(event.target.result);
+            setError(null);
+        };
+        reader.readAsDataURL(file);
+    };
+
     return (
         <div className="modal-overlay animate-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', zIndex: 1100 }}>
             <div className="modal-content animate-scale-in" style={{ 
@@ -108,10 +119,16 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                 </div>
 
                 {error ? (
-                    <div style={{ padding: '2.5rem 1.5rem', background: 'oklch(62% 0.2 28 / 0.05)', color: 'var(--danger-color)', borderRadius: '24px', textAlign: 'center', border: '1.5px solid oklch(62% 0.2 28 / 0.1)' }}>
+                    <div style={{ padding: '2.5rem 1.5rem', background: 'oklch(62% 0.2 28 / 0.05)', color: 'var(--danger-color)', borderRadius: '24px', textAlign: 'center', border: '1.5px solid oklch(62% 0.2 28 / 0.1)', width: '100%' }}>
                         <AlertCircle size={40} style={{ margin: '0 auto 1.25rem', opacity: 0.8 }} />
                         <p style={{ margin: '0 0 1.5rem 0', fontWeight: '850', fontSize: '0.95rem' }}>{error}</p>
-                        <button onClick={startCamera} className="btn btn-primary" style={{ background: 'var(--danger-color)', boxShadow: 'none' }}>Réessayer</button>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            <button onClick={startCamera} className="btn btn-primary" style={{ background: 'var(--danger-color)', boxShadow: 'none' }}>Réessayer la caméra</button>
+                            <label className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.85rem', borderRadius: '12px', cursor: 'pointer', background: 'white', fontWeight: '850', color: 'var(--text-main)', border: '1.5px solid var(--glass-border)', margin: 0 }}>
+                                <Camera size={18} /> Prendre avec l'appareil
+                                <input type="file" accept="image/*" onChange={handleFileUpload} style={{ display: 'none' }} />
+                            </label>
+                        </div>
                     </div>
                 ) : (
                     <div style={{ position: 'relative', width: '320px', height: '320px', borderRadius: '28px', overflow: 'hidden', background: 'var(--bg-secondary)', border: '2px solid var(--glass-border)', boxShadow: 'inset 0 4px 12px rgba(0,0,0,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -136,22 +153,24 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                     </div>
                 )}
 
-                <div style={{ width: '100%' }}>
-                    {!capturedImage ? (
-                        <button onClick={capturePhoto} disabled={isLoading} className="btn btn-primary" style={{ width: '100%', padding: '1.15rem', borderRadius: '18px', fontSize: '1.1rem', fontWeight: '950', gap: '0.75rem' }}>
-                            <Camera size={24} strokeWidth={2.5} /> Prendre la photo
-                        </button>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <button onClick={() => setCapturedImage(null)} className="btn btn-secondary" style={{ padding: '1rem', borderRadius: '18px', fontWeight: '950', gap: '0.5rem' }}>
-                                <RefreshCw size={20} strokeWidth={2.5} /> Recommencer
+                {!error && (
+                    <div style={{ width: '100%' }}>
+                        {!capturedImage ? (
+                            <button onClick={capturePhoto} disabled={isLoading} className="btn btn-primary" style={{ width: '100%', padding: '1.15rem', borderRadius: '18px', fontSize: '1.1rem', fontWeight: '950', gap: '0.75rem' }}>
+                                <Camera size={24} strokeWidth={2.5} /> Prendre la photo
                             </button>
-                            <button onClick={() => { onPhotoCaptured(capturedImage); stopCamera(); onClose(); }} className="btn btn-primary" style={{ background: 'var(--success-color)', boxShadow: '0 12px 24px oklch(from var(--success-color) l c h / 0.2)', padding: '1rem', borderRadius: '18px', fontWeight: '950', gap: '0.5rem' }}>
-                                <Check size={20} strokeWidth={2.5} /> Valider
-                            </button>
-                        </div>
-                    )}
-                </div>
+                        ) : (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                                <button onClick={() => setCapturedImage(null)} className="btn btn-secondary" style={{ padding: '1rem', borderRadius: '18px', fontWeight: '950', gap: '0.5rem' }}>
+                                    <RefreshCw size={20} strokeWidth={2.5} /> Recommencer
+                                </button>
+                                <button onClick={() => { onPhotoCaptured(capturedImage); stopCamera(); onClose(); }} className="btn btn-primary" style={{ background: 'var(--success-color)', boxShadow: '0 12px 24px oklch(from var(--success-color) l c h / 0.2)', padding: '1rem', borderRadius: '18px', fontWeight: '950', gap: '0.5rem' }}>
+                                    <Check size={20} strokeWidth={2.5} /> Valider
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     );

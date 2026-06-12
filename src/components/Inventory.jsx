@@ -15,23 +15,24 @@ const ChildCard = ({ child, itemCount, isActive, onClick, isCollapsed }) => (
         className={`card-glass participant-card ${isActive ? 'selected' : ''}`}
         style={{
             width: '100%',
-            padding: isCollapsed ? '0.75rem' : '1rem 1.25rem',
+            padding: isCollapsed ? '0.5rem' : '1rem 1.25rem',
             display: 'flex',
             alignItems: 'center',
-            gap: '1rem',
+            justifyContent: isCollapsed ? 'center' : 'flex-start',
+            gap: isCollapsed ? '0' : '1rem',
             cursor: 'pointer',
             border: isActive ? '1.5px solid var(--primary-color)' : '1.5px solid var(--glass-border)',
             background: isActive ? 'white' : 'rgba(255, 255, 255, 0.4)',
             transition: 'all 0.3s var(--ease-out-expo)',
             textAlign: 'left',
-            borderRadius: '20px',
+            borderRadius: isCollapsed ? '16px' : '20px',
             position: 'relative',
             overflow: 'hidden'
         }}
     >
         <div style={{
-            width: isCollapsed ? '32px' : '44px',
-            height: isCollapsed ? '32px' : '44px',
+            width: isCollapsed ? '40px' : '44px',
+            height: isCollapsed ? '40px' : '44px',
             borderRadius: '14px',
             background: child.photo ? `url(${child.photo}) center/cover` : 'var(--primary-gradient)',
             display: 'flex',
@@ -133,17 +134,16 @@ const ItemRow = ({ item, index, onDelete, canEdit, onTakePhoto, onUpload, isMobi
         );
     }
 
-    // ── Desktop: detailed grid row ──
+    // ── Desktop: detailed flex row ──
     return (
         <div className="card-glass animate-fade-in" style={{
             '--i': index, animationDelay: `calc(var(--i) * 30ms)`,
-            padding: '1.25rem 1.5rem', display: 'grid',
-            gridTemplateColumns: '1fr 140px 140px 180px 60px',
+            padding: '1.25rem 1.5rem', display: 'flex', flexWrap: 'wrap',
             alignItems: 'center', gap: '1.5rem', marginBottom: '10px',
             background: 'rgba(255, 255, 255, 0.4)', border: '1.5px solid var(--glass-border)',
             borderRadius: '24px', transition: 'all 0.3s var(--ease-out-expo)'
         }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', minWidth: '220px', flex: '1 1 auto' }}>
                 {photo ? (
                     <img src={photo} alt={item.label} style={{ width: '56px', height: '56px', borderRadius: '16px', objectFit: 'cover', border: '2px solid white', boxShadow: 'var(--shadow-sm)' }} />
                 ) : (
@@ -442,7 +442,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                     overflowY: isMobile ? 'hidden' : 'auto',
                     overflowX: isMobile ? 'auto' : 'hidden',
                     WebkitOverflowScrolling: 'touch',
-                    padding: '1.25rem', display: 'flex',
+                    padding: isSidebarCollapsed ? '12px' : '1.25rem', display: 'flex',
                     flexDirection: isMobile ? 'row' : 'column', gap: '0.75rem'
                 }} className="no-scrollbar">
                     {children.map(child => (
@@ -463,7 +463,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         backdropFilter: 'blur(20px)',
                         display: 'flex', flexDirection: 'column', gap: isMobile ? '1rem' : '1.5rem', zIndex: 5
                     }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '2rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '2rem', flexWrap: 'wrap' }}>
                         <div style={{ position: 'relative', flex: 1, maxWidth: '520px' }}>
                             <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', opacity: 0.6 }} />
                             <input className="glass-input" placeholder="Rechercher dans le matériel..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ paddingLeft: '48px', borderRadius: '100px', height: '48px', background: 'rgba(255,255,255,0.8)', fontWeight: '750' }} />
@@ -479,7 +479,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                     </div>
                 </header>
 
-                    <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '1rem' : '2.5rem' }} className="no-scrollbar">
+                    <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: isMobile ? '1rem' : '2.5rem' }} className="no-scrollbar">
                     {isLoading ? (
                         <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner-small" /></div>
                     ) : activeItems.length === 0 ? (
@@ -515,7 +515,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
             {/* Right Action Panel */}
             {!isMobile ? (
                 <aside style={{ 
-                    width: isActionPanelCollapsed ? '80px' : 'clamp(320px, 25vw, 400px)', 
+                    width: isActionPanelCollapsed ? '80px' : 'clamp(300px, 23vw, 360px)', 
                     background: 'rgba(255, 255, 255, 0.4)', 
                     borderLeft: '1.5px solid var(--glass-border)', 
                     display: 'flex', flexDirection: 'column', 
@@ -606,7 +606,7 @@ const ControlHub = ({
     useEffect(() => () => clearTimeout(focusScrollTimer.current), []);
 
     return (
-        <div style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+        <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             <section>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
                     <div style={{ background: 'var(--primary-light)', padding: '6px', borderRadius: '8px', color: 'var(--primary-color)' }}><Plus size={16} strokeWidth={3} /></div>
@@ -615,10 +615,10 @@ const ControlHub = ({
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {!newItem.photo ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                             <button
                                 className="btn btn-secondary"
-                                style={{ height: '110px', border: '2px dashed var(--glass-border)', background: 'rgba(255,255,255,0.5)', borderRadius: '20px', gap: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
+                                style={{ flex: 1, minWidth: '120px', height: '110px', border: '2px dashed var(--glass-border)', background: 'rgba(255,255,255,0.5)', borderRadius: '20px', gap: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}
                                 onClick={onScanObject}
                             >
                                 <Camera size={28} strokeWidth={1.5} style={{ opacity: 0.6 }} />
@@ -626,7 +626,7 @@ const ControlHub = ({
                             </button>
                             <label
                                 className="btn btn-secondary"
-                                style={{ height: '110px', border: '2px dashed var(--glass-border)', background: 'rgba(255,255,255,0.5)', borderRadius: '20px', gap: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                                style={{ flex: 1, minWidth: '120px', height: '110px', border: '2px dashed var(--glass-border)', background: 'rgba(255,255,255,0.5)', borderRadius: '20px', gap: '0.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                             >
                                 <Upload size={28} strokeWidth={1.5} style={{ opacity: 0.6 }} />
                                 <span style={{ fontWeight: '900', fontSize: '0.82rem', color: 'var(--text-muted)' }}>Choisir une photo</span>

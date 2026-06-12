@@ -12,16 +12,18 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
 
     return (
         <div className="modal-overlay animate-fade-in" onClick={() => setViewingParticipant(null)} style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)', zIndex: 1000 }}>
-            <div className="modal-content animate-scale-in" 
-                style={{ 
-                    borderRadius: '32px', 
-                    overflow: 'hidden', 
-                    maxWidth: '520px', 
-                    width: '100%',
+            <div className="animate-scale-in"
+                style={{
+                    borderRadius: '32px',
+                    overflow: 'hidden',
+                    width: 'min(520px, 92vw)',
+                    maxHeight: '95vh',
+                    display: 'flex',
+                    flexDirection: 'column',
                     background: 'rgba(255, 255, 255, 0.95)',
                     boxShadow: '0 25px 80px oklch(0% 0 0 / 0.25)',
                     border: '1.5px solid var(--glass-border)'
-                }} 
+                }}
                 onClick={(e) => e.stopPropagation()}>
 
                 {/* Header Image / Gradient Area */}
@@ -31,18 +33,22 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                     position: 'relative',
                     flexShrink: 0
                 }}>
-                    <button onClick={() => setViewingParticipant(null)} 
+                    <button onClick={() => setViewingParticipant(null)}
                         style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '12px', padding: '8px', border: 'none', cursor: 'pointer', backdropFilter: 'blur(10px)', display: 'flex' }}>
                         <X size={20} strokeWidth={2.5} />
                     </button>
                 </div>
 
-                <div style={{ padding: '0 2rem 2.5rem 2.5rem', maxHeight: '80vh', overflowY: 'auto' }} className="no-scrollbar">
-                    {/* Profile Header */}
-                    <div style={{ marginTop: '-60px', marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', position: 'relative', zIndex: 1 }}>
-                        <div style={{ border: '6px solid white', borderRadius: '32px', boxShadow: '0 12px 30px oklch(0% 0 0 / 0.15)', background: 'white', marginBottom: '1.25rem' }}>
-                            <Avatar participant={viewingParticipant} size={110} />
-                        </div>
+                {/* Avatar — sibling hors du conteneur scroll (sinon overflow:auto rogne le haut qui déborde sur le header) */}
+                <div style={{ marginTop: '-60px', display: 'flex', justifyContent: 'center', flexShrink: 0, position: 'relative', zIndex: 2 }}>
+                    <div style={{ border: '6px solid white', borderRadius: '32px', boxShadow: '0 12px 30px oklch(0% 0 0 / 0.15)', background: 'white' }}>
+                        <Avatar participant={viewingParticipant} size={110} />
+                    </div>
+                </div>
+
+                <div style={{ flex: 1, minHeight: 0, padding: '1.25rem 2rem 2.5rem 2.5rem', overflowY: 'auto' }} className="no-scrollbar">
+                    {/* Profile Header (nom + badges) */}
+                    <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)', margin: '0 0 0.5rem 0', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', textAlign: 'center', letterSpacing: '-0.03em' }}>
                             {viewingParticipant.firstName} <span style={{ textTransform: 'uppercase' }}>{viewingParticipant.lastName}</span>
                         </h2>

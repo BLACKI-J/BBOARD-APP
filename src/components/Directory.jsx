@@ -377,7 +377,7 @@ export default function Directory({ participants = [], setParticipants, groups =
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden', position: 'relative' }}>
             <div style={{ maxWidth: '1600px', width: '96%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
-            <div style={{overflow:'hidden', maxHeight: isMobile && isScrolled ? '0' : '300px', opacity: isMobile && isScrolled ? 0 : 1, transition:'max-height 0.3s ease,opacity 0.2s', pointerEvents: isMobile && isScrolled ? 'none' : 'auto'}}>
+            <div style={{overflow:'hidden', maxHeight: isScrolled ? '0' : '300px', opacity: isScrolled ? 0 : 1, transition:'max-height 0.3s ease,opacity 0.2s', pointerEvents: isScrolled ? 'none' : 'auto'}}>
                 <DirectoryHeader
                     stats={stats}
                     selectedCount={selectedParticipants.length}
@@ -392,13 +392,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                     canEdit={canEdit}
                 />
             </div>
-            {isMobile && isScrolled && (
-                <div style={{position:'sticky',top:0,zIndex:20,background:'rgba(255,255,255,0.95)',backdropFilter:'blur(16px)',borderBottom:'1px solid var(--glass-border)',display:'flex',alignItems:'center',gap:'0.625rem',padding:'8px 12px'}}>
-                    <Search size={14} style={{position:'absolute',left:'22px',top:'50%',transform:'translateY(-50%)',color:'var(--text-muted)'}} />
-                    <input value={searchTerm} onChange={e=>setSearchTerm(e.target.value)} placeholder="Rechercher..." className="glass-input" style={{paddingLeft:'32px',height:'38px',borderRadius:'20px',fontSize:'0.85rem',flex:1}} />
-                    <span style={{fontSize:'0.72rem',fontWeight:'900',color:'var(--text-muted)',flexShrink:0}}>{filteredParticipants?.length ?? 0}</span>
-                </div>
-            )}
+            {/* Recherche compacte sticky retirée : DirectoryFilters (recherche + filtres) reste déjà épinglé hors du scroll → évite le doublon de barre de recherche. */}
 
             <DirectoryFilters
                 searchTerm={searchTerm}

@@ -180,8 +180,6 @@ const SuiviPanel = ({ child, addHealthLog, updateParticipantHealth, canEdit, isM
 
 // ── Detail view with Infos / Suivi sub-tabs ──
 const ChildHealthDetail = ({ child, groups, onBack, updateParticipantHealth, addHealthLog, canEdit, isMobile }) => {
-    const [tab, setTab] = useState('infos');
-
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {/* Header */}
@@ -198,24 +196,7 @@ const ChildHealthDetail = ({ child, groups, onBack, updateParticipantHealth, add
                 </div>
             </div>
 
-            {/* Sub-tabs */}
-            <div style={{ display: 'flex', gap: '0.375rem', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px' }}>
-                {[{ id: 'infos', label: 'Infos', icon: <FileText size={15} /> }, { id: 'suivi', label: 'Suivi', icon: <Heart size={15} /> }].map(t => (
-                    <button key={t.id} onClick={() => setTab(t.id)} style={{
-                        flex: 1, padding: '0.6rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-                        fontSize: '0.82rem', fontWeight: '950', minHeight: '44px',
-                        background: tab === t.id ? 'white' : 'transparent',
-                        boxShadow: tab === t.id ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
-                        color: tab === t.id ? 'var(--primary-color)' : 'var(--text-muted)',
-                    }}>{t.icon} {t.label}</button>
-                ))}
-            </div>
-
-            {tab === 'infos'
-                ? <InfosPanel child={child} updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} />
-                : <SuiviPanel child={child} addHealthLog={addHealthLog} updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} isMobile={isMobile} />
-            }
+            <InfosPanel child={child} updateParticipantHealth={updateParticipantHealth} canEdit={canEdit} />
         </div>
     );
 };
