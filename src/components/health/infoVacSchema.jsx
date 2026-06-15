@@ -64,18 +64,32 @@ export const SECTIONS = [
     },
 ];
 
-// Non-empty summary rows for a card preview.
+// Une valeur « vide » côté résumé : non renseignée ou égale à la réponse neutre
+// (NON / RAS / Non) qu'on n'affiche pas pour ne pas noyer les infos utiles.
+const isEmptySummaryValue = (v) => !v || v === '' || v === '--' || v === 'NON' || v === 'RAS' || v === 'Non';
+
+// Non-empty summary rows for a card preview (liste à plat).
 export const getSummaryRows = (child) => {
     const rows = [];
     SECTIONS.forEach(sec => {
         sec.fields.forEach(f => {
-            const v = child[f.key];
-            if (!v || v === '' || v === '--' || v === 'NON' || v === 'RAS' || v === 'Non') return;
-            rows.push({ icon: sec.icon, color: sec.color, label: f.label, value: v });
+            if (isEmptySummaryValue(child[f.key])) return;
+            rows.push({ icon: sec.icon, color: sec.color, label: f.label, value: child[f.key] });
         });
     });
     return rows;
 };
+
+// Mêmes infos mais REGROUPÉES par section (carte « tout visible ») : on ne garde
+// que les sections ayant au moins un champ renseigné.
+export const getSummaryBySection = (child) => SECTIONS
+    .map(sec => ({
+        id: sec.id, label: sec.label, color: sec.color, icon: sec.icon,
+        rows: sec.fields
+            .filter(f => !isEmptySummaryValue(child[f.key]))
+            .map(f => ({ label: f.label, value: child[f.key] })),
+    }))
+    .filter(sec => sec.rows.length > 0);
 
 // Count OUI flags on health-section fields.
 export const getAlertCount = (child) => {
