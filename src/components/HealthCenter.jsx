@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
     Activity, Zap, FileText, ClipboardList
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
+import useAppStore from '../store/useAppStore';
 import SectionHeader from './common/SectionHeader';
 
 // ─── Sub-component imports ────────────────────────────────────────────────
@@ -18,8 +19,11 @@ const HEALTH_TABS = [
     { id: 'registre',   label: 'Registre',          short: 'Registre',     permKey: 'viewHealthRegistre', icon: <ClipboardList size={20} />,   color: 'oklch(52% 0.22 310)', bg: 'oklch(96% 0.05 310)' },
 ];
 
-export default function HealthCenter({ participants = [], setParticipants, groups = [], canEdit = true, isMobile, transmissions = [], setTransmissions, activeUser, permissions = {} }) {
+export default function HealthCenter({ participants = [], patchParticipant, groups = [], canEdit = true, isMobile, transmissions = [], setTransmissions, activeUser, permissions = {} }) {
     const ui = useUi();
+    // Setter brut du store (maj locale instantanée, SANS appel réseau) — distinct
+    // de patchParticipant qui, lui, persiste un seul enfant côté serveur.
+    const setParticipantsLocal = useAppStore(s => s.setParticipants);
 
     // Onglets visibles selon le rôle : un onglet n'est masqué que si sa permission
     // est explicitement à false (absente ou true → visible, rétrocompatible).
@@ -58,10 +62,42 @@ export default function HealthCenter({ participants = [], setParticipants, group
 
     const { scrollRef, isScrolled, onScroll, scrollToTop } = useScrollCollapse(80);
 
+    // Édition santé : maj optimiste locale IMMÉDIATE (champ réactif sous le doigt)
+    // + PATCH réseau DEBOUNCÉ par enfant (1 requête après l'arrêt de frappe, ne
+    // poste que le(s) champ(s) modifié(s) — fini le POST de toute la collection).
+    const pendingPatch = useRef({}); // { [childId]: { field: value, ... } }
+    const patchTimers = useRef({});  // { [childId]: timeoutId }
+
+    const flushPatch = (childId) => {
+        clearTimeout(patchTimers.current[childId]);
+        const fields = pendingPatch.current[childId];
+        if (!fields) return;
+        delete pendingPatch.current[childId];
+        patchParticipant?.(childId, fields);
+    };
+
     const updateParticipantHealth = (childId, field, value) => {
         if (!canEdit) return;
-        setParticipants(participants.map(p => p.id === childId ? { ...p, [field]: value } : p));
+        // 1. réactivité immédiate (aucun réseau)
+        setParticipantsLocal(useAppStore.getState().participants.map(p => p.id === childId ? { ...p, [field]: value } : p));
+        // 2. accumulation + persistance différée
+        pendingPatch.current[childId] = { ...(pendingPatch.current[childId] || {}), [field]: value };
+        clearTimeout(patchTimers.current[childId]);
+        patchTimers.current[childId] = setTimeout(() => flushPatch(childId), 600);
     };
+
+    // Au démontage (changement d'onglet/section), persiste les éditions encore
+    // en attente pour ne rien perdre.
+    useEffect(() => {
+        const timers = patchTimers.current;
+        const pending = pendingPatch.current;
+        return () => {
+            Object.keys(pending).forEach(childId => {
+                clearTimeout(timers[childId]);
+                if (pending[childId]) patchParticipant?.(childId, pending[childId]);
+            });
+        };
+    }, [patchParticipant]);
 
     const addHealthLog = (childId, logEntry) => {
         if (!canEdit) return;

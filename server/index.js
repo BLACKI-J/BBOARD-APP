@@ -102,7 +102,7 @@ const corsOptions = {
             callback(null, false);
         }
     },
-    methods: ["GET", "POST", "DELETE"],
+    methods: ["GET", "POST", "PATCH", "DELETE"],
     credentials: true
 };
 
@@ -325,10 +325,20 @@ async function getActor(userId) {
     if (userId === 'director') {
         actor = { id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction' };
     } else {
-        const row = await db.get('SELECT data FROM participants WHERE id = ?', userId);
-        const participant = sanitizeParticipant(parseJsonValue(row?.data, null));
-        if (!participant || participant.role === 'child') return null;
-        actor = participant;
+        // La COLONNE `role` fait foi (alignée sur le lookup login & la route PIN).
+        // `data` peut être absent/partiel ou contenir un role divergent (imports,
+        // anciennes migrations) → on reconstruit l'acteur depuis les colonnes pour
+        // ne pas refuser un staff valide (sinon : bon PIN mais 401).
+        const row = await db.get('SELECT id, firstName, lastName, role, groupId, data FROM participants WHERE id = ?', userId);
+        if (!row || row.role === 'child') return null;
+        const fromData = sanitizeParticipant(parseJsonValue(row.data, null)) || {};
+        actor = {
+            ...fromData,
+            id: row.id,
+            firstName: row.firstName || fromData.firstName || '',
+            lastName: row.lastName || fromData.lastName || '',
+            role: row.role,
+        };
     }
 
     const accessControl = await getAccessControl();
@@ -724,12 +734,21 @@ io.use(async (socket, next) => {
 
 app.get('/api/auth/profiles', async (req, res) => {
     try {
-        const rows = await db.all("SELECT data FROM participants WHERE role != 'child'");
+        const rows = await db.all("SELECT id, firstName, lastName, role, data FROM participants WHERE role != 'child'");
         const accessControl = await getAccessControl();
+        // Colonne `role` = source de vérité ; nom reconstruit depuis les colonnes
+        // si `data` est absent/partiel (cohérent avec getActor).
         const profiles = rows
-            .map((row) => sanitizeParticipant(parseJsonValue(row.data, null)))
-            .filter((participant) => participant && !accessControl.disabledUsers?.[participant.id])
-            .map(({ id, firstName, lastName, role }) => ({ id, firstName, lastName, role }));
+            .map((row) => {
+                const fromData = sanitizeParticipant(parseJsonValue(row.data, null)) || {};
+                return {
+                    id: row.id,
+                    firstName: row.firstName || fromData.firstName || '',
+                    lastName: row.lastName || fromData.lastName || '',
+                    role: row.role,
+                };
+            })
+            .filter((p) => p.id && !accessControl.disabledUsers?.[p.id]);
         res.json([{ id: 'director', firstName: 'Direction', lastName: 'Générale', role: 'direction' }, ...profiles]);
     } catch (err) {
         serverError(req, res, err);
@@ -854,8 +873,17 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/participants', requireAnyPermission('viewDirectory', 'viewAttendance', 'viewHealth', 'manageUsers'), async (req, res) => {
     try {
-        const rows = await db.all('SELECT data FROM participants');
-        res.json(rows.map((row) => parseJsonValue(row.data, null)).filter(Boolean).map(sanitizeParticipant));
+        // La colonne `role` fait foi : on l'impose sur le JSON `data` pour réconcilier
+        // toute divergence historique (sinon un staff peut apparaître comme 'child').
+        const rows = await db.all('SELECT role, data FROM participants');
+        res.json(
+            rows
+                .map((row) => {
+                    const p = parseJsonValue(row.data, null);
+                    return p ? sanitizeParticipant({ ...p, role: row.role }) : null;
+                })
+                .filter(Boolean)
+        );
     } catch (err) {
         serverError(req, res, err);
     }
@@ -935,6 +963,44 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
         } finally {
             await stmt.finalize();
         }
+        io.emit('data_updated', { type: 'participants' });
+        res.json({ success: true });
+    } catch (err) {
+        serverError(req, res, err);
+    }
+});
+
+// PATCH UN SEUL participant — éditions granulaires (santé, fiches sanitaires…)
+// sans reposter toute la collection (évite les payloads multi-Mo → 413 + lag).
+// Le rôle et les identifiants (pin/password) sont PROTÉGÉS : on force le rôle
+// stocké et sanitizeParticipant retire les secrets. Pour changer un rôle/PIN,
+// passer par POST /api/participants (manageUsers) ou /api/users/:id/pin.
+app.patch('/api/participants/:id', requireAnyPermission('editDirectory', 'editAttendance', 'editHealth'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const patch = (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) ? req.body : null;
+        if (!patch) return res.status(400).json({ error: 'Body must be an object of fields to update' });
+
+        const row = await db.get('SELECT data, role FROM participants WHERE id = ?', id);
+        if (!row) return res.status(404).json({ error: 'Participant introuvable' });
+
+        const current = parseJsonValue(row.data, {}) || {};
+        // Fusion champ par champ ; on force id + rôle stocké (anti-escalade) puis on
+        // purge tout secret éventuellement présent dans le patch.
+        const merged = sanitizeParticipant({ ...current, ...patch, id, role: row.role });
+
+        await db.run(
+            `UPDATE participants
+               SET firstName = ?, lastName = ?, groupId = ?, allergies = ?, constraints = ?, data = ?
+             WHERE id = ?`,
+            merged.firstName || '',
+            merged.lastName || '',
+            merged.groupId || merged.group || '',
+            merged.allergies || '',
+            merged.constraints || '',
+            JSON.stringify(merged),
+            id
+        );
         io.emit('data_updated', { type: 'participants' });
         res.json({ success: true });
     } catch (err) {

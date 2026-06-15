@@ -24,7 +24,9 @@ const PrintContent = ({ data }) => {
                 
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '10px' }}>
                     <div style={{ position: 'absolute', left: '10mm', top: '10mm' }}>
-                        <img src="/logo/logo.png" alt="" style={{ height: '55px', objectFit: 'contain' }} />
+                        <img src="/logo/logo.png" alt="" style={{ height: '55px', objectFit: 'contain' }}
+                             onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} />
+                        <div style={{ display: 'none', height: '55px', alignItems: 'center', fontWeight: 'bold', fontSize: '22px', color: '#1e3a8a', fontFamily: 'Georgia, serif', letterSpacing: '1px' }}>BBOARD</div>
                     </div>
                     <h1 style={{ fontFamily: '"Yanone Kaffeesatz", sans-serif', fontSize: '42px', color: '#1e3a8a', margin: '20px 0 0 0', fontWeight: 400, letterSpacing: '2px', textTransform: 'uppercase' }}>
                         FEUILLE D'ÉVÉNEMENT INDÉSIRABLE
@@ -201,7 +203,11 @@ const PrintContent = ({ data }) => {
             {/* --- PAGE 2 --- */}
             <div className="fei-page" style={{ position: 'relative', width: '210mm', height: '297mm', padding: '10mm', boxSizing: 'border-box', background: 'white' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                    <img src="/logo/logo.png" alt="" style={{ height: '60px', objectFit: 'contain', marginLeft: '10px' }} />
+                    <div style={{ marginLeft: '10px' }}>
+                        <img src="/logo/logo.png" alt="" style={{ height: '60px', objectFit: 'contain' }}
+                             onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} />
+                        <div style={{ display: 'none', height: '60px', alignItems: 'center', fontWeight: 'bold', fontSize: '24px', color: '#1e3a8a', fontFamily: 'Georgia, serif', letterSpacing: '1px' }}>BBOARD</div>
+                    </div>
                     <div style={{ marginRight: '20px', marginTop: '10px' }}>
                         <svg width="60" height="60" viewBox="0 0 100 100" style={{ transform: 'rotate(5deg)' }}>
                             <path d="M50 10 C75 10 95 25 95 45 C95 65 75 80 50 80 C36 80 23 75 14 66 L5 85 L20 73 C12 65 5 56 5 45 C5 25 25 10 50 10 Z" fill="white" stroke="black" strokeWidth="3" />

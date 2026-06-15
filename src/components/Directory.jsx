@@ -153,9 +153,9 @@ export default function Directory({ participants = [], setParticipants, groups =
 
         const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
-        const STAR_SVG = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align:middle;margin:0 5px"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4 2.4-7.4L2 9.4h7.6z"/></svg>`;
-        const CACTUS_SVG = (flip) => `<svg width="44" height="62" viewBox="0 0 44 62" fill="#4a7a3a" opacity=".55" style="display:inline-block;${flip?'transform:scaleX(-1)':''}"><rect x="17" y="14" width="10" height="48" rx="5"/><rect x="3" y="26" width="17" height="8" rx="4"/><rect x="24" y="33" width="17" height="8" rx="4"/><rect x="3" y="17" width="8" height="17" rx="4"/><rect x="33" y="25" width="8" height="16" rx="4"/></svg>`;
-        const SUN_SVG = `<svg width="48" height="48" viewBox="0 0 48 48" fill="#d4a96a" opacity=".4"><circle cx="24" cy="24" r="8"/><g stroke="#d4a96a" stroke-width="3" stroke-linecap="round">${[0,45,90,135,180,225,270,315].map(a=>`<line x1="${24+12*Math.cos(a*Math.PI/180)}" y1="${24+12*Math.sin(a*Math.PI/180)}" x2="${24+19*Math.cos(a*Math.PI/180)}" y2="${24+19*Math.sin(a*Math.PI/180)}"/>`).join('')}</g></svg>`;
+        const SHERIFF_STAR = (color) => `<svg width="18" height="18" viewBox="0 0 100 100" style="vertical-align:middle;margin:0 4px"><polygon points="50,2 61,35 96,35 68,57 79,91 50,69 21,91 32,57 4,35 39,35" fill="${color}" stroke="${color.replace(/[^#a-fA-F0-9]/g,'')||color}" stroke-width="2" stroke-linejoin="round"/><circle cx="50" cy="50" r="15" fill="none" stroke="#ffffffaa" stroke-width="3"/></svg>`;
+        const CACTUS_SVG = (flip) => `<svg width="40" height="58" viewBox="0 0 44 62" fill="#3a6b2a" opacity=".7" style="display:inline-block;${flip?'transform:scaleX(-1)':''}"><rect x="17" y="14" width="10" height="48" rx="5"/><rect x="3" y="26" width="17" height="8" rx="4"/><rect x="24" y="33" width="17" height="8" rx="4"/><rect x="3" y="17" width="8" height="17" rx="4"/><rect x="33" y="25" width="8" height="16" rx="4"/></svg>`;
+        const HORIZON_SVG = `<svg width="100%" height="30" viewBox="0 0 600 30" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg"><polygon points="0,30 0,18 40,18 55,8 70,18 120,18 130,12 140,18 200,18 200,30" fill="#2c1505" opacity=".5"/><polygon points="400,30 400,18 440,18 460,5 480,18 520,18 535,10 550,18 600,18 600,30" fill="#2c1505" opacity=".5"/><rect x="270" y="10" width="6" height="20" rx="3" fill="#3a6b2a" opacity=".65"/><rect x="262" y="15" width="6" height="4" rx="2" fill="#3a6b2a" opacity=".65"/><rect x="276" y="17" width="6" height="4" rx="2" fill="#3a6b2a" opacity=".65"/><rect x="310" y="13" width="5" height="17" rx="2.5" fill="#3a6b2a" opacity=".55"/><rect x="303" y="17" width="5" height="3" rx="2" fill="#3a6b2a" opacity=".55"/><rect x="315" y="19" width="5" height="3" rx="2" fill="#3a6b2a" opacity=".55"/></svg>`;
 
         const cardHtml = (p) => {
             const firstName = esc(p.firstName || '');
@@ -166,20 +166,23 @@ export default function Directory({ participants = [], setParticipants, groups =
                 ? `<img src="${p.photo}" class="photo" alt="${firstName}" />`
                 : `<div class="initials">${esc(initials)}</div>`;
             const badgeEl = group
-                ? `<div class="card-badge" style="background:${esc(group.color)}25;border-color:${esc(group.color)};color:${esc(group.color)}">${esc(group.name)}</div>`
+                ? `<div class="card-badge" style="color:${esc(group.color)}">${SHERIFF_STAR(esc(group.color))}${esc(group.name)}</div>`
                 : '';
-            return `<div class="card">${photoEl}<div class="card-name">${firstName}<br><strong>${lastName}</strong></div>${badgeEl}</div>`;
+            const birthEl = p.birthDate
+                ? `<div class="card-birth">né(e) le ${new Date(p.birthDate).toLocaleDateString('fr-FR')}</div>`
+                : '';
+            return `<div class="card"><div class="wanted-stamp">WANTED</div>${photoEl}<div class="card-name">${firstName}<br><strong>${lastName}</strong></div>${birthEl}${badgeEl}</div>`;
         };
 
         const sectionHtml = (members, groupObj) => {
-            const color = groupObj?.color || '#c2703d';
-            const name = groupObj ? esc(groupObj.name) : 'Sans groupe';
+            const color = groupObj?.color || '#8b5c2a';
+            const name = groupObj ? esc(groupObj.name) : 'Sans Groupe';
             return `
             <div class="section">
-                <div class="section-title" style="border-color:${esc(color)};color:${esc(color)}">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="${esc(color)}" style="vertical-align:middle;margin:0 5px"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4 2.4-7.4L2 9.4h7.6z"/></svg>
-                    ${name}
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="${esc(color)}" style="vertical-align:middle;margin:0 5px"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17.3l-6.2 4 2.4-7.4L2 9.4h7.6z"/></svg>
+                <div class="section-title">
+                    ${SHERIFF_STAR(color)}
+                    <span style="color:${esc(color)};border-bottom:2px solid ${esc(color)};padding:0 .5rem">${name}</span>
+                    ${SHERIFF_STAR(color)}
                 </div>
                 <div class="grid">${[...members].sort(sortAlpha).map(cardHtml).join('')}</div>
             </div>`;
@@ -192,125 +195,172 @@ export default function Directory({ participants = [], setParticipants, groups =
         printHtml(`<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8">
 <title>${esc(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap" rel="stylesheet">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Rye&family=Special+Elite&display=swap');
-  *{box-sizing:border-box;margin:0;padding:0}
-  html,body{
-    background:#f2deb8;
-    -webkit-print-color-adjust:exact;print-color-adjust:exact;
-  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  html,body{background:#d6b87a}
   body{
-    font-family:'Special Elite',Georgia,'Times New Roman',serif;
-    color:#3d2008;padding:8px;
+    font-family:'Special Elite',Georgia,serif;color:#2c1505;padding:6px;
     background-image:
-      radial-gradient(ellipse at 15% 15%,rgba(194,112,61,.12) 0%,transparent 55%),
-      radial-gradient(ellipse at 85% 85%,rgba(194,112,61,.12) 0%,transparent 55%);
+      radial-gradient(ellipse at 4% 3%,rgba(80,40,8,.45) 0%,transparent 30%),
+      radial-gradient(ellipse at 96% 3%,rgba(80,40,8,.4) 0%,transparent 30%),
+      radial-gradient(ellipse at 4% 97%,rgba(80,40,8,.4) 0%,transparent 30%),
+      radial-gradient(ellipse at 96% 97%,rgba(80,40,8,.45) 0%,transparent 30%),
+      radial-gradient(ellipse at 50% 50%,rgba(220,180,100,.35) 0%,transparent 65%),
+      radial-gradient(circle at 30% 60%,rgba(160,100,40,.1) 0%,transparent 20%),
+      radial-gradient(circle at 72% 25%,rgba(160,100,40,.08) 0%,transparent 18%);
   }
-  /* ── Page wrapper (replaces body::before fixed) ── */
+  /* ── Outer frame: rope braid ── */
   .page{
-    border:3px solid #8b5c2a;
-    padding:14px;
-    min-height:260mm;
-    box-shadow:inset 0 0 0 2px #f2deb8,inset 0 0 0 5px #c2703d,inset 0 0 0 7px #f2deb8;
+    border:5px solid #6b3d18;padding:6px;
+    background:
+      repeating-linear-gradient(45deg,#8b5c2a 0,#8b5c2a 3px,transparent 3px,transparent 12px),
+      repeating-linear-gradient(-45deg,#8b5c2a 0,#8b5c2a 3px,transparent 3px,transparent 12px);
+    background-size:16px 16px;
+  }
+  .page-inner{
+    background:#e8cfa0;
+    background-image:
+      radial-gradient(ellipse at 4% 3%,rgba(80,40,8,.35) 0%,transparent 28%),
+      radial-gradient(ellipse at 96% 3%,rgba(80,40,8,.3) 0%,transparent 28%),
+      radial-gradient(ellipse at 4% 97%,rgba(80,40,8,.3) 0%,transparent 28%),
+      radial-gradient(ellipse at 96% 97%,rgba(80,40,8,.35) 0%,transparent 28%),
+      radial-gradient(circle at 25% 55%,rgba(120,70,20,.12) 0%,transparent 18%),
+      radial-gradient(circle at 78% 30%,rgba(120,70,20,.1) 0%,transparent 15%);
+    border:3px solid #6b3d18;
+    padding:12px;
   }
   /* ── Header ── */
-  .header{text-align:center;margin-bottom:1.4rem;padding:0}
-  .header-inner{
-    background:#2c1505;border:4px solid #c2703d;
-    border-top:none;border-bottom:none;
-    padding:1rem 3rem;position:relative;overflow:hidden;
+  .header{text-align:center;margin-bottom:1.2rem}
+  .header-band{height:8px;background:repeating-linear-gradient(90deg,#2c1505 0,#2c1505 10px,#8b5c2a 10px,#8b5c2a 20px,#2c1505 20px)}
+  .header-eyebrow{
+    background:#2c1505;padding:3px 0;
+    font-size:9px;letter-spacing:.55em;color:#d4a96a;text-transform:uppercase;
   }
-  .header-inner::before,.header-inner::after{
-    content:'';position:absolute;top:0;bottom:0;width:60px;
-    background:repeating-linear-gradient(90deg,#c2703d 0,#c2703d 4px,transparent 4px,transparent 12px);
-    opacity:.35;
-  }
-  .header-inner::before{left:0}
-  .header-inner::after{right:0}
-  .header-band{
-    background:#8b5c2a;height:6px;
-    background-image:repeating-linear-gradient(90deg,#6b3d18 0,#6b3d18 8px,#a87040 8px,#a87040 16px);
-  }
-  .header-stars{color:#c2703d;font-size:11px;letter-spacing:.6em;padding:4px 0;background:#2c1505;text-align:center}
-  .main-title{
-    font-family:'Rye',Georgia,serif;font-size:42px;color:#f2deb8;
-    letter-spacing:.12em;text-transform:uppercase;line-height:1.05;
-    text-shadow:2px 2px 0 #8b5c2a;
-  }
-  .sub-title{font-size:11px;color:#d4a96a;letter-spacing:.3em;text-transform:uppercase;margin-top:4px;font-weight:bold}
-  .deco-row{display:flex;align-items:center;justify-content:space-between;padding:4px 1rem 0}
-  /* ── Section ── */
-  .section{margin-bottom:1.5rem}
-  .section-title{
-    text-align:center;font-family:'Rye',Georgia,serif;
-    font-size:14px;letter-spacing:.55em;text-transform:uppercase;
-    margin-bottom:.8rem;padding:.35rem 0;color:#5a3410;
-  }
-  .section-title::before,.section-title::after{
-    content:'';display:block;height:2px;
-    background:repeating-linear-gradient(90deg,currentColor 0,currentColor 6px,transparent 6px,transparent 12px);
-    margin:3px 0;opacity:.55;
-  }
-  /* ── Grid: auto-fill so row fills naturally ── */
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:1.4rem}
-  /* ── Cards ── */
-  .card{
-    text-align:center;background:#fffcf4;
-    border:2px solid #8b5c2a;border-radius:6px;
-    padding:.75rem .4rem .65rem;break-inside:avoid;
-    box-shadow:0 0 0 2px #f2deb8,0 0 0 5px #c2703d,0 0 0 7px #f2deb8,3px 4px 8px rgba(61,32,8,.25);
+  .header-main{
+    background:linear-gradient(180deg,#1a0a02 0%,#3d1c08 50%,#1a0a02 100%);
+    padding:10px 20px 6px;border-left:4px solid #c2703d;border-right:4px solid #c2703d;
     position:relative;
   }
-  .card::after{
-    content:'';position:absolute;top:5px;left:5px;right:5px;bottom:5px;
-    border:1px dashed rgba(139,92,42,.22);border-radius:3px;pointer-events:none;
+  .wanted-big{
+    font-family:'Rye',Georgia,serif;font-size:52px;color:#e8cfa0;
+    letter-spacing:.18em;text-transform:uppercase;line-height:1;
+    text-shadow:3px 3px 0 #6b3d18,-1px -1px 0 #8b5c2a;
+    display:block;
+  }
+  .dead-or-alive{
+    font-family:'Special Elite',Georgia,serif;font-size:11px;
+    color:#c2703d;letter-spacing:.5em;text-transform:uppercase;
+    border-top:1px solid #c2703d;border-bottom:1px solid #c2703d;
+    padding:3px 0;margin:4px 0;display:block;
+  }
+  .header-title{
+    font-family:'Rye',Georgia,serif;font-size:22px;color:#f2deb8;
+    letter-spacing:.08em;text-transform:uppercase;
+    text-shadow:1px 1px 0 #6b3d18;
+  }
+  .header-sub{font-size:10px;color:#a87040;letter-spacing:.3em;text-transform:uppercase;margin-top:3px}
+  .header-deco{display:flex;align-items:flex-end;justify-content:space-between;margin-top:4px}
+  .header-horizon{margin:0;line-height:0}
+  /* ── Sections ── */
+  .section{margin-bottom:1.4rem}
+  .section-title{
+    text-align:center;font-family:'Rye',Georgia,serif;
+    font-size:13px;letter-spacing:.35em;text-transform:uppercase;
+    margin-bottom:.7rem;padding:.4rem 0;
+    display:flex;align-items:center;justify-content:center;gap:.4rem;
+  }
+  /* ── Grid ── */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:1.1rem}
+  /* ── Cards ── */
+  .card{
+    text-align:center;
+    background:linear-gradient(160deg,#fdf5e0 0%,#f5e8c0 100%);
+    border:2px solid #6b3d18;border-radius:4px;
+    padding:.6rem .35rem .55rem;break-inside:avoid;
+    box-shadow:0 0 0 1px #e8cfa0,0 0 0 4px #8b5c2a,0 0 0 6px #e8cfa0,
+               2px 4px 10px rgba(44,21,5,.4),inset 0 1px 0 rgba(255,255,255,.4);
+    position:relative;overflow:visible;
+  }
+  .card::before{
+    content:'';position:absolute;inset:4px;
+    border:1px dashed rgba(107,61,24,.3);border-radius:2px;pointer-events:none;
+  }
+  .wanted-stamp{
+    position:absolute;top:5px;right:-4px;
+    font-family:'Special Elite',Georgia,serif;
+    font-size:6.5px;font-weight:bold;color:#aa1111;
+    letter-spacing:.12em;border:1.5px solid #aa1111;
+    padding:1px 4px;transform:rotate(12deg);opacity:.82;
+    text-transform:uppercase;background:rgba(255,255,255,.6);
+    border-radius:1px;
   }
   .photo{
-    width:80px;height:80px;border-radius:50%;object-fit:cover;
-    border:3px solid #8b5c2a;display:block;margin:0 auto .5rem;
-    filter:sepia(15%) contrast(1.05);box-shadow:0 2px 5px rgba(0,0,0,.25);
+    width:74px;height:74px;border-radius:50%;object-fit:cover;
+    border:3px solid #6b3d18;display:block;margin:0 auto .45rem;
+    filter:sepia(25%) contrast(1.08) brightness(.97);
+    box-shadow:0 2px 6px rgba(0,0,0,.35),0 0 0 2px #d4a96a;
   }
   .initials{
-    width:80px;height:80px;border-radius:50%;
-    background:linear-gradient(135deg,#c2703d,#8b5c2a);
-    border:3px solid #5a3410;
+    width:74px;height:74px;border-radius:50%;
+    background:linear-gradient(135deg,#8b4513 0%,#5a2d0c 100%);
+    border:3px solid #3d1c08;
     display:flex;align-items:center;justify-content:center;
-    margin:0 auto .5rem;font-size:26px;font-weight:bold;color:#f2deb8;
-    font-family:'Rye',Georgia,serif;box-shadow:0 2px 5px rgba(0,0,0,.25);
+    margin:0 auto .45rem;font-size:24px;font-weight:bold;color:#e8cfa0;
+    font-family:'Rye',Georgia,serif;
+    box-shadow:0 2px 6px rgba(0,0,0,.35),0 0 0 2px #d4a96a;
   }
-  .card-name{font-size:10.5px;color:#3d2008;letter-spacing:.04em;line-height:1.35;text-transform:uppercase;margin-bottom:4px}
-  .card-badge{display:inline-block;font-size:8px;font-weight:bold;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;border-radius:100px;border:1px solid;margin-top:2px}
+  .card-name{
+    font-size:9.5px;color:#2c1505;letter-spacing:.05em;
+    line-height:1.3;text-transform:uppercase;margin-bottom:4px;
+    font-family:'Special Elite',Georgia,serif;
+  }
+  .card-birth{font-size:8px;color:#6b3d18;letter-spacing:.03em;margin-bottom:3px;font-style:italic}
+  .card-badge{
+    display:inline-flex;align-items:center;
+    font-size:7.5px;font-weight:bold;letter-spacing:.05em;
+    text-transform:uppercase;margin-top:2px;
+  }
   /* ── Footer ── */
-  .footer{text-align:center;margin-top:1.25rem;padding-top:.65rem;font-size:9px;color:#8b5c2a;letter-spacing:.55em;text-transform:uppercase}
-  .footer::before{content:'';display:block;height:3px;margin-bottom:.5rem;
-    background:repeating-linear-gradient(90deg,#8b5c2a 0,#8b5c2a 6px,transparent 6px,transparent 12px)}
+  .footer{
+    text-align:center;margin-top:1rem;padding-top:.5rem;
+    font-size:8.5px;color:#6b3d18;letter-spacing:.5em;text-transform:uppercase;
+  }
+  .footer-rule{height:4px;margin-bottom:.5rem;
+    background:repeating-linear-gradient(90deg,#6b3d18 0,#6b3d18 8px,#d4a96a 8px,#d4a96a 14px,#6b3d18 14px)}
   @media print{
-    @page{size:A4 portrait;margin:6mm}
-    body{padding:4px}
+    @page{size:A4 portrait;margin:5mm}
+    html,body{margin:0;padding:0}
+    .page{min-height:287mm}
     .section{break-inside:avoid-page}
     .card{break-inside:avoid}
   }
 </style></head><body>
-<div class="page">
+<div class="page"><div class="page-inner">
   <div class="header">
     <div class="header-band"></div>
-    <div class="header-stars">✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦</div>
-    <div class="header-inner">
-      <div class="deco-row">
+    <div class="header-eyebrow">✦ &nbsp; Territoire de l'Ouest &nbsp; ✦ &nbsp; Bureau du Shérif &nbsp; ✦</div>
+    <div class="header-main">
+      <div class="header-deco">
         ${CACTUS_SVG(false)}
-        <div>
-          <div class="main-title">${esc(title)}</div>
-          <div class="sub-title">${esc(subtitle)} · ${source.length} participant${source.length > 1 ? 's' : ''}</div>
+        <div style="flex:1;text-align:center">
+          <span class="wanted-big">Wanted</span>
+          <span class="dead-or-alive">— Avis de Recherche —</span>
+          <div class="header-title">${esc(title)}</div>
+          <div class="header-sub">${esc(subtitle)} &nbsp;·&nbsp; ${source.length} desperado${source.length > 1 ? 's' : ''}</div>
         </div>
         ${CACTUS_SVG(true)}
       </div>
     </div>
-    <div class="header-stars">✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦ &nbsp; ✦</div>
+    <div class="header-horizon">${HORIZON_SVG}</div>
     <div class="header-band"></div>
   </div>
   ${sectionsHtml}
-  <div class="footer">✦ &nbsp; BBOARD — Plateforme de Gestion de Colonie &nbsp; ✦</div>
-</div>
+  <div class="footer">
+    <div class="footer-rule"></div>
+    ✦ &nbsp; B B O A R D &nbsp;—&nbsp; Plateforme de Gestion de Colonie &nbsp; ✦
+  </div>
+</div></div>
 </body></html>`);
     };
 

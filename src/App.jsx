@@ -4,8 +4,8 @@ import { io } from 'socket.io-client';
 import Login from './components/Login';
 import { useUi } from './ui/UiProvider';
 import { hasUnsavedChanges } from './utils/unsavedGuard';
-import { useSwipeNav } from './utils/useSwipeNav';
 import { apiSend } from './utils/api';
+import useIsMobile from './utils/useIsMobile';
 import PullToRefresh from './components/common/PullToRefresh';
 import SyncStatus from './components/common/SyncStatus';
 import useAppStore from './store/useAppStore';
@@ -56,7 +56,6 @@ const Logo = () => (
 
 const TAB_TITLES = {
     home: 'Tableau de bord',
-    seatmap: 'Transports',
     schedule: 'Planning',
     exitsheet: 'Fiche de sortie',
     incident: 'FEI',
@@ -130,10 +129,12 @@ function mergeAccessControl(raw) {
         ...defaultAccessControl, ...source,
         roles: mergedRoles,
         hiddenSections: { ...defaultAccessControl.hiddenSections, ...(source.hiddenSections || {}) },
-        rolePermissions: {
-            ...defaultAccessControl.rolePermissions,
-            ...(source.rolePermissions || {})
-        },
+        rolePermissions: Object.fromEntries(
+            Object.keys({ ...defaultAccessControl.rolePermissions, ...(source.rolePermissions || {}) }).map(role => [
+                role,
+                { ...(defaultAccessControl.rolePermissions[role] || {}), ...((source.rolePermissions || {})[role] || {}) }
+            ])
+        ),
         userPermissions: { ...defaultAccessControl.userPermissions, ...(source.userPermissions || {}) },
         disabledUsers: { ...defaultAccessControl.disabledUsers, ...(source.disabledUsers || {}) }
     };
@@ -216,15 +217,8 @@ export default function App() {
     const [sessionUser, setSessionUser] = useState(null);
     const [authChecked, setAuthChecked] = useState(false);
 
-    const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const isMobile = windowWidth < 1024;
-
-    useEffect(() => {
-        const handleResize = () => setWindowWidth(window.innerWidth);
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+    const isMobile = useIsMobile();
 
     const [accessControl, setAccessControl] = useState(defaultAccessControl);
     const [activeUserId, setActiveUserId] = useState('');
@@ -578,6 +572,25 @@ export default function App() {
         }
     }, [actorHeaders, clearAuthenticatedSession, ui]);
 
+    // Sauvegarde GRANULAIRE d'un seul participant (PATCH /:id) — ne reposte pas
+    // toute la collection. Maj optimiste du store + rollback si échec. Utilisé
+    // pour les éditions champ par champ (santé) où reposter 120 fiches photos
+    // incluses provoquait lenteur + 413.
+    const patchParticipant = useCallback(async (id, fields) => {
+        const before = useAppStore.getState().participants;
+        setParticipants(before.map(p => p.id === id ? { ...p, ...fields } : p)); // optimiste
+        try {
+            await apiSend('PATCH', `${API_URL}/participants/${id}`, { headers: actorHeaders, body: fields });
+            return true;
+        } catch (err) {
+            setParticipants(before); // rollback
+            if (err.status === 401) { clearAuthenticatedSession(); return false; }
+            console.error(`Failed to patch participant ${id}:`, err);
+            ui.toast(`Échec d'enregistrement : ${err.message}`, { type: 'error' });
+            return false;
+        }
+    }, [actorHeaders, clearAuthenticatedSession, ui, setParticipants]);
+
     const onRefresh = useCallback(() => refreshDataRef.current?.(), []);
 
     // Blocks tab changes while a form holds unsaved edits (see useUnsavedGuard).
@@ -593,12 +606,6 @@ export default function App() {
         setActiveTab(tab);
         setIsNavOpen(false);
     }, [activeTab, ui]);
-
-    const { onTouchStart: swipeTouchStart, onTouchEnd: swipeTouchEnd } = useSwipeNav({
-        tabs: navItems,
-        activeTab,
-        onNavigate: guardedNavigate,
-    });
 
     const setSyncedMenus = useCallback((v) => {
         mutateCollection(`${API_URL}/state/menus`, setMenus, v, menus);
@@ -711,8 +718,6 @@ export default function App() {
             {/* Main Content */}
             <main
                 style={{ flex: 1, height: '100%', display: 'flex', flexDirection: 'column', position: 'relative', minWidth: 0 }}
-                onTouchStart={isMobile ? swipeTouchStart : undefined}
-                onTouchEnd={isMobile ? swipeTouchEnd : undefined}
             >
                 <div className="morph-blob" style={{ top: '-10%', right: '-5%' }} />
                 <div className="morph-blob-2" style={{ bottom: '-5%', left: '5%' }} />
@@ -730,11 +735,15 @@ export default function App() {
                     </div>
                 )}
 
-                {/* Topbar Header */}
+                {/* Topbar Header — liquid glass */}
                 <header style={{
                     height: isMobile ? '56px' : '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: isMobile ? '0 0.875rem' : '0 2.5rem', background: 'rgba(255,255,255,0.4)', backdropFilter: 'blur(16px)',
-                    borderBottom: '1.5px solid var(--glass-border)', zIndex: 100, transition: 'all 0.3s var(--ease-out-expo)',
+                    padding: isMobile ? '0 0.875rem' : '0 2.5rem',
+                    background: 'var(--lg-gloss), var(--lg-bg)',
+                    backdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))',
+                    WebkitBackdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))',
+                    borderBottom: '1px solid var(--lg-border)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
+                    zIndex: 100, transition: 'all 0.3s var(--ease-out-expo)',
                     flexShrink: 0
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.625rem' : '1.5rem', minWidth: 0, flex: 1 }}>
@@ -785,18 +794,18 @@ export default function App() {
                                     </div>
                                 )}
                                 <div style={{ width: isMobile ? '34px' : '40px', height: isMobile ? '34px' : '40px', background: 'var(--primary-gradient)', borderRadius: isMobile ? '10px' : '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: isMobile ? '0.85rem' : '1rem', border: '2.5px solid white', boxShadow: '0 4px 12px var(--shadow-color)' }}>
-                                    {activeUser?.firstName[0]}
+                                    {(activeUser?.firstName || '?')[0]}
                                 </div>
                                 {!isMobile && <ChevronDown size={14} style={{ marginRight: '0.5rem', opacity: 0.5 }} />}
                             </button>
 
                             {isUserSwitcherOpen && (
-                                <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: isMobile ? '50px' : '64px', right: 0, width: isMobile ? '240px' : '280px', zIndex: 200, background: 'white', padding: '0.75rem', borderRadius: '24px', border: '1.5px solid var(--glass-border)', boxShadow: '0 32px 64px rgba(0,0,0,0.12)' }}>
+                                <div className="liquid-glass-strong animate-scale-in" style={{ position: 'absolute', top: isMobile ? '50px' : '64px', right: 0, width: isMobile ? '240px' : '280px', zIndex: 200, padding: '0.75rem', borderRadius: '24px', boxShadow: 'var(--lg-edge), 0 32px 64px rgba(60,32,8,0.16)' }}>
                                     <div style={{ padding: '0.5rem 0.75rem', fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Profil actif</div>
                                     <div style={{ maxHeight: '250px', overflowY: 'auto' }} className="no-scrollbar">
                                         {staffUsers.map(u => (
                                             <button key={u.id} onClick={() => { if (activeUserId === u.id) setIsUserSwitcherOpen(false); else handleLogout(); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem', border: 'none', background: activeUserId === u.id ? 'var(--primary-light)' : 'transparent', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                                                <div style={{ width: '28px', height: '28px', background: u.role === 'direction' ? 'var(--primary-gradient)' : 'oklch(62% 0.18 200)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '0.75rem' }}>{u.firstName[0]}</div>
+                                                <div style={{ width: '28px', height: '28px', background: u.role === 'direction' ? 'var(--primary-gradient)' : 'oklch(62% 0.18 200)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '0.75rem' }}>{(u.firstName || '?')[0]}</div>
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{u.firstName}</div>
                                                     <div style={{ fontSize: '8px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{u.role}</div>
@@ -830,13 +839,13 @@ export default function App() {
                             <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                                 {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} onNavigate={guardedNavigate} isMobile={isMobile} />
                                 : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} permissions={permissions} menus={menus} setMenus={setSyncedMenus} />
-                                : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} actorHeaders={actorHeaders} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, useAppStore.getState().exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
+                                : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, useAppStore.getState().exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, useAppStore.getState().meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'incident' ? <IncidentSheet canEdit={permissions.editIncident} actorHeaders={actorHeaders} activeUser={activeUser} incidentSheets={incidentSheets} participants={participants} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)} canEdit={permissions.editDirectory} isMobile={isMobile} roles={accessControl.roles} />
                                 : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
                                 : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'health' ? <HealthCenter participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editHealth} permissions={permissions} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
+                                : activeTab === 'health' ? <HealthCenter participants={participants} patchParticipant={patchParticipant} groups={groups} canEdit={permissions.editHealth} permissions={permissions} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
                                 : activeTab === 'settings' ? <Settings
                                     participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)}
                                     activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)}
@@ -863,7 +872,7 @@ export default function App() {
 
                         {/* More drawer */}
                         {moreOpen && (
-                            <div className="animate-scale-in" style={{ position: 'fixed', bottom: '68px', left: '1rem', right: '1rem', zIndex: 200, background: 'white', borderRadius: '24px', padding: '0.75rem', boxShadow: '0 -4px 40px rgba(0,0,0,0.15)', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="animate-scale-in liquid-glass-strong" style={{ position: 'fixed', bottom: '68px', left: '1rem', right: '1rem', zIndex: 200, borderRadius: '24px', padding: '0.75rem', boxShadow: 'var(--lg-edge), 0 -4px 40px rgba(60,32,8,0.18)' }}>
                                 {[...moreItems, ...(permissions.viewSettings ? [{ id: 'settings', label: 'Paramètres', icon: <SettingsIcon size={20} strokeWidth={2.5} /> }] : [])].map(item => (
                                     <button key={item.id} onClick={() => { guardedNavigate(item.id); setMoreOpen(false); }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: '850', fontSize: '0.92rem', background: activeTab === item.id ? 'var(--primary-light)' : 'transparent', color: activeTab === item.id ? 'var(--primary-color)' : 'var(--text-main)' }}>
@@ -875,8 +884,8 @@ export default function App() {
                             </div>
                         )}
 
-                        {/* Bottom bar */}
-                        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, height: 'calc(64px + env(safe-area-inset-bottom))', background: 'rgba(255,255,255,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid var(--glass-border)', display: 'flex', alignItems: 'stretch', paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: '0 -4px 20px rgba(0,0,0,0.07)' }}>
+                        {/* Bottom bar — liquid glass */}
+                        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, height: 'calc(64px + env(safe-area-inset-bottom))', background: 'var(--lg-gloss), var(--lg-bg-strong)', backdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))', WebkitBackdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))', borderTop: '1px solid var(--lg-border)', display: 'flex', alignItems: 'stretch', paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 -4px 24px oklch(40% 0.06 45 / 0.1)' }}>
                             {primaryItems.map(item => {
                                 const isActive = activeTab === item.id;
                                 const badge = navBadges[item.id] || 0;

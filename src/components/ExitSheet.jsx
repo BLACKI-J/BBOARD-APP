@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
-    MapPin, Calendar, Clock, Users, UserCheck,
+    MapPin, Clock, Users, UserCheck,
     Save, Printer, Eye, Trash2, ArrowLeft,
-    CheckSquare, Square, ChevronDown, FileText
+    CheckSquare, Square, FileText
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
+import { printHtml } from '../utils/printHtml';
 import SectionHeader from './common/SectionHeader';
 
 function PrintContent({ date, destination, startTime, endTime, selectedChildren, selectedAnimatorList, referent, checklistItems, isVanUsed, vanId, kmStart, kmEnd }) {
@@ -90,8 +91,9 @@ function PrintContent({ date, destination, startTime, endTime, selectedChildren,
     );
 }
 
-export default function ExitSheet({ participants, groups, canEdit = true, actorHeaders = { 'Content-Type': 'application/json' }, exitSheets = [], setExitSheets, isMobile }) {
+export default function ExitSheet({ participants, groups, canEdit = true, exitSheets = [], setExitSheets, isMobile }) {
     const ui = useUi();
+    const printRef = useRef(null);
     const [destination, setDestination] = useState('');
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [startTime, setStartTime] = useState('14:00');
@@ -147,8 +149,8 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
     };
 
     const saveExitSheet = async (silent = false) => {
-        if (!canEdit && !silent) {
-            ui.toast('Enregistrement non autorise.', { type: 'error' });
+        if (!canEdit) {
+            if (!silent) ui.toast('Enregistrement non autorise.', { type: 'error' });
             return;
         }
         if (!silent) setSaveStatus('saving');
@@ -171,14 +173,13 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
     };
 
     const handlePrint = async () => {
-        if (!canEdit) {
-            ui.toast('Impression non autorisee.', { type: 'error' });
-            return;
-        }
         await saveExitSheet(true);
-        const orig = document.title;
-        document.title = (fileName || 'Fiche_Sortie').replace(/ /g, '_');
-        setTimeout(() => { window.print(); document.title = orig; }, 500);
+        const el = printRef.current;
+        if (!el) return;
+        const docTitle = (fileName || 'Fiche_Sortie').replace(/ /g, '_');
+        printHtml(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${docTitle}</title>
+<style>*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;padding:1cm;background:white}@page{size:A4 portrait;margin:0}</style>
+</head><body>${el.innerHTML}</body></html>`);
     };
 
     const deleteSheet = async (e, id) => {
@@ -561,8 +562,8 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                 </div>
             )}
 
-            {/* ── PRINT ONLY ── */}
-            <div className="print-view">
+            {/* ── PRINT ONLY (rendu hors écran, copié dans l'iframe d'impression) ── */}
+            <div className="print-view" ref={printRef}>
                 <PrintContent
                     date={date} destination={destination} startTime={startTime} endTime={endTime}
                     selectedChildren={selectedChildren} selectedAnimatorList={selectedAnimatorList}
@@ -603,23 +604,6 @@ export default function ExitSheet({ participants, groups, canEdit = true, actorH
                     .es-main-grid {
                         grid-template-columns: 1fr !important;
                     }
-                }
-
-                @media print {
-                    body * { visibility: hidden !important; overflow: visible !important; }
-                    .print-view, .print-view * { visibility: visible !important; }
-                    .print-view {
-                        position: absolute !important; left: 0 !important; top: 0 !important;
-                        width: 100% !important; display: block !important;
-                        background: white !important; padding: 1cm !important;
-                    }
-                    html, body, #root, .app-container, .main-content, .workspace-area, .exit-sheet-container {
-                        height: auto !important; min-height: auto !important; max-height: none !important;
-                        overflow: visible !important; display: block !important;
-                        background: white !important; padding: 0 !important; margin: 0 !important; transform: none !important;
-                    }
-                    @page { size: A4 portrait; margin: 0; }
-                    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                 }
             `}</style>
         </div>

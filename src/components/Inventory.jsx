@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
-import { Camera, Search, Plus, Trash2, Package, Upload, X, ChevronRight, Layers, Box, RefreshCcw, List, Sparkles, CheckCircle2, AlertCircle, ShoppingBag, ArrowRight, Users } from 'lucide-react';
+import { Camera, Search, Plus, Trash2, Package, Upload, X, ChevronRight, Layers, Box, RefreshCcw, List, Sparkles, ShoppingBag, Users } from 'lucide-react';
 import WebcamPhotoCapture from './directory/WebcamPhotoCapture';
 import { canUseWebcam } from '../utils/camera';
 import { useUi } from '../ui/UiProvider';
@@ -276,7 +276,10 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
         if (!canEdit) return null;
         const participantId = options.participantId || selectedChildId;
         const id = payload.id || `item_${Date.now()}_${Math.random().toString(16).slice(2, 6)}`;
-        const newItem = { ...payload, id, participant_id: participantId };
+        // La photo base64 n'est PAS stockée par /items (table séparée, envoyée via
+        // /photos). L'inclure ici gonflait le POST → 413 nginx. On l'exclut.
+        const { photo, ...rest } = payload;
+        const newItem = { ...rest, id, participant_id: participantId };
         // Backend attend UN objet par requête (pas le tableau complet).
         try {
             await apiSend('POST', '/api/inventory/items', { headers: actorHeaders, body: newItem });
@@ -369,7 +372,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
         if (!canEdit || batchEntries.length === 0) return;
         setIsProcessingBatch(true);
         try {
-            let ok = 0, fail = 0;
+            let ok = 0, fail = 0, photoFail = 0;
             for (const entry of batchEntries) {
                 const itemId = await saveItem({
                     label: entry.label,
@@ -377,21 +380,27 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                     arrival_qty: entry.arrival_qty,
                     departure_qty: 0,
                     status: 'ok'
-                }, { refresh: false });
+                });
                 if (itemId) {
                     ok++;
-                    await fetch(`/api/inventory/items/${itemId}/photos`, {
-                        method: 'POST',
-                        headers: actorHeaders,
-                        body: JSON.stringify({ participantId: selectedChildId, imageBase64: entry.imageBase64 })
-                    });
+                    try {
+                        await apiSend('POST', `/api/inventory/items/${itemId}/photos`, {
+                            headers: actorHeaders,
+                            body: { participantId: selectedChildId, imageBase64: entry.imageBase64 }
+                        });
+                    } catch {
+                        photoFail++; // objet créé, mais la photo n'a pas pu être envoyée
+                    }
                 } else {
                     fail++;
                 }
             }
-            if (fail === 0) {
+            if (fail === 0 && photoFail === 0) {
                 ui.toast(`Lot importé (${ok}).`, { type: 'success' });
                 setBatchEntries([]); // ne vide que si tout a réussi (sinon on garde pour réessayer)
+            } else if (fail === 0) {
+                ui.toast(`${ok} importé(s), ${photoFail} photo(s) en échec.`, { type: 'error' });
+                setBatchEntries([]); // objets créés : ne pas re-importer (doublons)
             } else {
                 ui.toast(`${ok} importé(s), ${fail} échec(s).`, { type: 'error' });
             }
@@ -679,16 +688,20 @@ const ControlHub = ({
                         style={{ width: '100%', height: '56px', borderRadius: '18px', fontWeight: '950', fontSize: '1rem', marginTop: '0.5rem' }} 
                         onClick={async () => { 
                             if (!newItem.label.trim()) { ui.toast('Veuillez entrer une désignation.', { type: 'error' }); nameInputRef.current?.focus(); return; }
-                            const savedId = await saveItem(newItem, { refresh: false });
+                            const savedId = await saveItem(newItem);
                             if (!savedId) return; // échec déjà signalé par saveItem
+                            let photoOk = true;
                             if (newItem.photo) {
-                                await fetch(`/api/inventory/items/${savedId}/photos`, {
-                                    method: 'POST', headers: actorHeaders, body: JSON.stringify({ participantId: selectedChildId, imageBase64: newItem.photo })
-                                });
+                                try {
+                                    await apiSend('POST', `/api/inventory/items/${savedId}/photos`, {
+                                        headers: actorHeaders,
+                                        body: { participantId: selectedChildId, imageBase64: newItem.photo }
+                                    });
+                                } catch { photoOk = false; }
                             }
                             if (onRefresh) await onRefresh();
                             setNewItem({ label: '', category: 'vêtement', arrival_qty: 1, departure_qty: 0, photo: '' });
-                            ui.toast('Objet enregistré.', { type: 'success' });
+                            ui.toast(photoOk ? 'Objet enregistré.' : 'Objet enregistré (photo en échec).', { type: photoOk ? 'success' : 'error' });
                         }}
                     >
                         {isSearchingAi ? 'Analyse...' : (newItem.photo ? 'Confirmer l\'ajout' : 'Enregistrer cet objet')}

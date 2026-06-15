@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
 import { AlertTriangle, Save, Printer, Trash2, Eye, ArrowLeft, Plus, History, Sparkles, CheckCircle2, ShieldAlert, ChevronRight, Users, MapPin, User, Calendar, Clock, Check } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { useUnsavedGuard } from '../utils/unsavedGuard';
+import { printHtml } from '../utils/printHtml';
 import Button from './ui/Button';
 import SectionHeader from './common/SectionHeader';
 
@@ -39,6 +40,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
     // N'affecte que l'aperçu (.no-print) ; la copie .print-view imprimée reste intacte.
     // Le scale se base sur la largeur RÉELLE du conteneur (padding + sidebar déduits),
     // pas sur window.innerWidth qui rognait le bord gauche sur certaines largeurs.
+    const printRef = useRef(null);
     const a4Ref = useRef(null);
     const previewWrapperRef = useRef(null);
     const [previewScale, setPreviewScale] = useState(1);
@@ -154,9 +156,13 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
     };
 
     const handlePrint = async () => {
-        if (!canEdit) return;
         await saveIncident(true);
-        window.print();
+        const el = printRef.current;
+        if (!el) return;
+        printHtml(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Yanone+Kaffeesatz:wght@400;500&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}body{margin:0;padding:0;background:white}@page{size:A4 portrait;margin:0}</style>
+</head><body>${el.innerHTML}</body></html>`);
     };
 
     const requestRewrite = async (sourceText) => {
@@ -210,43 +216,70 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                         {/* Main Editor */}
                         <div style={{ flex: '1 1 100%', display: 'flex', flexDirection: 'column', gap: 'clamp(1rem, 4vw, 2rem)' }}>
                             <div className="card-glass fei-header-card" style={{
-                                padding: isMobile ? '1rem' : '1.5rem 2rem',
+                                padding: isMobile ? '0.75rem 1rem' : '1.5rem 2rem',
                                 display: 'flex',
-                                flexDirection: isMobile ? 'column' : 'row',
-                                alignItems: isMobile ? 'flex-start' : 'center',
+                                flexDirection: 'row',
+                                flexWrap: 'nowrap',
+                                alignItems: 'center',
                                 justifyContent: 'space-between',
-                                gap: '1.25rem'
+                                gap: '0.75rem'
                             }}>
-                                <SectionHeader hue="var(--sec-fei)" icon={AlertTriangle} title="Feuille d'Événement Indésirable" subtitle="Questionaire FEI" />
-                                <div className="fei-header-actions-block" style={{ display: 'flex', gap: '0.75rem', width: isMobile ? '100%' : 'auto', flexWrap: 'wrap' }}>
-                                    <Button 
-                                        variant="secondary" 
-                                        icon={saveStatus === 'saved' ? CheckCircle2 : Save} 
-                                        onClick={() => saveIncident(false)} 
-                                        disabled={!canEdit} 
-                                        style={{ flex: isMobile ? 1 : 'none', color: saveStatus === 'saved' ? 'var(--success-color)' : undefined }}
+                                {/* Icon + titre compact sur mobile */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
+                                    <div style={{ background: 'oklch(62% 0.2 var(--sec-fei))', borderRadius: '14px', padding: '10px', color: 'white', display: 'flex', flexShrink: 0 }}>
+                                        <AlertTriangle size={isMobile ? 18 : 22} strokeWidth={2.5} />
+                                    </div>
+                                    <div style={{ minWidth: 0 }}>
+                                        <div style={{ fontWeight: '950', fontSize: isMobile ? '0.88rem' : '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {isMobile ? 'FEI' : "Feuille d'Événement Indésirable"}
+                                        </div>
+                                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Questionnaire FEI</div>
+                                    </div>
+                                </div>
+
+                                {/* Boutons — une seule ligne sur mobile */}
+                                <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+                                    <button
+                                        className="btn-icon-ref"
+                                        onClick={() => saveIncident(false)}
+                                        disabled={!canEdit}
+                                        title={saveStatus === 'saved' ? 'Enregistré' : 'Enregistrer'}
+                                        style={{
+                                            width: '44px', height: '44px', borderRadius: '12px',
+                                            background: saveStatus === 'saved' ? 'oklch(95% 0.08 145)' : 'white',
+                                            color: saveStatus === 'saved' ? 'var(--success-color)' : 'var(--text-main)',
+                                            opacity: canEdit ? 1 : 0.4,
+                                            cursor: canEdit ? 'pointer' : 'not-allowed', flexShrink: 0
+                                        }}
                                     >
-                                        {saveStatus === 'saved' ? 'Enregistré' : 'Enregistrer'}
-                                    </Button>
-                                    <Button 
-                                        variant="secondary" 
-                                        icon={Eye} 
-                                        onClick={() => setShowPreview(true)} 
-                                        style={{ flex: isMobile ? 1 : 'none' }}
+                                        {saveStatus === 'saved' ? <CheckCircle2 size={18} strokeWidth={2.5} /> : <Save size={18} strokeWidth={2.5} />}
+                                    </button>
+                                    <button
+                                        className="btn-icon-ref"
+                                        onClick={() => setShowPreview(true)}
+                                        title="Aperçu"
+                                        style={{
+                                            width: '44px', height: '44px', borderRadius: '12px',
+                                            background: 'white', color: 'var(--text-main)',
+                                            cursor: 'pointer', flexShrink: 0
+                                        }}
                                     >
-                                        Aperçu
-                                    </Button>
-                                    
-                                    {activeUser?.role === 'direction' && (
-                                        <Button 
-                                            variant="primary" 
-                                            icon={Printer} 
-                                            onClick={handlePrint} 
-                                            style={{ width: isMobile ? '100%' : 'auto' }}
-                                        >
-                                            Imprimer
-                                        </Button>
-                                    )}
+                                        <Eye size={18} strokeWidth={2.5} />
+                                    </button>
+                                    <button
+                                        onClick={handlePrint}
+                                        title="Imprimer"
+                                        style={{
+                                            height: '40px', padding: '0 0.875rem', borderRadius: '12px',
+                                            border: 'none', background: 'oklch(62% 0.2 var(--sec-fei))',
+                                            color: 'white', fontWeight: '950', fontSize: '0.82rem',
+                                            display: 'flex', alignItems: 'center', gap: '0.4rem',
+                                            cursor: 'pointer', flexShrink: 0
+                                        }}
+                                    >
+                                        <Printer size={16} strokeWidth={2.5} />
+                                        {!isMobile && 'Imprimer'}
+                                    </button>
                                 </div>
                             </div>
 
@@ -598,18 +631,9 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                 .fei-a4-holder { transform-origin: top center; transition: transform 0.3s; }
                 
                 .print-view { display: none; }
-
-                @media print {
-                    .no-print { display: none !important; }
-                    .print-view { display: block !important; position: absolute; left: 0; top: 0; width: 100%; }
-                    body { background: white !important; }
-                    body * { visibility: hidden; }
-                    .print-view, .print-view * { visibility: visible; }
-                    @page { size: A4 portrait; margin: 10mm; }
-                }
             `}</style>
 
-            <div className="print-view">
+            <div className="print-view" ref={printRef}>
                 <PrintContent data={form} />
             </div>
         </div>
