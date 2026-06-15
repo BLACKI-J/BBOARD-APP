@@ -759,20 +759,43 @@ app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
     try {
         const { userId, pin } = req.body || {};
         let storedHash;
+        let exists = true;
         if (userId === 'director') {
             storedHash = await getStateValue(db, 'adminPinHash');
         } else {
             const row = await db.get("SELECT pin_hash FROM participants WHERE id = ? AND role != 'child'", userId);
+            exists = !!row;
             storedHash = row?.pin_hash;
         }
 
         const accessControl = await getAccessControl();
-        if (!verifyPin(String(pin || ''), storedHash) || accessControl.disabledUsers?.[userId]) {
+
+        // Diagnostic explicite : on sépare les causes au lieu d'un 401 générique.
+        // Le « bon PIN mais refusé » vient quasi toujours d'un compte SANS pin_hash
+        // (importé / créé avant le hachage) — on le dit clairement à l'utilisateur
+        // et on logue la cause (sans secret) pour le debug en prod.
+        if (!exists) {
+            console.warn(`Login refusé (${userId}): compte staff introuvable.`);
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
+        if (accessControl.disabledUsers?.[userId]) {
+            console.warn(`Login refusé (${userId}): compte désactivé.`);
+            return res.status(403).json({ error: 'Ce compte est désactivé. Contactez la direction.' });
+        }
+        if (!isPinHash(storedHash)) {
+            console.warn(`Login refusé (${userId}): aucun code PIN défini (pin_hash absent/invalide).`);
+            return res.status(409).json({ error: "Aucun code PIN n'est défini pour ce compte. La direction doit le (re)définir dans Réglages → Utilisateurs." });
+        }
+        if (!verifyPin(String(pin || ''), storedHash)) {
+            console.warn(`Login refusé (${userId}): code PIN incorrect.`);
             return res.status(401).json({ error: 'Invalid credentials' });
         }
 
         const actor = await getActor(userId);
-        if (!actor) return res.status(401).json({ error: 'Invalid credentials' });
+        if (!actor) {
+            console.warn(`Login refusé (${userId}): acteur introuvable (ligne manquante ou rôle child).`);
+            return res.status(401).json({ error: 'Invalid credentials' });
+        }
         const token = createSession(userId);
         setSessionCookie(res, token);
         res.json({ user: publicActor(actor), accessControl });

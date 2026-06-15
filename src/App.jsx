@@ -335,7 +335,17 @@ export default function App() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: user.id, pin })
         });
-        if (!response.ok) throw new Error('Code PIN invalide');
+        if (!response.ok) {
+            // 401 = mauvais PIN (message générique). 403/409 = compte désactivé /
+            // sans PIN défini → on remonte le message serveur pour guider l'utilisateur.
+            let message = 'Code PIN invalide';
+            if (response.status !== 401) {
+                try { const data = await response.json(); if (data?.error) message = data.error; } catch { /* corps non JSON */ }
+            }
+            const err = new Error(message);
+            err.status = response.status;
+            throw err;
+        }
         applyAuthenticatedSession(await response.json());
     };
 

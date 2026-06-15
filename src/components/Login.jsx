@@ -5,6 +5,7 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
     const [selectedUser, setSelectedUser] = useState(null);
     const [pin, setPin] = useState('');
     const [error, setError] = useState(false);
+    const [errorMsg, setErrorMsg] = useState('');
     const [showPinEntry, setShowPinEntry] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -15,13 +16,18 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
         setPin(newPin);
         if (newPin.length === 4) {
             setIsSubmitting(true);
-            onLogin(selectedUser, newPin).catch(() => {
+            onLogin(selectedUser, newPin).catch((err) => {
+                // 401 → message court « Code incorrect ». 403/409 (compte désactivé /
+                // sans PIN) → message serveur explicite, laissé plus longtemps à l'écran.
+                const isActionable = err?.status && err.status !== 401;
                 setError(true);
+                setErrorMsg(isActionable ? (err.message || 'Connexion impossible') : '');
                 if (navigator.vibrate) navigator.vibrate([50, 40, 50]); // buzz d'erreur
                 setTimeout(() => {
                     setPin('');
                     setError(false);
-                }, 800);
+                    setErrorMsg('');
+                }, isActionable ? 5000 : 800);
             }).finally(() => setIsSubmitting(false));
         }
     };
@@ -145,8 +151,8 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                         </div>
 
                         {error && (
-                            <div style={{ color: 'var(--danger-color)', fontSize: '0.8rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <AlertCircle size={14} /> Code incorrect
+                            <div style={{ color: 'var(--danger-color)', fontSize: '0.8rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', maxWidth: '280px', textAlign: 'center', lineHeight: 1.4 }}>
+                                <AlertCircle size={14} style={{ flexShrink: 0 }} /> {errorMsg || 'Code incorrect'}
                             </div>
                         )}
 
