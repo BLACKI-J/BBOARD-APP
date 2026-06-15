@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import { apiSend } from './api';
 import { participantsToCsv } from './participantsCsv';
+import { healthSheetsToCsv, medicationsToCsv, registreMedsToCsv, passagesToCsv, suiviSanteToCsv } from './healthCsv';
 
 // Collections récupérées pour la sauvegarde complète (clé → endpoint GET).
 const COLLECTIONS = [
@@ -60,6 +61,16 @@ export async function exportFullArchive({ headers, roleLabels = {} } = {}) {
     zip.file('sauvegarde.json', JSON.stringify(backup, null, 2));
     zip.file('participants.csv', '﻿' + participantsToCsv(data.participants || [], data.groups || [], roleLabels));
 
+    // CSV santé LISIBLES (Excel). Toutes ces données vivent dans les participants ;
+    // ces fichiers les rendent exploitables sans ouvrir le JSON. BOM (﻿) pour Excel.
+    const p = data.participants || [];
+    const g = data.groups || [];
+    zip.file('sante/fiches-sanitaires.csv', '﻿' + healthSheetsToCsv(p, g));
+    zip.file('sante/medicaments.csv', '﻿' + medicationsToCsv(p));
+    zip.file('sante/registre-medicaments.csv', '﻿' + registreMedsToCsv(p));
+    zip.file('sante/passages-infirmerie.csv', '﻿' + passagesToCsv(p));
+    zip.file('sante/suivi-sante.csv', '﻿' + suiviSanteToCsv(p));
+
     // Compteur global dans les noms de fichiers : les ids serveur partagent souvent
     // leur préfixe (timestamp) → collisions silencieuses dans le zip sinon.
     const pPhotos = zip.folder('photos/participants');
@@ -83,6 +94,12 @@ export async function exportFullArchive({ headers, roleLabels = {} } = {}) {
         'Contenu :',
         '- sauvegarde.json : toutes les données (ré-importable via Paramètres > Tout importer)',
         '- participants.csv : liste ouvrable dans Excel',
+        '- sante/ : données santé lisibles dans Excel',
+        '    • fiches-sanitaires.csv : toutes les fiches sanitaires (InfoVac)',
+        '    • medicaments.csv : médicaments programmés par enfant',
+        '    • registre-medicaments.csv : administrations tracées',
+        '    • passages-infirmerie.csv : passages / soins',
+        '    • suivi-sante.csv : historique des soins et mesures',
         '- photos/ : photos des participants et du matériel (vraies images)',
         '',
         'Restauration : Paramètres > Maintenance > Tout importer, puis choisir ce fichier .zip.',

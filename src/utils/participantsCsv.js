@@ -1,14 +1,16 @@
+// Échappement CSV partagé : guillemets doublés + anti-injection de formule Excel
+// (un champ commençant par = + - @ serait exécuté comme formule à l'ouverture).
+export const csvEscape = (v) => {
+    let s = String(v ?? '').replace(/"/g, '""');
+    if (/^[=+\-@]/.test(s)) s = `'${s}`;
+    return `"${s}"`;
+};
+
 // Génère le CSV participants (chaîne, sans BOM). Source unique des colonnes.
 export function participantsToCsv(participants = [], groups = [], roleLabels = {}) {
     const groupName = (id) => (groups || []).find((g) => g.id === id)?.name || '';
     const roleLabel = (r) => roleLabels[r] || r;
-    const esc = (v) => {
-        let s = String(v ?? '').replace(/"/g, '""');
-        // Anti-injection de formule Excel : un champ libre commençant par = + - @
-        // serait exécuté comme formule à l'ouverture.
-        if (/^[=+\-@]/.test(s)) s = `'${s}`;
-        return `"${s}"`;
-    };
+    const esc = csvEscape;
     const headers = ['Prénom', 'Nom', 'Rôle', 'Groupe', 'Date de naissance', 'Allergies', 'Régime', 'Contraintes', 'Fiche sanitaire', 'Téléphone', 'Contact urgence'];
     const rows = (participants || []).map((p) => [
         esc(p.firstName), esc(p.lastName), esc(roleLabel(p.role)),
