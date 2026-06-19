@@ -299,10 +299,15 @@ setInterval(() => {
     }
 }, 60 * 60 * 1000).unref();
 
+// SameSite=Lax (pas Strict) : Safari/iOS (WebKit) refuse souvent un cookie Strict
+// après une entrée cross-site (lien, Cloudflare, redirection) → « connecté puis
+// rejeté ». Lax reste anti-CSRF sur les requêtes d'état (POST/PUT/DELETE).
+// Secure recommandé en HTTPS (COOKIE_SECURE=true) : iOS ITP se méfie d'un cookie
+// non-Secure servi en HTTPS.
 function setSessionCookie(res, token) {
     res.cookie(SESSION_COOKIE_NAME, token, {
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'lax',
         secure: process.env.COOKIE_SECURE === 'true',
         maxAge: SESSION_TTL_MS,
         path: '/'
@@ -312,7 +317,7 @@ function setSessionCookie(res, token) {
 function clearSessionCookie(res) {
     res.clearCookie(SESSION_COOKIE_NAME, {
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'lax',
         secure: process.env.COOKIE_SECURE === 'true',
         path: '/'
     });
