@@ -47,12 +47,12 @@ export default function Attendance({ participants, setParticipants, groups, canE
 
     const togglePresence = (id) => {
         if (!canEdit) { ui.toast('Pointage non autorisé.', { type: 'error' }); return; }
-        setParticipants(participants.map(p => p.id === id ? { ...p, isPresent: !p.isPresent } : p));
+        setParticipants(prev => prev.map(p => p.id === id ? { ...p, isPresent: !p.isPresent } : p));
     };
 
     const markAll = (status) => {
         if (!canEdit) return;
-        setParticipants(participants.map(p => p.role === 'child' ? { ...p, isPresent: status } : p));
+        setParticipants(prev => prev.map(p => p.role === 'child' ? { ...p, isPresent: status } : p));
     };
 
     const handlePhotoUpload = async (e, participantId) => {
@@ -63,7 +63,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
         try {
             const dataUrl = await fileToDataUrl(file);
             const compressed = await compressImage(dataUrl, 768, 0.7);
-            setParticipants(participants.map(p => p.id === participantId ? { ...p, photo: compressed } : p));
+            setParticipants(prev => prev.map(p => p.id === participantId ? { ...p, photo: compressed } : p));
         } catch {
             ui.toast('Échec du traitement de la photo.', { type: 'error' });
         }
@@ -90,7 +90,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
 
     const handlePhotoCaptured = (photoBase64) => {
         if (!canEdit) return;
-        setParticipants(participants.map(p => p.id === selectedParticipantId ? { ...p, photo: photoBase64 } : p));
+        setParticipants(prev => prev.map(p => p.id === selectedParticipantId ? { ...p, photo: photoBase64 } : p));
         setIsCameraOpen(false);
         setSelectedParticipantId(null);
     };

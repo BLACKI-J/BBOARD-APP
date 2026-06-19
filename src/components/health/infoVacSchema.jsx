@@ -68,18 +68,6 @@ export const SECTIONS = [
 // (NON / RAS / Non) qu'on n'affiche pas pour ne pas noyer les infos utiles.
 const isEmptySummaryValue = (v) => !v || v === '' || v === '--' || v === 'NON' || v === 'RAS' || v === 'Non';
 
-// Non-empty summary rows for a card preview (liste à plat).
-export const getSummaryRows = (child) => {
-    const rows = [];
-    SECTIONS.forEach(sec => {
-        sec.fields.forEach(f => {
-            if (isEmptySummaryValue(child[f.key])) return;
-            rows.push({ icon: sec.icon, color: sec.color, label: f.label, value: child[f.key] });
-        });
-    });
-    return rows;
-};
-
 // Mêmes infos mais REGROUPÉES par section (carte « tout visible ») : on ne garde
 // que les sections ayant au moins un champ renseigné.
 export const getSummaryBySection = (child) => SECTIONS

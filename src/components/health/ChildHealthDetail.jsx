@@ -1,22 +1,8 @@
-import React, { useState, useMemo } from 'react';
-import {
-    ArrowLeft, FileText, Clipboard, Phone, Plus, Heart, Pill, Scale,
-    ShoppingCart, PhoneCall, UserCheck, Edit2
-} from 'lucide-react';
+import React from 'react';
+import { ArrowLeft, Edit2 } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { GroupBadge } from '../common/Badges';
-import { getMedicationsList } from '../../utils/meds';
-import { EmptyState } from '../ui';
 import { SECTIONS } from './infoVacSchema';
-
-const LOG_TYPES = {
-    soin:    { label: 'Soin',        icon: <Heart size={16} />,        color: 'oklch(62% 0.18 20)' },
-    medoc:   { label: 'Médoc',       icon: <Pill size={16} />,         color: 'oklch(62% 0.18 232)' },
-    physio:  { label: 'Physio',      icon: <Scale size={16} />,        color: 'oklch(62% 0.18 145)' },
-    frais:   { label: 'Frais',       icon: <ShoppingCart size={16} />, color: 'oklch(62% 0.18 45)' },
-    appel:   { label: 'Appel',       icon: <PhoneCall size={16} />,    color: 'oklch(62% 0.18 300)' },
-    medecin: { label: 'Médecin',     icon: <UserCheck size={16} />,    color: 'oklch(62% 0.18 180)' },
-};
 
 // ── Infos sub-tab: static reference fields ──
 const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
@@ -60,126 +46,8 @@ const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
     </div>
 );
 
-// ── Suivi sub-tab: log form + timeline ──
-const SuiviPanel = ({ child, addHealthLog, updateParticipantHealth, canEdit, isMobile }) => {
-    const [logType, setLogType] = useState('soin');
-    const [logContent, setLogContent] = useState('');
-    const [logValue, setLogValue] = useState('');
-    const [logCategory, setLogCategory] = useState('');
-    const medsList = useMemo(() => getMedicationsList(child), [child]);
-
-    const submit = () => {
-        if (!logContent && !logValue) return;
-        if (logType === 'medecin') updateParticipantHealth(child.id, 'doctorSeenDate', new Date().toISOString());
-        addHealthLog(child.id, { type: logType, content: logContent, value: logValue, category: logCategory });
-        setLogContent(''); setLogValue(''); setLogCategory('');
-    };
-
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-            {/* Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
-                <div style={{ padding: '0.75rem 1rem', background: 'white', borderRadius: '14px', border: '1.5px solid var(--glass-border)' }}>
-                    <div style={{ fontSize: '0.62rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Traitement de fond</div>
-                    {medsList.length === 0 ? <span style={{ opacity: 0.5, fontSize: '0.8rem', fontWeight: '700' }}>Aucun</span> : (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                            {medsList.map((m, i) => <span key={i} style={{ fontSize: '0.82rem', fontWeight: '850' }}>{m.name} <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{m.slots.join(', ')}</span></span>)}
-                        </div>
-                    )}
-                </div>
-                <div style={{ padding: '0.75rem 1rem', background: 'white', borderRadius: '14px', border: '1.5px solid var(--glass-border)' }}>
-                    <div style={{ fontSize: '0.62rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Dernière pesée</div>
-                    <div style={{ fontSize: '1.1rem', fontWeight: '950' }}>{child.weight || '--'} <span style={{ fontSize: '0.75rem', opacity: 0.6 }}>kg</span></div>
-                </div>
-                {child.doctorSeenDate && (
-                    <div style={{ padding: '0.75rem 1rem', background: 'oklch(98% 0.02 180)', borderRadius: '14px', border: '1.5px solid oklch(62% 0.18 180 / 0.15)' }}>
-                        <div style={{ fontSize: '0.62rem', fontWeight: '950', color: 'oklch(55% 0.18 180)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>Suivi médical</div>
-                        <div style={{ fontSize: '1rem', fontWeight: '950', color: 'oklch(55% 0.18 180)' }}>{new Date(child.doctorSeenDate).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}</div>
-                    </div>
-                )}
-            </div>
-
-            {/* Log form */}
-            {canEdit && (
-                <div style={{ background: 'white', borderRadius: '18px', border: '1.5px solid var(--glass-border)', padding: '1.25rem' }}>
-                    <h3 style={{ fontSize: '0.85rem', fontWeight: '950', margin: '0 0 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <Plus size={18} strokeWidth={3} style={{ color: 'var(--primary-color)' }} /> Nouveau suivi
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(90px, 1fr))', gap: '0.5rem', marginBottom: '1rem' }}>
-                        {Object.entries(LOG_TYPES).map(([id, cfg]) => (
-                            <button key={id} onClick={() => setLogType(id)} style={{
-                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', padding: '0.55rem', borderRadius: '12px', border: '1.5px solid', cursor: 'pointer', minHeight: '44px',
-                                borderColor: logType === id ? cfg.color : 'var(--glass-border)',
-                                background: logType === id ? cfg.color : 'white',
-                                color: logType === id ? 'white' : 'var(--text-muted)',
-                                fontWeight: '900', fontSize: '0.75rem'
-                            }}>{cfg.icon} {cfg.label}</button>
-                        ))}
-                    </div>
-
-                    {logType === 'medoc' && (
-                        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                            {['Matin', 'Midi', 'Goûter', 'Soir'].map(t => (
-                                <button key={t} onClick={() => setLogCategory(t)} style={{ flex: 1, padding: '0.5rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900', border: '1.5px solid', minHeight: '40px', borderColor: logCategory === t ? 'var(--primary-color)' : 'var(--glass-border)', background: logCategory === t ? 'var(--primary-light)' : 'white', color: logCategory === t ? 'var(--primary-color)' : 'var(--text-muted)' }}>{t}</button>
-                            ))}
-                        </div>
-                    )}
-                    {logType === 'physio' ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                            <select className="glass-input" value={logCategory} onChange={e => setLogCategory(e.target.value)} style={{ height: '44px', fontWeight: '800' }}>
-                                <option value="">Mesure…</option>
-                                <option value="poids">Poids (kg)</option>
-                                <option value="selles">Selles</option>
-                                <option value="couches">Couches</option>
-                                <option value="temperature">Température (°C)</option>
-                            </select>
-                            <input className="glass-input" placeholder="Valeur" value={logValue} onChange={e => setLogValue(e.target.value)} style={{ height: '44px', fontWeight: '800' }} />
-                        </div>
-                    ) : logType === 'frais' ? (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                            <input className="glass-input" placeholder="Montant (€)" type="number" value={logValue} onChange={e => setLogValue(e.target.value)} style={{ height: '44px', fontWeight: '800' }} />
-                            <select className="glass-input" value={logCategory} onChange={e => setLogCategory(e.target.value)} style={{ height: '44px', fontWeight: '800' }}>
-                                <option value="pharmacie">Pharmacie</option>
-                                <option value="medecin">Médecin</option>
-                                <option value="autre">Autre</option>
-                            </select>
-                        </div>
-                    ) : (
-                        <textarea className="glass-input" placeholder={logType === 'soin' ? 'Description du soin…' : 'Notes…'} value={logContent} onChange={e => setLogContent(e.target.value)} style={{ height: '80px', padding: '0.75rem', resize: 'none', borderRadius: '14px' }} />
-                    )}
-                    <button className="btn btn-primary" onClick={submit} style={{ width: '100%', height: '48px', borderRadius: '14px', fontWeight: '950', marginTop: '0.75rem' }}>Enregistrer</button>
-                </div>
-            )}
-
-            {/* Timeline */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                <h3 className="u-section-title" style={{ paddingLeft: '0.25rem', margin: 0 }}>Historique</h3>
-                {(!child.healthLogs || child.healthLogs.length === 0) ? (
-                    <EmptyState icon={<Clipboard size={28} strokeWidth={1.5} />} title="Aucun historique." />
-                ) : child.healthLogs.map(log => {
-                    const cfg = LOG_TYPES[log.type] || LOG_TYPES.soin;
-                    return (
-                        <div key={log.id} style={{ background: 'white', borderRadius: '14px', border: '1.5px solid var(--glass-border)', padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: cfg.color.replace(')', ' / 0.1)'), color: cfg.color }}>{cfg.icon}</div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: '0.5rem' }}>
-                                    <span style={{ fontSize: '0.68rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                                        {log.type === 'medoc' ? `Médoc · ${log.category || ''}` : log.type === 'physio' ? `Physio · ${log.category || ''}` : log.type === 'frais' ? `Frais · ${log.category || ''}` : cfg.label}
-                                    </span>
-                                    <span style={{ fontSize: '0.68rem', fontWeight: '600', color: 'var(--text-muted)', flexShrink: 0 }}>{new Date(log.timestamp).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                                </div>
-                                <div style={{ fontWeight: '800', fontSize: '0.88rem', color: 'var(--text-main)', marginTop: '2px' }}>{log.content || (log.value ? `${log.value} ${log.category === 'poids' ? 'kg' : ''}` : 'Confirmé')}</div>
-                            </div>
-                        </div>
-                    );
-                })}
-            </div>
-        </div>
-    );
-};
-
-// ── Detail view with Infos / Suivi sub-tabs ──
-const ChildHealthDetail = ({ child, groups, onBack, updateParticipantHealth, addHealthLog, canEdit, isMobile }) => {
+// ── Detail view ──
+const ChildHealthDetail = ({ child, groups, onBack, updateParticipantHealth, canEdit }) => {
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             {/* Header */}

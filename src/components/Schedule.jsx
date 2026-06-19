@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-    ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, Clock, MapPin,
-    Users, X, Trash2, Edit2, Repeat, Star, Tag, CheckCircle2, Circle, Printer, Utensils,
+    ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, MapPin,
+    Users, X, Trash2, Edit2, Star, Circle, Utensils,
     Coffee, Sun, Zap, Moon, Check
 } from 'lucide-react';
 import useIsMobile from '../utils/useIsMobile';
@@ -262,9 +262,6 @@ export default function Schedule({ activities, setActivities, participants, grou
         startTime: '09:00', endTime: '10:00',
         title: '', description: '', participants: [],
         color: DEFAULT_COLOR.value,
-        repeatType: 'none',
-        repeatEndDate: formatDate(new Date(new Date().setDate(new Date().getDate() + 7))),
-        customDays: []
     });
 
     const [showSuggestions, setShowSuggestions] = useState(false);
@@ -308,9 +305,6 @@ export default function Schedule({ activities, setActivities, participants, grou
             startTime: activity.startTime || activity.time || '09:00',
             endTime: activity.endTime || '10:00',
             color: activity.color || DEFAULT_COLOR.value,
-            repeatType: 'none',
-            repeatEndDate: formatDate(new Date(new Date().setDate(new Date().getDate() + 7))),
-            customDays: []
         });
         setEditingId(activity.id);
         setIsFormOpen(true);
@@ -324,12 +318,12 @@ export default function Schedule({ activities, setActivities, participants, grou
             confirmText: 'Supprimer',
             danger: true
         });
-        if (ok) setActivities(activities.filter(a => a.id !== id));
+        if (ok) setActivities(prev => prev.filter(a => a.id !== id));
     };
 
     const handleToggleDone = (id) => {
         if (!canEditActivities) return;
-        setActivities(activities.map(a => a.id === id ? { ...a, done: !a.done } : a));
+        setActivities(prev => prev.map(a => a.id === id ? { ...a, done: !a.done } : a));
     };
 
     const handleSubmit = (e) => {
@@ -338,29 +332,19 @@ export default function Schedule({ activities, setActivities, participants, grou
         const baseActivity = {
             ...formData,
             time: formData.startTime,
-            repeatType: undefined,
-            repeatEndDate: undefined,
-            customDays: undefined
         };
 
         if (editingId) {
-            setActivities(activities.map(a => a.id === editingId ? { ...baseActivity, id: editingId } : a));
+            setActivities(prev => prev.map(a => a.id === editingId ? { ...baseActivity, id: editingId } : a));
         } else {
-            let newActivities = [];
-            if (formData.repeatType === 'daily') {
-                for (let d = new Date(formData.date); d <= new Date(formData.repeatEndDate); d.setDate(d.getDate() + 1))
-                    newActivities.push({ ...baseActivity, id: uuidv4(), date: formatDate(d) });
-            } else {
-                newActivities.push({ ...baseActivity, id: uuidv4() });
-            }
-            setActivities([...activities, ...newActivities]);
+            setActivities(prev => [...prev, { ...baseActivity, id: uuidv4() }]);
         }
         setIsFormOpen(false);
     };
 
     const handleMoveActivity = (activityId, newDateStr) => {
         if (!canEditActivities) return;
-        setActivities(activities.map(a => a.id === activityId ? { ...a, date: newDateStr } : a));
+        setActivities(prev => prev.map(a => a.id === activityId ? { ...a, date: newDateStr } : a));
     };
 
     const handleTitleChange = (e) => {
@@ -435,9 +419,6 @@ export default function Schedule({ activities, setActivities, participants, grou
             startTime: '09:00', endTime: '10:00',
             title: '', description: '', participants: [],
             color: DEFAULT_COLOR.value,
-            repeatType: 'none',
-            repeatEndDate: formatDate(new Date(new Date().setDate(new Date().getDate() + 7))),
-            customDays: []
         });
         setEditingId(null);
         setIsFormOpen(true);
@@ -580,7 +561,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                         </div>
                     ) : (
                          <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto' }}>
-                           <Menus participants={participants} currentDate={currentDate} isMobile={isMobile} menus={menus} setMenus={setMenus} canEdit={canEditMenus} />
+                           <Menus participants={participants} currentDate={currentDate} isMobile={isMobile} menus={menus} setMenus={setMenus} canEdit={canEditMenus} groups={groups} />
                          </div>
                     )}
                 </div>

@@ -312,7 +312,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                                                         }}
                                                     >
                                                         {sel && <CheckSquare size={13} strokeWidth={3} />}
-                                                        {anim.firstName} {anim.lastName.charAt(0)}.
+                                                        {anim.firstName} {(anim.lastName || '').charAt(0)}.
                                                     </button>
                                                 );
                                             })}

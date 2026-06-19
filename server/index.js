@@ -189,6 +189,8 @@ function sanitizeParticipant(participant) {
     delete clean.pin_hash;
     delete clean.password;
     delete clean.data;
+    // Flag dérivé en lecture seule (cf. GET /api/participants) — jamais persisté.
+    delete clean.hasPin;
     return clean;
 }
 
@@ -854,6 +856,15 @@ app.post('/api/auth/admin-pin', authenticateRequest, requireAnyPermission('manag
         req.session.adminVerifiedUntil = 0;
         // Révoque les autres sessions Direction (appareil perdu/volé) ; garde la courante.
         invalidateUserSessions('director', req.sessionToken);
+        // Cette route précède le middleware d'audit → log explicite (mutation sensible).
+        insertActionLog({
+            actorId: req.actor?.id,
+            actorName: `${req.actor?.firstName || ''} ${req.actor?.lastName || ''}`.trim(),
+            actorRole: req.actor?.role,
+            action: 'POST /api/auth/admin-pin',
+            resource: '/api/auth/admin-pin',
+            metadata: { event: 'admin_pin_changed' },
+        });
         res.json({ success: true });
     } catch (err) {
         serverError(req, res, err);
@@ -898,12 +909,17 @@ app.get('/api/participants', requireAnyPermission('viewDirectory', 'viewAttendan
     try {
         // La colonne `role` fait foi : on l'impose sur le JSON `data` pour réconcilier
         // toute divergence historique (sinon un staff peut apparaître comme 'child').
-        const rows = await db.all('SELECT role, data FROM participants');
+        const rows = await db.all('SELECT role, data, pin_hash FROM participants');
         res.json(
             rows
                 .map((row) => {
                     const p = parseJsonValue(row.data, null);
-                    return p ? sanitizeParticipant({ ...p, role: row.role }) : null;
+                    if (!p) return null;
+                    const clean = sanitizeParticipant({ ...p, role: row.role });
+                    // hasPin : le hash n'est jamais exposé, mais le client a besoin de
+                    // savoir si un PIN existe (statut + alerte « comptes sans PIN »).
+                    if (row.role !== 'child') clean.hasPin = isPinHash(row.pin_hash);
+                    return clean;
                 })
                 .filter(Boolean)
         );
@@ -1045,6 +1061,8 @@ app.post('/api/users/:id/pin', requireAnyPermission('manageUsers'), async (req, 
         if (!result.changes) return res.status(404).json({ error: 'Staff member not found' });
         // Révoque les sessions existantes de ce staff (sauf si c'est lui qui change son PIN).
         invalidateUserSessions(req.params.id, req.actor?.id === req.params.id ? req.sessionToken : null);
+        // Rafraîchit `hasPin` côté clients (statut PIN dans Réglages).
+        io.emit('data_updated', { type: 'participants' });
         res.json({ success: true });
     } catch (err) {
         serverError(req, res, err);
@@ -1182,12 +1200,14 @@ app.get('/api/exit-sheets', requireAnyPermission('viewExitSheet'), async (req, r
 
 app.post('/api/exit-sheets', requireAnyPermission('editExitSheet'), async (req, res) => {
     try {
-        const sheets = req.body || [];
+        const sheets = req.body;
+        // Body non-array → 400 (sinon replaceCollection vide la table puis insère du vide).
+        if (!Array.isArray(sheets)) return res.status(400).json({ error: 'Body must be an array' });
         const stmt = await db.prepare('INSERT INTO exit_sheets (id, data) VALUES (?, ?)');
         try {
             await replaceCollection({
                 table: 'exit_sheets',
-                rows: Array.isArray(sheets) ? sheets : [sheets],
+                rows: sheets,
                 insertOne: async (s) => {
                     if (s && s.id) await stmt.run(s.id, JSON.stringify(s));
                 }
@@ -1229,12 +1249,14 @@ app.get('/api/incident-sheets', requireAnyPermission('viewIncident'), async (req
 
 app.post('/api/incident-sheets', requireAnyPermission('editIncident'), async (req, res) => {
     try {
-        const sheets = req.body || [];
+        const sheets = req.body;
+        // Body non-array → 400 (sinon replaceCollection vide la table puis insère du vide).
+        if (!Array.isArray(sheets)) return res.status(400).json({ error: 'Body must be an array' });
         const stmt = await db.prepare('INSERT INTO incident_sheets (id, data) VALUES (?, ?)');
         try {
             await replaceCollection({
                 table: 'incident_sheets',
-                rows: Array.isArray(sheets) ? sheets : [sheets],
+                rows: sheets,
                 insertOne: async (s) => {
                     if (s && s.id) await stmt.run(s.id, JSON.stringify(s));
                 }
@@ -1276,12 +1298,13 @@ app.get('/api/meeting-recaps', requireAnyPermission('viewRecap'), async (req, re
 
 app.post('/api/meeting-recaps', requireAnyPermission('editRecap'), async (req, res) => {
     try {
-        const recaps = req.body || [];
+        const recaps = req.body;
+        if (!Array.isArray(recaps)) return res.status(400).json({ error: 'Body must be an array' });
         const stmt = await db.prepare('INSERT INTO meeting_recaps (id, data) VALUES (?, ?)');
         try {
             await replaceCollection({
                 table: 'meeting_recaps',
-                rows: Array.isArray(recaps) ? recaps : [recaps],
+                rows: recaps,
                 insertOne: async (r) => {
                     if (r && r.id) await stmt.run(r.id, JSON.stringify(r));
                 }

@@ -1,9 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import {
-    Clock, Utensils, Calendar, Users, AlertTriangle, Cake, FileText,
+    Clock, Utensils, Calendar, Cake, FileText,
     Pill, Plus, Check, ChevronRight, MessageSquareText, Sun, Sunrise, Moon, Apple, ShieldAlert
 } from 'lucide-react';
-import { getMedicationsList, ALL_SLOTS } from '../utils/meds';
+import { getMedicationsList } from '../utils/meds';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const DAY_MAP = [6, 0, 1, 2, 3, 4, 5]; // JS getDay() (Sun=0) → Monday-first index
@@ -47,13 +47,14 @@ const activityBucket = (a) => {
 };
 
 export default function Home({
-    activities = [], participants = [], groups = [], menus = {},
+    activities = [], participants = [], menus = {},
     healthAlerts = [], transmissions = [], setTransmissions, activeUser,
     onNavigate, isMobile,
 }) {
     const now = new Date();
     const today = todayISO();
     const hour = now.getHours();
+    const minute = now.getMinutes();
     const greeting = hour < 12 ? 'Bonjour' : hour < 18 ? 'Bon après-midi' : 'Bonsoir';
     const GreetIcon = hour < 12 ? Sunrise : hour < 18 ? Sun : Moon;
     const firstName = activeUser?.firstName ? `, ${activeUser.firstName}` : '';
@@ -85,7 +86,7 @@ export default function Home({
         setMsgText(''); setMsgPriority('info'); setMsgOpen(false);
     };
 
-    const children = useMemo(() => participants.filter(p => !p.role || p.role === 'child'), [participants]);
+    const children = useMemo(() => participants.filter(p => p.role === 'child'), [participants]);
 
     // ── Activities of the current half-day (fallback: next upcoming today) ──
     const periodActivities = useMemo(() => {
@@ -94,13 +95,13 @@ export default function Home({
             .sort((a, b) => (a.startTime || '').localeCompare(b.startTime || ''));
         const inBucket = todays.filter(a => activityBucket(a) === period);
         if (inBucket.length > 0) return { list: inBucket, isFallback: false };
-        const nowMin = hour * 60 + now.getMinutes();
+        const nowMin = hour * 60 + minute;
         const upcoming = todays.filter(a => {
             const [h, m] = (a.startTime || '0:0').split(':').map(Number);
             return (h * 60 + m) >= nowMin;
         });
         return { list: upcoming, isFallback: true };
-    }, [activities, today, period, hour, now]);
+    }, [activities, today, period, hour, minute]);
 
     // ── Meds to give in the current slot (not yet validated) ──
     const medsNow = useMemo(() => {

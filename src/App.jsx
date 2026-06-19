@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, Suspense } from 'react';
-import { Calendar, Contact, Settings as SettingsIcon, Menu, ClipboardList, FileText, Bell, ClipboardCheck, AlertCircle, AlertTriangle, Package, Utensils, Zap, Sparkles, ChevronDown, Activity, LayoutDashboard } from 'lucide-react';
+import { Calendar, Contact, Settings as SettingsIcon, Menu, ClipboardList, FileText, Bell, ClipboardCheck, AlertCircle, AlertTriangle, Package, Zap, Sparkles, ChevronDown, Activity, LayoutDashboard } from 'lucide-react';
 import { io } from 'socket.io-client';
 import Login from './components/Login';
 import { useUi } from './ui/UiProvider';
@@ -474,9 +474,10 @@ export default function App() {
         refreshData();
 
         socket.on('connect', () => {
-            console.log('Socket connected');
             setConnectionStatus('connected');
-            if (!isDataLoaded.current) refreshData();
+            // Toujours resynchroniser à la (re)connexion : un 'data_updated' manqué pendant
+            // une coupure réseau ne serait jamais rattrapé sinon (UI périmée).
+            refreshData();
         });
 
         socket.on('disconnect', () => {

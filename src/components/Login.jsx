@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { UserCircle, Lock, ChevronRight, AlertCircle, Zap, ShieldCheck } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ChevronRight, AlertCircle, Zap, ShieldCheck } from 'lucide-react';
 
 export default function Login({ staffUsers, onLogin, connectionStatus }) {
     const [selectedUser, setSelectedUser] = useState(null);
@@ -17,17 +17,23 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
         if (newPin.length === 4) {
             setIsSubmitting(true);
             onLogin(selectedUser, newPin).catch((err) => {
+                // Pas de status → erreur réseau / serveur injoignable (≠ code faux).
                 // 401 → message court « Code incorrect ». 403/409 (compte désactivé /
                 // sans PIN) → message serveur explicite, laissé plus longtemps à l'écran.
+                const isNetworkError = !err?.status;
                 const isActionable = err?.status && err.status !== 401;
                 setError(true);
-                setErrorMsg(isActionable ? (err.message || 'Connexion impossible') : '');
+                setErrorMsg(
+                    isNetworkError ? 'Serveur injoignable. Vérifiez votre connexion.'
+                        : isActionable ? (err.message || 'Connexion impossible')
+                            : ''
+                );
                 if (navigator.vibrate) navigator.vibrate([50, 40, 50]); // buzz d'erreur
                 setTimeout(() => {
                     setPin('');
                     setError(false);
                     setErrorMsg('');
-                }, isActionable ? 5000 : 800);
+                }, (isActionable || isNetworkError) ? 5000 : 800);
             }).finally(() => setIsSubmitting(false));
         }
     };

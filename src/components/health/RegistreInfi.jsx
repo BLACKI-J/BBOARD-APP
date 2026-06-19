@@ -12,7 +12,7 @@ const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
 ));
 
-const toIsoDate = (d) => d.toISOString().slice(0, 10);
+const toIsoDate = (d) => { const p = (n) => String(n).padStart(2, '0'); return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`; };
 const todayIso = () => toIsoDate(new Date());
 const addDays = (iso, n) => { const d = new Date(iso); d.setDate(d.getDate() + n); return toIsoDate(d); };
 const fmtDay = (iso) => new Date(iso + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });

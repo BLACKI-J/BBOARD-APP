@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, EyeOff, FileClock, Settings2, AlertCircle, Eye, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, Trash, History, Plus, X } from 'lucide-react';
+import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, FileClock, Settings2, AlertCircle, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, History, Power, Ban, CheckCircle2, CalendarClock } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { apiSend } from '../utils/api';
@@ -44,6 +44,13 @@ const SECTIONS_CONFIG = [
     ]}
 ];
 
+// Codes PIN trop courants : refusés à la création comme à la modification.
+const WEAK_PINS = new Set([
+    '0000', '1111', '2222', '3333', '4444', '5555', '6666', '7777', '8888', '9999',
+    '1234', '2345', '3456', '4567', '5678', '6789', '4321', '3210', '1212', '2580', '6969', '0007'
+]);
+const isWeakPin = (pin) => WEAK_PINS.has(String(pin));
+
 const emptyPermissions = () => ({
     viewSchedule: false, editSchedule: false,
     viewExitSheet: false, editExitSheet: false,
@@ -78,7 +85,6 @@ export default function Settings({
     const [logsLoading, setLogsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
     const [userSearch, setUserSearch] = useState('');
-    const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [newUser, setNewUser] = useState({ firstName: '', lastName: '', role: 'animator', pin: '' });
     const [pinDrafts, setPinDrafts] = useState({});
     const [archiveBusy, setArchiveBusy] = useState(false);
@@ -87,16 +93,45 @@ export default function Settings({
     const [newRoleName, setNewRoleName] = useState('');
     const [selectedConfigRole, setSelectedConfigRole] = useState('animator');
     const [editingUserPermId, setEditingUserPermId] = useState(null);
+    // Filtres équipe + journal + suivi des sauvegardes
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [statusFilter, setStatusFilter] = useState('all'); // all | nopin | disabled
+    const [logFilter, setLogFilter] = useState('');
+    const [lastBackup, setLastBackup] = useState(() => {
+        try { return localStorage.getItem('colo-last-backup') || ''; } catch { return ''; }
+    });
+
+    const disabledUsers = accessControl?.disabledUsers || {};
 
     const staffUsers = useMemo(
         () => (participants || []).filter((p) => p && p.role !== 'child'),
         [participants]
     );
 
+    const staffNoPin = useMemo(() => staffUsers.filter(u => u.hasPin === false).length, [staffUsers]);
+    const staffDisabled = useMemo(() => staffUsers.filter(u => disabledUsers[u.id]).length, [staffUsers, disabledUsers]);
+
     const filteredUsers = useMemo(() => {
-        if (!userSearch) return staffUsers;
-        return staffUsers.filter(u => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch.toLowerCase()));
-    }, [staffUsers, userSearch]);
+        let list = staffUsers;
+        if (userSearch) list = list.filter(u => `${u.firstName} ${u.lastName}`.toLowerCase().includes(userSearch.toLowerCase()));
+        if (roleFilter !== 'all') list = list.filter(u => u.role === roleFilter);
+        if (statusFilter === 'nopin') list = list.filter(u => u.hasPin === false);
+        else if (statusFilter === 'disabled') list = list.filter(u => disabledUsers[u.id]);
+        return list;
+    }, [staffUsers, userSearch, roleFilter, statusFilter, disabledUsers]);
+
+    // Ancienneté de la dernière sauvegarde locale (rappel maintenance).
+    const backupAge = useMemo(() => {
+        if (!lastBackup) return null;
+        return Math.floor((Date.now() - new Date(lastBackup).getTime()) / 86400000);
+    }, [lastBackup]);
+    const backupStale = !lastBackup || (backupAge !== null && backupAge > 7);
+
+    const filteredLogs = useMemo(() => {
+        if (!logFilter.trim()) return logs;
+        const q = logFilter.toLowerCase();
+        return logs.filter(l => `${l.action || ''} ${l.actor_name || ''} ${l.resource || ''}`.toLowerCase().includes(q));
+    }, [logs, logFilter]);
 
     const canManageAccess = !!permissions?.manageAccess;
     const canManageUsers = !!permissions?.manageUsers;
@@ -131,6 +166,11 @@ export default function Settings({
     const updateUserPin = async (userId, newPin) => {
         if (!canManageUsers) return;
         if (!/^\d{4}$/.test(newPin)) return;
+        if (isWeakPin(newPin)) {
+            ui.toast('Code PIN trop courant (ex : 1234, 0000). Choisissez-en un autre.', { type: 'error' });
+            setPinDrafts(prev => ({ ...prev, [userId]: '' }));
+            return;
+        }
         try {
             const res = await fetch(`/api/users/${userId}/pin`, {
                 method: 'POST',
@@ -242,14 +282,96 @@ export default function Settings({
         ui.toast('Droits réinitialisés selon le rôle.', { type: 'success' });
     };
 
+    // Active/désactive un compte staff. Le serveur honore déjà disabledUsers
+    // (login → 403, permissions vidées) : on écrit juste dans accessControl.
+    const toggleUserDisabled = async (userId) => {
+        if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        if (userId === currentUser?.id) { ui.toast('Vous ne pouvez pas désactiver votre propre compte.', { type: 'error' }); return; }
+        const willDisable = !disabledUsers[userId];
+        if (willDisable) {
+            const ok = await ui.confirm({
+                title: 'Désactiver le compte',
+                message: 'Ce membre ne pourra plus se connecter (le compte et ses données sont conservés). Réactivable à tout moment.',
+                confirmText: 'Désactiver', danger: true,
+            });
+            if (!ok) return;
+        }
+        setAccessControl(prev => {
+            const next = { ...(prev.disabledUsers || {}) };
+            if (willDisable) next[userId] = true; else delete next[userId];
+            return { ...prev, disabledUsers: next };
+        });
+        ui.toast(willDisable ? 'Compte désactivé.' : 'Compte réactivé.', { type: 'success' });
+    };
+
+    const handleDeleteUser = async (userId) => {
+        if (!canManageUsers) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        if (userId === currentUser?.id) { ui.toast('Vous ne pouvez pas supprimer votre propre compte.', { type: 'error' }); return; }
+        const u = staffUsers.find(x => x.id === userId);
+        const ok = await ui.confirm({
+            title: 'Supprimer le membre',
+            message: `Supprimer définitivement ${u?.firstName || ''} ${u?.lastName || ''} ? Cette action est irréversible.`,
+            confirmText: 'Supprimer', danger: true,
+        });
+        if (!ok) return;
+        const res = await setParticipants(prev => prev.filter(p => p.id !== userId));
+        if (res === false) return;
+        // Nettoie les traces du membre dans accessControl + brouillons de PIN.
+        setAccessControl(prev => {
+            const userPermissions = { ...(prev.userPermissions || {}) };
+            const disabled = { ...(prev.disabledUsers || {}) };
+            delete userPermissions[userId]; delete disabled[userId];
+            return { ...prev, userPermissions, disabledUsers: disabled };
+        });
+        setPinDrafts(prev => { const c = { ...prev }; delete c[userId]; return c; });
+        if (editingUserPermId === userId) setEditingUserPermId(null);
+        ui.toast('Membre supprimé.', { type: 'success' });
+    };
+
+    // Horodate la dernière sauvegarde (rappel maintenance).
+    const markBackup = () => {
+        const now = new Date().toISOString();
+        try { localStorage.setItem('colo-last-backup', now); } catch { /* quota */ }
+        setLastBackup(now);
+    };
+
+    const exportLogsCsv = () => {
+        if (!canViewLogs) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        if (!logs.length) { ui.toast('Aucun log à exporter.', { type: 'error' }); return; }
+        const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+        const header = ['Date', 'Heure', 'Action', 'Auteur', 'Ressource'];
+        const lines = logs.map(l => [
+            new Date(l.created_at).toLocaleDateString('fr-FR'),
+            new Date(l.created_at).toLocaleTimeString('fr-FR'),
+            l.action, l.actor_name, l.resource,
+        ].map(esc).join(','));
+        const bom = String.fromCharCode(0xFEFF); // Excel lit l'UTF-8 (accents)
+        const csv = bom + [header.map(esc).join(','), ...lines].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.body.appendChild(document.createElement('a'));
+        link.href = url; link.download = `journal-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+    };
+
     const handleAddUser = async (e) => {
         e.preventDefault();
+        if (!canManageUsers) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
+        // Anti-escalade : créer un compte Direction exige manageAccess (cf. updateUserRole).
+        if (newUser.role === 'direction' && !canManageAccess) {
+            ui.toast('Seule la Direction peut créer un compte Direction.', { type: 'error' });
+            return;
+        }
         if (!newUser.firstName || !newUser.lastName) {
             ui.toast('Prénom et nom sont requis.', { type: 'error' });
             return;
         }
         if (!/^\d{4}$/.test(newUser.pin)) {
             ui.toast('Le code PIN doit contenir exactement 4 chiffres.', { type: 'error' });
+            return;
+        }
+        if (isWeakPin(newUser.pin)) {
+            ui.toast('Code PIN trop courant (ex : 1234, 0000). Choisissez-en un autre.', { type: 'error' });
             return;
         }
 
@@ -278,18 +400,21 @@ export default function Settings({
 
     const handleResetAll = async () => {
         if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
-        const ok = await ui.confirm({
-            title: 'Réinitialisation',
-            message: 'Participants, groupes et activités seront effacés définitivement (les fiches, l\'inventaire et le journal sont conservés). Action irréversible.',
-            confirmText: 'Supprimer',
-            danger: true
+        // Saisie explicite « RESET » : garde-fou contre un clic accidentel (irréversible).
+        const value = await ui.prompt({
+            title: 'Réinitialisation totale',
+            message: 'Participants, groupes et activités seront effacés définitivement (fiches, inventaire et journal conservés). Action IRRÉVERSIBLE. Tapez RESET pour confirmer.',
+            placeholder: 'RESET',
+            confirmText: 'Tout réinitialiser',
+            validate: (v) => (String(v || '').trim().toUpperCase() === 'RESET' ? null : 'Tapez RESET en majuscules pour confirmer.'),
         });
-        if (!ok) return;
+        if (value === null) return;
         setParticipants([]);
         setGroups([]);
         setActivities([]);
         // Ne vider que les clés de l'app (pas localStorage.clear() qui touche tout l'origine)
         Object.keys(localStorage).filter(k => k.startsWith('colo-')).forEach(k => localStorage.removeItem(k));
+        setLastBackup(''); // la clé colo-last-backup vient d'être effacée
         ui.toast('Réinitialisation effectuée.', { type: 'success' });
     };
 
@@ -302,6 +427,16 @@ export default function Settings({
         if (noGroup > 0) alerts.push(`${noGroup} enfant(s) sans groupe.`);
         return alerts;
     }, [participants]);
+
+    // Vigilance affichée en Vue d'ensemble : enfants + sécurité comptes + sauvegarde.
+    const vigilance = useMemo(() => {
+        const a = [...blockingAlerts];
+        if (staffNoPin > 0) a.push(`${staffNoPin} membre(s) sans code PIN — connexion impossible tant qu'il n'est pas défini.`);
+        if (backupStale) a.push(lastBackup
+            ? `Dernière sauvegarde il y a ${backupAge} jour(s) — pensez à exporter une archive.`
+            : 'Aucune sauvegarde locale enregistrée — exportez une archive.');
+        return a;
+    }, [blockingAlerts, staffNoPin, backupStale, backupAge, lastBackup]);
 
     const fetchLogs = async () => {
         if (!canViewLogs) return;
@@ -357,6 +492,7 @@ export default function Settings({
         e.preventDefault();
         if (!/^\d{4}$/.test(newPin)) { ui.toast('Le code PIN doit contenir exactement 4 chiffres.', { type: 'error' }); return; }
         if (newPin !== confirmPin) { ui.toast('Les codes PIN ne correspondent pas.', { type: 'error' }); return; }
+        if (isWeakPin(newPin)) { ui.toast('Code PIN trop courant (ex : 1234, 0000). Choisissez-en un autre.', { type: 'error' }); return; }
         try {
             const response = await fetch('/api/auth/admin-pin', {
                 method: 'POST',
@@ -382,6 +518,7 @@ export default function Settings({
         link.href = url; link.download = `colo-backup-${new Date().toISOString().split('T')[0]}.json`;
         link.click(); document.body.removeChild(link);
         URL.revokeObjectURL(url);
+        markBackup();
     };
 
     const handleRestoreFile = async (file) => {
@@ -426,6 +563,7 @@ export default function Settings({
         // Mêmes PII enfants que l'export JSON → même gate.
         if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         exportParticipantsCsv(participants, groups, roleLabels);
+        markBackup();
     };
 
     // Sauvegarde complète .zip (données + photos + CSV). Réservé Direction.
@@ -435,6 +573,7 @@ export default function Settings({
         setArchiveBusy(true);
         try {
             await exportFullArchive({ headers: actorHeaders, roleLabels });
+            markBackup();
             ui.toast('Archive complète téléchargée.', { type: 'success' });
         } catch (err) {
             ui.toast(`Échec de l'export : ${err.message}`, { type: 'error' });
@@ -496,7 +635,7 @@ export default function Settings({
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', padding: isMobile ? '1rem' : '0' }}>
             {/* Header Area */}
-            <div className="card-glass" style={{
+            <div className="glass-card" style={{
                 padding: isMobile ? '1rem' : '1.25rem 2rem',
                 marginBottom: isMobile ? '1rem' : '2rem',
                 display: 'flex',
@@ -564,9 +703,10 @@ export default function Settings({
                                 {[
                                     { label: 'Personnel', value: staffUsers.length, color: 'var(--primary-color)', icon: <Users size={18} /> },
                                     { label: 'Modules Actifs', value: Object.keys(SECTION_LABELS).length - (Object.values(accessControl?.hiddenSections || {}).filter(Boolean).length), color: 'var(--success-color)', icon: <LayoutDashboard size={18} /> },
-                                    { label: 'Actions Logs', value: logs.length, color: 'var(--text-main)', icon: <History size={18} /> }
+                                    { label: 'Actions Logs', value: logs.length, color: 'var(--text-main)', icon: <History size={18} /> },
+                                    { label: 'Sans PIN', value: staffNoPin, color: staffNoPin > 0 ? 'var(--danger-color)' : 'var(--success-color)', icon: <KeyRound size={18} /> }
                                 ].map((stat, i) => (
-                                    <div key={i} className="card-glass" style={{ padding: '1.75rem', borderRadius: '24px', border: '1.5px solid var(--glass-border)', background: 'white' }}>
+                                    <div key={i} className="glass-card" style={{ padding: '1.75rem', borderRadius: '24px' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
                                             <div style={{ background: 'var(--bg-secondary)', padding: '6px', borderRadius: '8px', color: stat.color }}>{stat.icon}</div>
                                             <div style={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>{stat.label}</div>
@@ -577,19 +717,19 @@ export default function Settings({
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 400px', gap: '2rem' }}>
-                                <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                                <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
                                         <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--danger-color)' }}><ShieldAlert size={20} strokeWidth={2.5} /></div>
                                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Points de Vigilance</h4>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                                        {blockingAlerts.length === 0 ? (
+                                        {vigilance.length === 0 ? (
                                             <div style={{ padding: '2rem', textAlign: 'center', background: 'var(--bg-secondary)', borderRadius: '20px', border: '1.5px dashed var(--glass-border)', color: 'var(--success-color)', fontWeight: '950', fontSize: '0.9rem' }}>
                                                 <Sparkles size={24} style={{ marginBottom: '1rem', opacity: 0.5 }} />
                                                 <p>État du système nominal. Aucune alerte critique détectée.</p>
                                             </div>
                                         ) : (
-                                            blockingAlerts.map((msg, i) => (
+                                            vigilance.map((msg, i) => (
                                                 <div key={i} style={{ padding: '1rem 1.25rem', background: 'oklch(62% 0.18 20 / 0.05)', borderRadius: '16px', border: '1.5px solid oklch(62% 0.18 20 / 0.1)', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                                                     <AlertCircle size={18} style={{ color: 'var(--danger-color)', flexShrink: 0, marginTop: '2px' }} />
                                                     <span style={{ fontSize: '0.95rem', fontWeight: '850', color: 'oklch(20% 0.05 20)' }}>{msg}</span>
@@ -598,7 +738,7 @@ export default function Settings({
                                         )}
                                     </div>
                                 </div>
-                                <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                                <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
                                         <div style={{ background: 'var(--bg-secondary)', padding: '8px', borderRadius: '10px', color: 'var(--text-main)' }}><History size={20} strokeWidth={2.5} /></div>
                                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Audit Récent</h4>
@@ -631,19 +771,40 @@ export default function Settings({
                                     <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
                                     <input className="glass-input" placeholder="Filtrer par nom ou prénom..." value={userSearch} onChange={e => setUserSearch(e.target.value)} style={{ paddingLeft: '48px', height: '52px', background: 'var(--bg-secondary)', borderRadius: '16px', fontWeight: '800' }} />
                                 </div>
+                                <select value={roleFilter} onChange={e => setRoleFilter(e.target.value)} className="glass-input"
+                                    style={{ height: '52px', borderRadius: '16px', background: 'var(--bg-secondary)', fontWeight: '800', padding: '0 1rem', maxWidth: isMobile ? '100%' : '180px' }}>
+                                    <option value="all">Tous les rôles</option>
+                                    {rolesList.filter(r => r.id !== 'child').map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                                </select>
+                                <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-secondary)', borderRadius: '14px', padding: '4px', flexShrink: 0 }}>
+                                    {[['all', 'Tous'], ['nopin', 'Sans PIN'], ['disabled', `Désactivés${staffDisabled ? ` (${staffDisabled})` : ''}`]].map(([val, lab]) => (
+                                        <button key={val} type="button" onClick={() => setStatusFilter(val)}
+                                            style={{ padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', background: statusFilter === val ? 'white' : 'transparent', color: statusFilter === val ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: statusFilter === val ? 'var(--shadow-sm)' : 'none' }}>
+                                            {lab}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1.5rem' }}>
+                                {filteredUsers.length === 0 && (
+                                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px dashed var(--glass-border)', color: 'var(--text-muted)', fontWeight: '850' }}>
+                                        Aucun membre pour ce filtre.
+                                    </div>
+                                )}
                                 {filteredUsers.map((user, idx) => {
                                     const hasCustomPerms = accessControl?.userPermissions?.[user.id] && Object.keys(accessControl.userPermissions[user.id]).length > 0;
                                     const isEditingThisUser = editingUserPermId === user.id;
+                                    const isDisabled = !!disabledUsers[user.id];
+                                    const canAccountActions = user.id !== 'director' && user.id !== currentUser?.id;
 
                                     return (
-                                        <div key={user.id} className="card-glass animate-fade-in" style={{
+                                        <div key={user.id} className="glass-card animate-fade-in" style={{
                                             '--i': idx,
                                             animationDelay: `calc(var(--i) * 30ms)`,
-                                            padding: '1.75rem', borderRadius: '28px', background: 'white', border: isEditingThisUser ? '2.5px solid var(--primary-color)' : '1.5px solid var(--glass-border)',
-                                            transition: 'all 0.3s var(--ease-out-expo)'
+                                            padding: '1.75rem', borderRadius: '28px',
+                                            outline: isEditingThisUser ? '2.5px solid var(--primary-color)' : 'none', outlineOffset: '-2px',
+                                            opacity: isDisabled ? 0.62 : 1,
                                         }}>
                                             <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', marginBottom: '1.25rem' }}>
                                                 <div style={{ width: '44px', height: '44px', background: 'var(--primary-gradient)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '1.1rem' }}>
@@ -651,7 +812,7 @@ export default function Settings({
                                                 </div>
                                                 <div style={{ minWidth: 0, flex: 1 }}>
                                                     <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)', letterSpacing: '-0.02em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.firstName} {user.lastName}</div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '4px' }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '4px', flexWrap: 'wrap' }}>
                                                         <select
                                                             value={user.role}
                                                             onChange={e => updateUserRole(user.id, e.target.value)}
@@ -664,6 +825,20 @@ export default function Settings({
                                                         >
                                                             {rolesList.filter(r => r.id !== 'child').map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                                                         </select>
+                                                        {user.hasPin === false ? (
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'oklch(95% 0.05 28)', color: 'var(--danger-color)' }}>
+                                                                <AlertCircle size={10} strokeWidth={3} /> Aucun PIN
+                                                            </span>
+                                                        ) : user.hasPin === true ? (
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'oklch(95% 0.06 145)', color: 'oklch(46% 0.16 145)' }}>
+                                                                <CheckCircle2 size={10} strokeWidth={3} /> PIN défini
+                                                            </span>
+                                                        ) : null}
+                                                        {isDisabled && (
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
+                                                                <Ban size={10} strokeWidth={3} /> Désactivé
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </div>
                                             </div>
@@ -707,6 +882,24 @@ export default function Settings({
                                                     </button>
                                                 )}
                                             </div>}
+
+                                            {canAccountActions && (canManageAccess || canManageUsers) && (
+                                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.75rem' }}>
+                                                    {canManageAccess && (
+                                                        <button type="button" onClick={() => toggleUserDisabled(user.id)} className="btn btn-secondary"
+                                                            style={{ flex: 1, padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', color: isDisabled ? 'var(--success-color)' : 'var(--text-muted)' }}>
+                                                            <Power size={13} strokeWidth={2.8} /> {isDisabled ? 'Réactiver' : 'Désactiver'}
+                                                        </button>
+                                                    )}
+                                                    {canManageUsers && (
+                                                        <button type="button" onClick={() => handleDeleteUser(user.id)} className="btn btn-secondary"
+                                                            style={{ padding: '0.5rem 0.7rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900', color: 'var(--danger-color)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
+                                                            title="Supprimer ce membre">
+                                                            <Trash2 size={13} strokeWidth={2.8} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            )}
 
                                             {/* User permission overriding panel */}
                                             {isEditingThisUser && (
@@ -766,7 +959,7 @@ export default function Settings({
 
                     {/* CREATE USER TAB */}
                     {activeTab === 'create_user' && (
-                        <div className="card-glass animate-fade-in" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)', maxWidth: '600px' }}>
+                        <div className="glass-card animate-fade-in" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', maxWidth: '600px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                 <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Sparkles size={24} strokeWidth={2.5} /></div>
                                 <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Nouveau Membre</h3>
@@ -784,7 +977,7 @@ export default function Settings({
                                 <div>
                                     <label className="input-label" style={{ display: 'block', fontSize: '0.78rem', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Rôle</label>
                                     <select className="glass-input" value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))} style={{ height: '48px', fontWeight: '800' }}>
-                                        {rolesList.filter(r => r.id !== 'child').map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+                                        {rolesList.filter(r => r.id !== 'child' && (r.id !== 'direction' || canManageAccess)).map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                                     </select>
                                 </div>
                                 <div>
@@ -813,7 +1006,7 @@ export default function Settings({
                     {activeTab === 'roles' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                             {/* Role management card */}
-                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '10px', color: 'var(--primary-color)' }}><Sparkles size={20} strokeWidth={2.5} /></div>
                                     <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950' }}>Ajouter un Rôle personnalisé</h3>
@@ -835,7 +1028,7 @@ export default function Settings({
                             {/* Configuration split layout */}
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '280px 1fr', gap: '2rem', alignItems: 'flex-start' }}>
                                 {/* Role list */}
-                                <div className="card-glass" style={{ padding: '1.25rem', borderRadius: '24px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                <div className="glass-card" style={{ padding: '1.25rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                     <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', padding: '0.5rem', letterSpacing: '0.05em' }}>Liste des Rôles</div>
                                     {rolesList.filter(r => r.id !== 'child').map(role => {
                                         const roleKey = role.id;
@@ -870,7 +1063,7 @@ export default function Settings({
                                 </div>
 
                                 {/* Permissions configuration panel */}
-                                <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px', background: 'white', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                     <div>
                                         <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                                             Configuration : {roleLabels[selectedConfigRole] || selectedConfigRole}
@@ -958,7 +1151,7 @@ export default function Settings({
 
                     {/* SECTIONS TAB */}
                     {activeTab === 'sections' && (
-                        <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                        <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                 <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Settings2 size={24} strokeWidth={2.5} /></div>
                                 <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Modules de l'Interface</h3>
@@ -966,7 +1159,7 @@ export default function Settings({
                             <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '3rem', fontWeight: '850', maxWidth: '600px', lineHeight: '1.6' }}>Masquez les modules non-essentiels pour optimiser le workflow de l'équipe d'animation pendant le séjour.</p>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
                                 {Object.entries(SECTION_LABELS).map(([key, label]) => (
-                                    <label key={key} className="card-glass" style={{
+                                    <label key={key} className="glass-card" style={{
                                         padding: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
                                         background: accessControl?.hiddenSections?.[key] ? 'var(--bg-secondary)' : 'white',
                                         opacity: accessControl?.hiddenSections?.[key] ? 0.6 : 1,
@@ -989,7 +1182,7 @@ export default function Settings({
                     {/* SECURITY TAB */}
                     {activeTab === 'security' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><KeyRound size={24} strokeWidth={2.5} /></div>
                                     <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Paramètres de Sécurité</h3>
@@ -1028,7 +1221,15 @@ export default function Settings({
                     {/* MAINTENANCE TAB */}
                     {activeTab === 'maintenance' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.25rem', borderRadius: '18px', background: backupStale ? 'oklch(96% 0.06 75)' : 'var(--bg-secondary)', border: `1.5px solid ${backupStale ? 'oklch(82% 0.12 75)' : 'var(--glass-border)'}`, fontWeight: '850', fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                                <CalendarClock size={18} style={{ color: backupStale ? 'var(--warning-color)' : 'var(--text-muted)', flexShrink: 0 }} />
+                                {lastBackup ? (
+                                    <span>Dernière sauvegarde : <b>{new Date(lastBackup).toLocaleDateString('fr-FR')}</b>{backupAge > 0 ? ` (il y a ${backupAge} j)` : ' (aujourd\'hui)'}.{backupStale ? ' Pensez à exporter une archive.' : ''}</span>
+                                ) : (
+                                    <span>Aucune sauvegarde locale enregistrée. Exportez une archive pour garder une copie.</span>
+                                )}
+                            </div>
+                            <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
                                     <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Database size={24} strokeWidth={2.5} /></div>
                                     <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Maintenance & Data</h3>
@@ -1083,24 +1284,33 @@ export default function Settings({
                                 </div>
                             </div>
 
-                            <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                         <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '12px', color: 'var(--text-main)' }}><FileClock size={24} strokeWidth={2.5} /></div>
                                         <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Journal d'Activité</h3>
                                     </div>
-                                    <div style={{ display: 'flex', gap: '1rem' }}>
+                                    <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                         <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }} onClick={fetchLogs}>Actualiser</button>
+                                        <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={exportLogsCsv}><Download size={15} strokeWidth={2.5} /> Exporter CSV</button>
                                         {canManageAccess && <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px', color: 'var(--danger-color)' }} onClick={handleClearLogs}>Effacer</button>}
                                     </div>
                                 </div>
+                                {logs.length > 0 && (
+                                    <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                                        <Search size={16} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', opacity: 0.4 }} />
+                                        <input className="glass-input" placeholder="Filtrer le journal (action, auteur, ressource)…" value={logFilter} onChange={e => setLogFilter(e.target.value)} style={{ paddingLeft: '40px', height: '44px', background: 'var(--bg-secondary)', borderRadius: '12px', fontWeight: '700' }} />
+                                    </div>
+                                )}
                                 <div style={{ maxHeight: '600px', overflowY: 'auto', paddingRight: '0.5rem' }} className="no-scrollbar">
                                     {logsLoading ? (
                                         <div style={{ textAlign: 'center', padding: '4rem' }}><div className="spinner-small" /></div>
                                     ) : logs.length === 0 ? (
                                         <div style={{ textAlign: 'center', padding: '4rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px dashed var(--glass-border)', color: 'var(--text-muted)', fontWeight: '850' }}>Aucun log disponible.</div>
+                                    ) : filteredLogs.length === 0 ? (
+                                        <div style={{ textAlign: 'center', padding: '4rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px dashed var(--glass-border)', color: 'var(--text-muted)', fontWeight: '850' }}>Aucun résultat pour ce filtre.</div>
                                     ) : (
-                                        logs.map((log, i) => (
+                                        filteredLogs.map((log, i) => (
                                             <div key={log.id || i} style={{ padding: '1.5rem', borderBottom: '1.5px solid var(--bg-secondary)', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                                                 <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'oklch(20% 0.05 45 / 0.4)' }}>
                                                     <FileClock size={22} strokeWidth={2.5} />

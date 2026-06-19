@@ -91,7 +91,17 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
     const toggleSiBesoin = useCallback((child, slot, medName) => {
         if (!canEdit) return;
         const currentDay = getValidated(child);
-        const currentSlot = currentDay[slot] === true ? {} : (currentDay[slot] || {});
+        const rawSlot = currentDay[slot];
+        let currentSlot;
+        if (rawSlot === true) {
+            // Legacy boolean "tout validé" : on le déplie en objet par-médoc pour
+            // ne pas perdre l'état des traitements quotidiens en cochant un PRN.
+            const meds = getMedicationsList(child).filter(m => m.slots.includes(slot)).map(m => m.name);
+            currentSlot = {};
+            meds.forEach(m => currentSlot[m] = true);
+        } else {
+            currentSlot = (typeof rawSlot === 'object' && rawSlot) ? rawSlot : {};
+        }
         const newSlot = { ...currentSlot, [medName]: !currentSlot[medName] };
         updateParticipantHealth(child.id, 'medsValidated', { ...child.medsValidated, [selectedDate]: { ...currentDay, [slot]: newSlot } });
     }, [canEdit, getValidated, selectedDate, updateParticipantHealth]);
@@ -146,14 +156,6 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
 
     const collapsed = isMobile && isScrolled;
     const shortDate = fromISO(selectedDate).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-
-    const shiftDay = (delta) => {
-        const d = fromISO(selectedDate);
-        d.setDate(d.getDate() + delta);
-        const iso = localISO(d);
-        if (iso > today) return;
-        setSelectedDate(iso);
-    };
 
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', paddingBottom: '2rem' }}>

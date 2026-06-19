@@ -93,7 +93,9 @@ const MedsPdfExport = ({ children }) => {
                                     const hasMatin = med.slots.includes('Matin');
                                     const hasMidi = med.slots.includes('Midi');
                                     const hasGouter = med.slots.includes('Goûter');
-                                    const hasSoir = med.slots.includes('Soir');
+                                    // 'Coucher' est fusionné dans la colonne Soir (cf. mapping ci-dessus) :
+                                    // sinon un médoc programmé au seul Coucher a toutes ses cases grisées.
+                                    const hasSoir = med.slots.includes('Soir') || med.slots.includes('Coucher');
 
                                     return (
                                         <tr key={'d'+i} className="meds-row">

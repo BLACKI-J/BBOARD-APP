@@ -1,9 +1,8 @@
 import React, { useEffect, useLayoutEffect, useState, useRef } from 'react';
-import { AlertTriangle, Save, Printer, Trash2, Eye, ArrowLeft, Plus, History, Sparkles, CheckCircle2, ShieldAlert, ChevronRight, Users, MapPin, User, Calendar, Clock, Check } from 'lucide-react';
+import { AlertTriangle, Save, Printer, Trash2, Eye, ArrowLeft, Plus, History, Sparkles, CheckCircle2, Users, MapPin, User, Calendar, Clock, Check } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { useUnsavedGuard } from '../utils/unsavedGuard';
 import { printHtml } from '../utils/printHtml';
-import Button from './ui/Button';
 import SectionHeader from './common/SectionHeader';
 
 // Imports harmonisés depuis le sous-dossier incidents/
@@ -11,29 +10,22 @@ import PrintContent from './incidents/IncidentPrint';
 import {
     ROLE_OPTIONS,
     EVENT_TYPES,
-    INTERNAL_NOTIFIED,
-    EXTERNAL_NOTIFIED,
     createPerson,
     defaultForm,
     severityLabels,
-    severityColors,
-    roleChecklist,
-    eventChecked,
-    legendItems
+    severityColors
 } from './incidents/incidentUtils';
 
-export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit = true, actorHeaders = { 'Content-Type': 'application/json' }, activeUser, incidentSheets = [], participants = [], onRefresh, isMobile }) {
+export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit = true, actorHeaders = { 'Content-Type': 'application/json' }, incidentSheets = [], participants = [], onRefresh, isMobile }) {
     const ui = useUi();
     const [form, setForm] = useState(defaultForm());
     const history = incidentSheets;
     const [saveStatus, setSaveStatus] = useState(null);
     const [showPreview, setShowPreview] = useState(false);
-    const [rewriteMode, setRewriteMode] = useState(defaultRewriteMode);
+    const rewriteMode = defaultRewriteMode; // pas de sélecteur de mode pour l'instant
     const [aiDraft, setAiDraft] = useState('');
     const [isRewriting, setIsRewriting] = useState(false);
     const [rewriteError, setRewriteError] = useState('');
-    const [originalDetails, setOriginalDetails] = useState('');
-    const [activeTab, setActiveTab] = useState('infos');
     const [autocomplete, setAutocomplete] = useState({ section: null, index: null, results: [] });
 
     // Aperçu Cerfa : page A4 fixe de 210mm (~794px) → scale écran pour tenir sur mobile.
@@ -204,7 +196,6 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
         cleanSnapshot.current = JSON.stringify(fresh);
         setAiDraft('');
         setRewriteError('');
-        setOriginalDetails('');
     };
 
     return (
@@ -492,6 +483,26 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                             <Sparkles size={16} /> {isRewriting ? 'Reformulation...' : 'Ajuster le ton pour le Cerfa'}
                                         </button>
                                     </div>
+                                    {rewriteError && (
+                                        <div style={{ marginTop: '-0.5rem', padding: '0.75rem 1rem', borderRadius: '12px', background: 'oklch(95% 0.05 28)', color: 'var(--danger-color)', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <AlertTriangle size={16} strokeWidth={2.5} /> {rewriteError}
+                                        </div>
+                                    )}
+                                    {aiDraft && (
+                                        <div style={{ padding: '1.25rem', borderRadius: '20px', background: 'oklch(97% 0.03 272)', border: '1.5px solid oklch(80% 0.08 272)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '950', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'oklch(45% 0.18 272)' }}>
+                                                <Sparkles size={15} /> Proposition reformulée
+                                            </div>
+                                            <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: 1.5 }}>{aiDraft}</div>
+                                            <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                                <button type="button" onClick={() => { setForm(prev => ({ ...prev, details: aiDraft })); setAiDraft(''); ui.toast('Texte appliqué aux détails.', { type: 'success' }); }}
+                                                    className="btn btn-primary" style={{ padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: '900', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                    <Check size={15} strokeWidth={3} /> Remplacer les détails
+                                                </button>
+                                                <button type="button" onClick={() => setAiDraft('')} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: '900', fontSize: '0.85rem' }}>Ignorer</button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

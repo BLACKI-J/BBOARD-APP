@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Search, Plus } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search } from 'lucide-react';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
 import useIsMobile from '../utils/useIsMobile';
 import { exportParticipantsCsv } from '../utils/participantsCsv';
@@ -15,6 +15,21 @@ import ParticipantCard from './directory/ParticipantCard';
 import ParticipantDetails from './directory/ParticipantDetails';
 import ParticipantForm from './directory/ParticipantForm';
 import GroupManager from './directory/GroupManager';
+
+// Normalise une date d'import CSV vers ISO (YYYY-MM-DD) : un format FR JJ/MM/AAAA
+// cassait getAge, l'input type=date et la clé de dédoublonnage.
+const toIsoDate = (raw) => {
+    const s = (raw || '').trim();
+    if (!s) return '';
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const m = s.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{2,4})$/);
+    if (m) {
+        let [, d, mo, y] = m;
+        if (y.length === 2) y = (Number(y) > 50 ? '19' : '20') + y;
+        return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+    }
+    return s;
+};
 
 export default function Directory({ participants = [], setParticipants, groups = [], setGroups, canEdit = true, roles = [] }) {
     const ui = useUi();
@@ -411,7 +426,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                         lastName: parseCell(cells, iNom),
                         role: iRole !== -1 ? parseRole(parseCell(cells, iRole)) : 'child',
                         group: matchedGroup ? matchedGroup.id : '',
-                        birthDate: parseCell(cells, iNaissance),
+                        birthDate: toIsoDate(parseCell(cells, iNaissance)),
                         allergies: parseCell(cells, iAllergies),
                         diet: parseCell(cells, iRegime),
                         constraints: parseCell(cells, iConstraintes),
@@ -568,16 +583,14 @@ export default function Directory({ participants = [], setParticipants, groups =
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!canEdit) return;
-        try {
-            if (editingId) {
-                await setParticipants(safeParticipants.map(p => p.id === editingId ? { ...formData, id: editingId } : p));
-            } else {
-                await setParticipants([...safeParticipants, { ...formData, id: uuidv4() }]);
-            }
-            resetForm();
-        } catch (err) {
-            ui.alert({ title: 'Erreur', message: 'Impossible d\'enregistrer. Veuillez vérifier les informations (ex: PIN manquant pour un compte adulte).', type: 'error' });
-        }
+        // setParticipants (mutateCollection) renvoie true/false et ne jette pas :
+        // ne fermer le formulaire qu'en cas de succès, sinon afficher l'erreur.
+        const next = editingId
+            ? safeParticipants.map(p => p.id === editingId ? { ...formData, id: editingId } : p)
+            : [...safeParticipants, { ...formData, id: uuidv4() }];
+        const ok = await setParticipants(next);
+        if (ok !== false) resetForm();
+        else ui.alert({ title: 'Erreur', message: 'Impossible d\'enregistrer. Vérifiez les informations (ex : PIN manquant pour un compte adulte).', type: 'error' });
     };
 
     const requestSort = (key) => {

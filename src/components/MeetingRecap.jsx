@@ -15,11 +15,12 @@ const PRIORITY_CONFIG = {
 
 const pad = (n) => String(n).padStart(2, '0');
 const isoDate = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+const todayISO = () => { const d = new Date(); return isoDate(d.getFullYear(), d.getMonth(), d.getDate()); };
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
-export default function MeetingRecap({ participants, canEdit = true, meetingRecaps = [], setMeetingRecaps, isMobile }) {
+export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMeetingRecaps, isMobile }) {
     const ui = useUi();
-    const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(todayISO);
     const [calOpen, setCalOpen] = useState(false);
     const [viewMonth, setViewMonth] = useState(new Date());
     const [newTodo, setNewTodo] = useState('');
@@ -32,7 +33,7 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
         return map;
     }, [meetingRecaps]);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = todayISO();
 
     // ── Todo actions ──
     // Updaters fonctionnels : résolus contre l'état FRAIS du store (mutateCollection),
@@ -50,14 +51,22 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
     const [noteDraft, setNoteDraft] = useState('');
     const [noteSaved, setNoteSaved] = useState(true);
     const saveTimer = useRef(null);
-    const recapsRef = useRef(meetingRecaps);
-    recapsRef.current = meetingRecaps;
+    const pendingSave = useRef(null); // { content, date } d'une note pas encore commitée
 
     // Reset draft when the selected day changes (flush any pending save first)
     useEffect(() => {
         setNoteDraft(notes[selectedDate] || '');
         setNoteSaved(true);
-        return () => clearTimeout(saveTimer.current);
+        return () => {
+            clearTimeout(saveTimer.current);
+            // Flush : si une note attend (debounce pas encore déclenché), on la commit
+            // avant de changer de jour / démonter, pour ne pas perdre les dernières frappes.
+            const pending = pendingSave.current;
+            pendingSave.current = null;
+            if (pending && pending.content !== (notes[pending.date] || '')) {
+                commitNote(pending.content, pending.date);
+            }
+        };
     }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const commitNote = (content, date) => {
@@ -77,8 +86,9 @@ export default function MeetingRecap({ participants, canEdit = true, meetingReca
         const date = selectedDate;
         setNoteDraft(content);
         setNoteSaved(false);
+        pendingSave.current = { content, date };
         clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => commitNote(content, date), 700);
+        saveTimer.current = setTimeout(() => { commitNote(content, date); pendingSave.current = null; }, 700);
     };
 
     // ── Day navigation ──

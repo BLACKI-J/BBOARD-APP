@@ -51,40 +51,40 @@ export function medicationsToCsv(participants = []) {
 export function registreMedsToCsv(participants = []) {
     const children = onlyChildren(participants);
     const headers = ['Date', 'Heure', 'Prénom', 'Nom', 'Médicaments', 'Traitement', 'Soignant'];
-    const rows = [];
+    const entries = [];
     children.forEach((c) => {
         (c.registreLogs || []).forEach((l) => {
-            rows.push([fmtDateTime(l.timestamp), l.heure || '', c.firstName, c.lastName, l.medicaments || '', l.traitement || '', l.soignant || '']);
+            entries.push({ ts: l.timestamp, cells: [fmtDateTime(l.timestamp), l.heure || '', c.firstName, c.lastName, l.medicaments || '', l.traitement || '', l.soignant || ''] });
         });
     });
-    rows.sort((a, b) => String(b[0]).localeCompare(String(a[0])));
-    return toCsv(headers, rows);
+    entries.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    return toCsv(headers, entries.map((e) => e.cells));
 }
 
 // ── Passages infirmerie (passageLogs) ────────────────────────────────────────
 export function passagesToCsv(participants = []) {
     const children = onlyChildren(participants);
     const headers = ['Date', 'Prénom', 'Nom', 'Nature', 'Soins', 'Observation', 'Soignant'];
-    const rows = [];
+    const entries = [];
     children.forEach((c) => {
         (c.passageLogs || []).forEach((l) => {
-            rows.push([fmtDateTime(l.timestamp), c.firstName, c.lastName, l.nature || '', l.soins || '', l.observation || '', l.soignant || '']);
+            entries.push({ ts: l.timestamp, cells: [fmtDateTime(l.timestamp), c.firstName, c.lastName, l.nature || '', l.soins || '', l.observation || '', l.soignant || ''] });
         });
     });
-    rows.sort((a, b) => String(b[0]).localeCompare(String(a[0])));
-    return toCsv(headers, rows);
+    entries.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    return toCsv(headers, entries.map((e) => e.cells));
 }
 
 // ── Suivi santé : historique des soins/mesures (healthLogs) ───────────────────
 export function suiviSanteToCsv(participants = []) {
     const children = onlyChildren(participants);
     const headers = ['Date', 'Prénom', 'Nom', 'Type', 'Catégorie', 'Description', 'Valeur'];
-    const rows = [];
+    const entries = [];
     children.forEach((c) => {
         (c.healthLogs || []).forEach((l) => {
-            rows.push([fmtDateTime(l.timestamp), c.firstName, c.lastName, l.type || '', l.category || '', l.content || '', l.value || '']);
+            entries.push({ ts: l.timestamp, cells: [fmtDateTime(l.timestamp), c.firstName, c.lastName, l.type || '', l.category || '', l.content || '', l.value || ''] });
         });
     });
-    rows.sort((a, b) => String(b[0]).localeCompare(String(a[0])));
-    return toCsv(headers, rows);
+    entries.sort((a, b) => new Date(b.ts) - new Date(a.ts));
+    return toCsv(headers, entries.map((e) => e.cells));
 }

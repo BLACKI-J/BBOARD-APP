@@ -14,7 +14,7 @@ const MEALS = [
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const DAY_MAP = [6, 0, 1, 2, 3, 4, 5]; // JS getDay() → index in DAYS
 
-export default function Menus({ participants, currentDate, isMobile, menus = {}, setMenus, canEdit = true }) {
+export default function Menus({ participants, currentDate, isMobile, menus = {}, setMenus, canEdit = true, groups = [] }) {
     const childrenWithAllergies = useMemo(() =>
         (participants || []).filter(p => p.role === 'child' && p.allergies && p.allergies.trim() !== ''),
         [participants]
@@ -108,21 +108,24 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                     <Wheat size={40} strokeWidth={1.5} style={{ margin: '0 auto 1.25rem', color: 'var(--text-muted)', opacity: 0.3 }} />
                                     <p style={{ fontSize: '0.9rem', fontWeight: '850', color: 'var(--text-muted)', lineHeight: '1.5' }}>Aucune allergie critique signalée.</p>
                                 </div>
-                            ) : childrenWithAllergies.map((child, idx) => (
+                            ) : childrenWithAllergies.map((child, idx) => {
+                                const groupName = groups.find(g => g.id === child.group)?.name;
+                                return (
                                 <div key={child.id} className="animate-fade-in" style={{ '--i': idx, animationDelay: `calc(var(--i) * 40ms)`, padding: '1.25rem', background: 'oklch(62% 0.18 20 / 0.04)', border: '1.5px solid oklch(62% 0.18 20 / 0.08)', borderRadius: '20px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ fontWeight: '950', color: 'var(--danger-color)', fontSize: '0.95rem' }}>
                                             {child.firstName} <span style={{ textTransform: 'uppercase', fontSize: '0.85em', opacity: 0.7 }}>{child.lastName}</span>
                                         </div>
-                                        {child.group && (
-                                            <div style={{ fontSize: '9px', fontWeight: '950', background: 'white', padding: '2px 8px', borderRadius: '6px', color: 'var(--text-muted)', border: '1px solid var(--glass-border)' }}>{child.group}</div>
+                                        {groupName && (
+                                            <div style={{ fontSize: '9px', fontWeight: '950', background: 'white', padding: '2px 8px', borderRadius: '6px', color: 'var(--text-muted)', border: '1px solid var(--glass-border)' }}>{groupName}</div>
                                         )}
                                     </div>
                                     <div style={{ background: 'white', padding: '0.75rem 1rem', borderRadius: '14px', border: '1.5px solid oklch(62% 0.18 20 / 0.1)', color: 'oklch(20% 0.05 20)', fontSize: '0.85rem', fontWeight: '800', lineHeight: '1.5' }}>
                                         {child.allergies}
                                     </div>
                                 </div>
-                            ))}
+                                );
+                            })}
                         </div>
                         <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'var(--primary-gradient)', borderRadius: '20px', display: 'flex', gap: '1rem', color: 'white' }}>
                             <Sparkles size={20} strokeWidth={2.5} style={{ flexShrink: 0, marginTop: '2px' }} />

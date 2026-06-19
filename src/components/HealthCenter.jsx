@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
     Activity, Zap, FileText, ClipboardList
 } from 'lucide-react';
-import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
 import useAppStore from '../store/useAppStore';
 import SectionHeader from './common/SectionHeader';
@@ -20,7 +19,6 @@ const HEALTH_TABS = [
 ];
 
 export default function HealthCenter({ participants = [], patchParticipant, groups = [], canEdit = true, isMobile, transmissions = [], setTransmissions, activeUser, permissions = {} }) {
-    const ui = useUi();
     // Setter brut du store (maj locale instantanée, SANS appel réseau) — distinct
     // de patchParticipant qui, lui, persiste un seul enfant côté serveur.
     const setParticipantsLocal = useAppStore(s => s.setParticipants);
@@ -98,15 +96,6 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
             });
         };
     }, [patchParticipant]);
-
-    const addHealthLog = (childId, logEntry) => {
-        if (!canEdit) return;
-        const child = participants.find(p => p.id === childId);
-        const logs = Array.isArray(child.healthLogs) ? child.healthLogs : [];
-        const newLogs = [{ ...logEntry, id: Date.now(), timestamp: new Date().toISOString() }, ...logs];
-        updateParticipantHealth(childId, 'healthLogs', newLogs);
-        ui.toast('Suivi mis à jour.', { type: 'success' });
-    };
 
     return (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden' }}>
@@ -207,7 +196,7 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
                 ) : (
                     <InfoVacSection
                         children={children} groups={groups}
-                        updateParticipantHealth={updateParticipantHealth} addHealthLog={addHealthLog}
+                        updateParticipantHealth={updateParticipantHealth}
                         canEdit={canEdit && can('editHealthInfovac')} isMobile={isMobile}
                     />
                 )}

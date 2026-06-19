@@ -8,9 +8,6 @@ export const EVENT_TYPES = [
     'Déviances érotisées', 'Problématique médicale (joindre CR médical)'
 ];
 
-export const INTERNAL_NOTIFIED = ['Directeur.trice', 'Adjoint.e pédagogique', 'Adjoints.es sanitaires', 'Animateurs.trices'];
-export const EXTERNAL_NOTIFIED = ['Parent(s) ou tuteur vacancier', 'Structure du vacancier', 'CEC 1000&&UN Loisirs'];
-
 export const createPerson = () => ({ firstName: '', lastName: '', role: 'Anim' });
 
 export const defaultForm = () => ({
@@ -28,9 +25,7 @@ export const defaultForm = () => ({
     externalNotifiedBy: '',
     externalNotifiedDate: new Date().toISOString().split('T')[0],
     details: '',
-    signedAt: '',
-    signedOn: new Date().toISOString().split('T')[0],
-    signatures: ''
+    signedOn: new Date().toISOString().split('T')[0]
 });
 
 export const severityLabels = {
@@ -49,16 +44,4 @@ export const severityColors = {
     red: 'oklch(62% 0.18 25)'
 };
 
-export const roleChecklist = (selectedRole, options) => (
-    options.map((role) => `${selectedRole === role ? '[x]' : '[ ]'} ${role}`).join('  ')
-);
-
 export const eventChecked = (data, label) => data.eventTypes?.includes(label);
-
-export const legendItems = [
-    { key: 'white', short: 'Blanc', label: 'Evenement sans gravite', color: '#ffffff' },
-    { key: 'blue', short: 'Bleu', label: 'Problematique medicale (joindre CR medical)', color: '#2563eb' },
-    { key: 'green', short: 'Vert', label: 'Problematique sexuelle a surveiller', color: '#16a34a' },
-    { key: 'yellow', short: 'Jaune', label: 'Comportement a surveiller (fugue, etc...)', color: '#eab308' },
-    { key: 'red', short: 'Rouge', label: 'Probleme de violence et/ou degradation intentionnelle', color: '#dc2626' }
-];

@@ -8,7 +8,6 @@ import { getMedicationsList } from '../../utils/meds';
 const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, editingId, groups, canEdit, roles = [] }) => {
     const ui = useUi();
     const [newMed, setNewMed] = useState('');
-    const [newPrn, setNewPrn] = useState('');
 
     // Snapshot the form when it opens so we can detect unsaved edits on close.
     const initialSnapshot = useRef('');
@@ -34,7 +33,9 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
 
     if (!isOpen) return null;
 
-    const pocketMoney = formData.pocketMoney || { initial: 0, current: 0, history: [] };
+    // Défaut au niveau CHAMP : un import partiel (objet sans `initial`) ne doit pas
+    // produire d'input non contrôlé / de NaN.
+    const pocketMoney = { initial: 0, current: 0, history: [], ...(formData.pocketMoney || {}) };
 
     const addPocketExpense = async () => {
         const amount = await ui.prompt({
@@ -314,7 +315,8 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                             type="button"
                                             onClick={() => {
                                                 if (newMed.trim()) {
-                                                    const currentMeds = getMedicationsList(formData);
+                                                    // Liste BRUTE (getMedicationsList strippe 'Si besoin' → écrirait la perte du tag sur tous les médocs)
+                                                    const currentMeds = (Array.isArray(formData.medications) && formData.medications.length > 0) ? [...formData.medications] : getMedicationsList(formData);
                                                     setFormData({ 
                                                         ...formData, 
                                                         medications: [...currentMeds, { 
@@ -356,7 +358,8 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                                             <button
                                                                 type="button"
                                                                 onClick={() => {
-                                                                    const currentMeds = getMedicationsList(formData);
+                                                                    // Liste BRUTE (getMedicationsList strippe 'Si besoin' → écrirait la perte du tag sur tous les médocs)
+                                                    const currentMeds = (Array.isArray(formData.medications) && formData.medications.length > 0) ? [...formData.medications] : getMedicationsList(formData);
                                                                     currentMeds.splice(idx, 1);
                                                                     setFormData({ ...formData, medications: currentMeds });
                                                                 }}
