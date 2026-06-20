@@ -4,6 +4,35 @@ import Avatar from '../common/Avatar';
 import { GroupBadge } from '../common/Badges';
 import { SECTIONS } from './infoVacSchema';
 
+// Champ texte « draft local + sauvegarde différée ». Sans ça, chaque frappe
+// déclenchait un PATCH ; en frappe rapide les PATCH partaient en désordre et le
+// refetch socket réécrivait l'input avec une valeur périmée → caractères effacés.
+// Ici la frappe pilote un état LOCAL (jamais écrasé tant que le champ est focus),
+// et on n'envoie qu'UN PATCH après 600 ms de pause (ou au blur).
+const HEALTH_INPUT_STYLE = { width: '100%', fontSize: '0.85rem', fontWeight: '800', padding: '8px 10px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'var(--bg-main)', outline: 'none', minHeight: '42px' };
+const HealthTextField = ({ value, placeholder, onCommit }) => {
+    const [draft, setDraft] = React.useState(value || '');
+    const focusedRef = React.useRef(false);
+    const timerRef = React.useRef(null);
+
+    // Resync depuis le store UNIQUEMENT hors focus (sinon écrase la frappe en cours).
+    React.useEffect(() => { if (!focusedRef.current) setDraft(value || ''); }, [value]);
+    React.useEffect(() => () => clearTimeout(timerRef.current), []);
+
+    const commit = (v) => { clearTimeout(timerRef.current); onCommit(v); };
+    return (
+        <input type="text" value={draft} placeholder={placeholder || '—'} style={HEALTH_INPUT_STYLE}
+            onChange={(e) => {
+                const v = e.target.value;
+                setDraft(v);
+                clearTimeout(timerRef.current);
+                timerRef.current = setTimeout(() => onCommit(v), 600);
+            }}
+            onFocus={() => { focusedRef.current = true; }}
+            onBlur={() => { focusedRef.current = false; commit(draft); }} />
+    );
+};
+
 // ── Infos sub-tab: static reference fields ──
 const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -27,9 +56,8 @@ const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
                                             {f.options.map(o => <option key={o} value={o}>{o}</option>)}
                                         </select>
                                     ) : (
-                                        <input type="text" value={val} onChange={e => updateParticipantHealth(child.id, f.key, e.target.value)}
-                                            placeholder={f.placeholder || '—'}
-                                            style={{ width: '100%', fontSize: '0.85rem', fontWeight: '800', padding: '8px 10px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'var(--bg-main)', outline: 'none', minHeight: '42px' }} />
+                                        <HealthTextField value={val} placeholder={f.placeholder}
+                                            onCommit={(v) => updateParticipantHealth(child.id, f.key, v)} />
                                     )
                                 ) : (
                                     <div style={{ fontSize: '0.88rem', fontWeight: isEmpty ? '600' : '800', color: isEmpty ? 'var(--text-softer)' : (val === 'OUI' ? 'oklch(55% 0.18 145)' : 'var(--text-main)'), fontStyle: isEmpty ? 'italic' : 'normal', padding: '7px 0' }}>
