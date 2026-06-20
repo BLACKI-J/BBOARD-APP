@@ -2,17 +2,54 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
     ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, MapPin,
     Users, X, Trash2, Edit2, Star, Circle, Utensils,
-    Coffee, Sun, Zap, Moon, Check
+    Coffee, Sun, Zap, Moon, Check, Copy, LayoutGrid, Printer, AlertTriangle
 } from 'lucide-react';
 import useIsMobile from '../utils/useIsMobile';
 import { v4 as uuidv4 } from 'uuid';
 import Menus from './Menus';
+import { printHtml } from '../utils/printHtml';
 import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const formatDate = (date) => date.toISOString().split('T')[0];
+// Date locale (PAS toISOString/UTC : décalait d'un jour près de minuit hors UTC+).
+const formatDate = (date) => {
+    const p = (n) => String(n).padStart(2, '0');
+    return `${date.getFullYear()}-${p(date.getMonth() + 1)}-${p(date.getDate())}`;
+};
+
+// Lundi de la semaine contenant `date`.
+const startOfWeek = (date) => {
+    const d = new Date(date);
+    const dow = d.getDay(); // 0=dim
+    d.setDate(d.getDate() - (dow === 0 ? 6 : dow - 1));
+    d.setHours(0, 0, 0, 0);
+    return d;
+};
+const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
+
+// Une activité « concerne » un groupe si au moins un de ses participants y est rattaché.
+const activityMatchesGroup = (activity, groupId, participants) => {
+    if (!groupId || groupId === 'all') return true;
+    const ids = activity.participants;
+    if (!Array.isArray(ids) || ids.length === 0) return false;
+    const inGroup = new Set(participants.filter(p => p.group === groupId).map(p => p.id));
+    return ids.some(id => inGroup.has(id));
+};
+
+// Chevauchement horaire entre deux activités qui PARTAGENT au moins un participant.
+const timesOverlap = (a, b) => {
+    const as = a.startTime || a.time, ae = a.endTime;
+    const bs = b.startTime || b.time, be = b.endTime;
+    if (!as || !ae || !bs || !be) return false;
+    return as < be && bs < ae;
+};
+const shareParticipant = (a, b) => {
+    const A = Array.isArray(a.participants) ? a.participants : [];
+    const B = new Set(Array.isArray(b.participants) ? b.participants : []);
+    return A.some(id => B.has(id));
+};
 
 const COMMON_ACTIVITIES = [
     "Petit déjeuner", "Déjeuner", "Dîner", "Goûter",
@@ -60,7 +97,7 @@ const getDuration = (start, end) => {
 
 const WATER_KEYWORDS = ['baignade', 'piscine', 'natation', 'aquatique', 'mer', 'lac', 'rivière', 'plage', 'snorkeling'];
 
-const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobile, canEdit, participants = [] }) => {
+const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDuplicate, onShowNonTested, hasConflict, isMobile, canEdit, participants = [] }) => {
     const color = activity.color || DEFAULT_COLOR.value;
     const timeSlot = getTimeSlotLabel(activity.startTime);
     const duration = getDuration(activity.startTime, activity.endTime);
@@ -197,10 +234,16 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
                                 <Users size={12} strokeWidth={2.5} style={{ color: 'var(--secondary-color)' }} /> {activity.participants.length}
                             </span>
                         )}
-                        {isWaterActivity && nonTestedCount > 0 && (
-                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'oklch(55% 0.2 45)', background: 'oklch(97% 0.06 45)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.12 45)' }}>
-                                {nonTestedCount} non-testé{nonTestedCount > 1 ? 's' : ''}
+                        {hasConflict && (
+                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '950', color: 'var(--danger-color)', background: 'oklch(96% 0.05 28)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.12 28)' }}>
+                                <AlertTriangle size={12} strokeWidth={2.8} /> Chevauchement
                             </span>
+                        )}
+                        {isWaterActivity && nonTestedCount > 0 && (
+                            <button type="button" onClick={() => onShowNonTested?.()} title="Voir les enfants non testés"
+                                style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'oklch(55% 0.2 45)', background: 'oklch(97% 0.06 45)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.12 45)', cursor: 'pointer' }}>
+                                {nonTestedCount} non-testé{nonTestedCount > 1 ? 's' : ''}
+                            </button>
                         )}
                         {isWaterActivity && nonTestedCount === 0 && participants.filter(p => p.role === 'child').length > 0 && (
                             <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'oklch(45% 0.18 145)', background: 'oklch(97% 0.04 145)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.10 145)' }}>
@@ -230,6 +273,9 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, isMobil
                         </button>
                         <button aria-label="Modifier l'activité" onClick={() => onEdit(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
                             <Edit2 size={16} strokeWidth={2.5} />
+                        </button>
+                        <button aria-label="Dupliquer l'activité" onClick={() => onDuplicate(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                            <Copy size={15} strokeWidth={2.5} />
                         </button>
                         <button aria-label="Supprimer l'activité" onClick={() => onDelete(activity.id)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)', color: 'var(--danger-color)' }}>
                             <Trash2 size={16} strokeWidth={2.5} />
@@ -267,6 +313,8 @@ export default function Schedule({ activities, setActivities, participants, grou
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [suggestions, setSuggestions] = useState([]);
     const [calendarMonth, setCalendarMonth] = useState(new Date());
+    const [scheduleView, setScheduleView] = useState('day'); // 'day' (défaut) | 'week'
+    const [groupFilter, setGroupFilter] = useState('all');
     const isMobile = useIsMobile();
 
     // Bascule l'onglet courant si sa sous-section devient masquée par les droits.
@@ -278,7 +326,7 @@ export default function Schedule({ activities, setActivities, participants, grou
 
     const navigateDay = (dir) => {
         const d = new Date(currentDate);
-        d.setDate(d.getDate() + dir);
+        d.setDate(d.getDate() + dir * (scheduleView === 'week' ? 7 : 1)); // semaine entière en vue semaine
         setCurrentDate(d);
         if (d.getMonth() !== calendarMonth.getMonth()) setCalendarMonth(d);
     };
@@ -288,9 +336,35 @@ export default function Schedule({ activities, setActivities, participants, grou
     const dayActivities = useMemo(() =>
         activities
             .filter(a => a.date === formatDate(currentDate))
+            .filter(a => activityMatchesGroup(a, groupFilter, participants))
             .sort((a, b) => (a.startTime || a.time || '').localeCompare(b.startTime || b.time || '')),
-        [activities, currentDate]
+        [activities, currentDate, groupFilter, participants]
     );
+
+    // Conflits : activités du jour qui se chevauchent ET partagent un participant.
+    const conflictIds = useMemo(() => {
+        const set = new Set();
+        for (let i = 0; i < dayActivities.length; i++) {
+            for (let j = i + 1; j < dayActivities.length; j++) {
+                if (timesOverlap(dayActivities[i], dayActivities[j]) && shareParticipant(dayActivities[i], dayActivities[j])) {
+                    set.add(dayActivities[i].id); set.add(dayActivities[j].id);
+                }
+            }
+        }
+        return set;
+    }, [dayActivities]);
+
+    const weekStart = useMemo(() => startOfWeek(currentDate), [currentDate]);
+    const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+        const day = addDays(weekStart, i);
+        const ds = formatDate(day);
+        return {
+            date: day, ds,
+            items: activities
+                .filter(a => a.date === ds && activityMatchesGroup(a, groupFilter, participants))
+                .sort((a, b) => (a.startTime || a.time || '').localeCompare(b.startTime || b.time || '')),
+        };
+    }), [activities, weekStart, groupFilter, participants]);
 
     const doneCount = dayActivities.filter(a => a.done).length;
     const progress = dayActivities.length > 0 ? (doneCount / dayActivities.length) * 100 : 0;
@@ -345,6 +419,56 @@ export default function Schedule({ activities, setActivities, participants, grou
     const handleMoveActivity = (activityId, newDateStr) => {
         if (!canEditActivities) return;
         setActivities(prev => prev.map(a => a.id === activityId ? { ...a, date: newDateStr } : a));
+    };
+
+    const handleDuplicate = (activity) => {
+        if (!canEditActivities) return;
+        const { id, ...rest } = activity;
+        setActivities(prev => [...prev, { ...rest, id: uuidv4(), title: `${activity.title} (copie)`, done: false }]);
+        ui.toast('Activité dupliquée — glissez-la sur un autre jour si besoin.', { type: 'success' });
+    };
+
+    const handleDuplicateDay = async () => {
+        if (!canEditActivities) return;
+        const src = activities.filter(a => a.date === formatDate(currentDate));
+        if (src.length === 0) { ui.toast('Aucune activité à dupliquer ce jour.', { type: 'error' }); return; }
+        const target = await ui.prompt({
+            title: 'Dupliquer la journée',
+            message: `Copier les ${src.length} activité(s) vers quelle date ?`,
+            placeholder: 'AAAA-MM-JJ', defaultValue: formatDate(addDays(currentDate, 1)),
+            confirmText: 'Dupliquer',
+            validate: (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '').trim()) ? null : 'Format attendu : AAAA-MM-JJ.',
+        });
+        if (target === null) return;
+        const ds = target.trim();
+        const copies = src.map(a => { const { id, ...rest } = a; return { ...rest, id: uuidv4(), date: ds, done: false }; });
+        setActivities(prev => [...prev, ...copies]);
+        ui.toast(`${copies.length} activité(s) copiée(s) vers le ${ds}.`, { type: 'success' });
+    };
+
+    const showNonTested = () => {
+        const names = participants
+            .filter(p => p.role === 'child' && !p.swimTest)
+            .map(p => `${p.firstName} ${p.lastName || ''}`.trim());
+        ui.alert({
+            title: `Baignade — ${names.length} enfant(s) non testé(s)`,
+            message: names.length ? names.join('\n') : 'Tous les enfants ont validé le test de baignade.',
+        });
+    };
+
+    const escapeHtml = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const printSchedule = () => {
+        const rows = (items) => items.length
+            ? items.map(a => `<tr><td>${escapeHtml(a.startTime || a.time || '')}${a.endTime ? '–' + escapeHtml(a.endTime) : ''}</td><td>${escapeHtml(a.title)}</td><td>${escapeHtml(a.description || '')}</td></tr>`).join('')
+            : '<tr><td colspan="3" style="color:#999">Journée libre</td></tr>';
+        const table = (items) => `<table><thead><tr><th>Heure</th><th>Activité</th><th>Lieu</th></tr></thead><tbody>${rows(items)}</tbody></table>`;
+        const body = scheduleView === 'week'
+            ? weekDays.map(d => `<h2>${escapeHtml(d.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }))}</h2>${table(d.items)}`).join('')
+            : `<h2>${escapeHtml(currentDateLabel)}</h2>${table(dayActivities)}`;
+        const groupName = groupFilter !== 'all' ? ' — ' + escapeHtml(groups.find(g => g.id === groupFilter)?.name || '') : '';
+        printHtml(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Planning</title>`
+            + `<style>body{font-family:system-ui,Segoe UI,sans-serif;padding:24px;color:#222}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px;text-transform:capitalize}table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px;text-align:left}th{background:#f3f3f3}</style>`
+            + `</head><body><h1>Planning${groupName}</h1>${body}</body></html>`);
     };
 
     const handleTitleChange = (e) => {
@@ -512,7 +636,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                             Aucune sous-section du Planning n'est accessible avec votre rôle.
                         </div>
                     ) : viewMode === 'activities' ? (
-                        <div style={{ maxWidth: '1000px', width: '100%', margin: '0 auto' }}>
+                        <div style={{ maxWidth: scheduleView === 'week' ? '1500px' : '1000px', width: '100%', margin: '0 auto' }}>
                             {/* Date Header Card */}
                             <div className="card-glass" style={{
                                 padding: isMobile ? '1rem' : '1.5rem 2rem', marginBottom: isMobile ? '1.5rem' : '3rem', borderLeft: '8px solid var(--primary-color)',
@@ -522,9 +646,11 @@ export default function Schedule({ activities, setActivities, participants, grou
                             }}>
                                 <div>
                                     <h2 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
-                                        {currentDateLabel}
+                                        {scheduleView === 'week'
+                                            ? `Semaine du ${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${addDays(weekStart, 6).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
+                                            : currentDateLabel}
                                     </h2>
-                                    {dayActivities.length > 0 && (
+                                    {scheduleView === 'day' && dayActivities.length > 0 && (
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
                                             <div style={{ height: '6px', width: isMobile ? '100px' : '180px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
                                                 <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary-color)', borderRadius: '10px', transition: 'width 1s' }} />
@@ -533,15 +659,66 @@ export default function Schedule({ activities, setActivities, participants, grou
                                         </div>
                                     )}
                                 </div>
-                                {canEditActivities && (
-                                    <button onClick={openNewForm} className="btn btn-primary" style={{ padding: isMobile ? '0.75rem' : '0.85rem 1.5rem', fontWeight: '950', gap: '0.75rem', borderRadius: '14px', fontSize: isMobile ? '0.85rem' : '0.9rem' }}>
-                                        <Plus size={isMobile ? 18 : 20} strokeWidth={3} /> Nouvelle Activité
-                                    </button>
-                                )}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '12px', padding: '3px' }}>
+                                        {[['day', 'Jour', <CalendarIcon size={13} strokeWidth={2.8} key="d" />], ['week', 'Semaine', <LayoutGrid size={13} strokeWidth={2.8} key="w" />]].map(([v, label, icon]) => (
+                                            <button key={v} onClick={() => setScheduleView(v)} style={{ padding: '0.4rem 0.7rem', borderRadius: '9px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', background: scheduleView === v ? 'white' : 'transparent', color: scheduleView === v ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: scheduleView === v ? 'var(--shadow-sm)' : 'none' }}>
+                                                {icon} {label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {groups.length > 0 && (
+                                        <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} title="Filtrer par groupe" style={{ height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'white', fontWeight: '800', fontSize: '0.8rem', padding: '0 0.6rem', cursor: 'pointer', maxWidth: '160px' }}>
+                                            <option value="all">Tous les groupes</option>
+                                            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                        </select>
+                                    )}
+                                    <button onClick={printSchedule} className="btn-icon" title="Imprimer le planning" style={{ width: '38px', height: '38px', background: 'white', border: '1.5px solid var(--glass-border)' }}><Printer size={16} strokeWidth={2.5} /></button>
+                                    {canEditActivities && scheduleView === 'day' && (
+                                        <button onClick={handleDuplicateDay} className="btn-icon" title="Dupliquer la journée vers une autre date" style={{ width: '38px', height: '38px', background: 'white', border: '1.5px solid var(--glass-border)' }}><Copy size={16} strokeWidth={2.5} /></button>
+                                    )}
+                                    {canEditActivities && (
+                                        <button onClick={openNewForm} className="btn btn-primary" style={{ padding: isMobile ? '0.6rem 0.9rem' : '0.7rem 1.2rem', fontWeight: '950', gap: '0.5rem', borderRadius: '14px', fontSize: isMobile ? '0.8rem' : '0.88rem' }}>
+                                            <Plus size={isMobile ? 16 : 18} strokeWidth={3} /> {isMobile ? 'Activité' : 'Nouvelle Activité'}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Timeline */}
-                            {dayActivities.length === 0 ? (
+                            {/* Vue semaine : 7 colonnes, glisser une activité d'un jour à l'autre = replanifier */}
+                            {scheduleView === 'week' ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(7, minmax(0, 1fr))', gap: '0.5rem' }}>
+                                    {weekDays.map(({ date, ds, items }) => {
+                                        const isToday = ds === formatDate(new Date());
+                                        const isSel = ds === formatDate(currentDate);
+                                        return (
+                                            <div key={ds}
+                                                onDragOver={canEditActivities ? (e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'inset 0 0 0 2px var(--primary-color)'; } : undefined}
+                                                onDragLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
+                                                onDrop={canEditActivities ? (e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'none'; const id = e.dataTransfer.getData('text/plain'); if (id) handleMoveActivity(id, ds); } : undefined}
+                                                style={{ background: 'white', border: `1.5px solid ${isSel ? 'var(--primary-color)' : 'var(--glass-border)'}`, borderRadius: '16px', padding: '0.5rem', minHeight: '130px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                <button onClick={() => { setCurrentDate(new Date(date)); setScheduleView('day'); }} title="Ouvrir cette journée"
+                                                    style={{ border: 'none', background: isToday ? 'oklch(58% 0.2 var(--brand-hue) / 0.1)' : 'transparent', cursor: 'pointer', textAlign: 'left', padding: '0.3rem 0.4rem', borderRadius: '9px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontWeight: '950', fontSize: '0.8rem', textTransform: 'capitalize', color: isToday ? 'var(--primary-color)' : 'var(--text-main)' }}>
+                                                        {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}
+                                                    </span>
+                                                    {items.length > 0 && <span style={{ fontSize: '0.62rem', fontWeight: '900', color: 'var(--text-muted)' }}>{items.length}</span>}
+                                                </button>
+                                                {items.map(a => (
+                                                    <div key={a.id} draggable={canEditActivities}
+                                                        onDragStart={(e) => { e.dataTransfer.setData('text/plain', a.id); }}
+                                                        onClick={() => canEditActivities && handleEdit(a)}
+                                                        style={{ borderLeft: `3px solid ${a.color || DEFAULT_COLOR.value}`, background: a.done ? 'var(--bg-secondary)' : 'oklch(98% 0.005 250)', borderRadius: '8px', padding: '5px 7px', cursor: canEditActivities ? 'grab' : 'default', opacity: a.done ? 0.55 : 1 }}>
+                                                        <div style={{ fontSize: '0.68rem', fontWeight: '900', color: 'var(--text-muted)' }}>{a.startTime || a.time || '—'}</div>
+                                                        <div style={{ fontSize: '0.78rem', fontWeight: '850', color: 'var(--text-main)', lineHeight: 1.2, textDecoration: a.done ? 'line-through' : 'none', wordBreak: 'break-word' }}>{a.title}</div>
+                                                    </div>
+                                                ))}
+                                                {items.length === 0 && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', opacity: 0.4, textAlign: 'center', padding: '0.75rem 0' }}>—</div>}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : dayActivities.length === 0 ? (
                                 <div className="card-glass" style={{ textAlign: 'center', padding: '6rem 2rem', border: '2.5px dashed var(--glass-border)' }}>
                                     <div style={{ width: '90px', height: '90px', background: 'var(--bg-secondary)', borderRadius: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2.5rem', opacity: 0.5 }}>
                                         <CalendarIcon size={44} />
@@ -554,6 +731,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     {dayActivities.map((activity, idx) => (
                                         <ActivityCard key={activity.id} activity={activity} index={idx}
                                             onEdit={handleEdit} onDelete={handleDelete} onToggleDone={handleToggleDone}
+                                            onDuplicate={handleDuplicate} onShowNonTested={showNonTested} hasConflict={conflictIds.has(activity.id)}
                                             isMobile={isMobile} canEdit={canEditActivities} participants={participants} />
                                     ))}
                                 </div>
