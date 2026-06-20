@@ -37,7 +37,7 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
                     color: 'white', zIndex: 10, transition: 'all 0.3s'
                 }}
             >
-                {isSelected && <Check size={18} strokeWidth={3} />}
+                {isSelected && <Check size={18} strokeWidth={2} />}
             </div>
 
             {/* Top Bar Indicators */}
@@ -59,7 +59,7 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
                 </div>
                 
                 <div style={{ width: '100%' }}>
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '1.3rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.04em', lineHeight: 1.2 }}>
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.04em', lineHeight: 1.2 }}>
                         {participant.firstName} <span style={{ opacity: 0.6 }}>{participant.lastName}</span>
                     </h3>
                     <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: '800', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
@@ -93,7 +93,7 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
                     className="btn btn-primary"
                     style={{ flex: 1, padding: '0.625rem', borderRadius: '12px', fontSize: '0.85rem', fontWeight: '950', gap: '0.5rem', background: 'white', color: 'var(--primary-color)', border: '1.5px solid var(--primary-color)', boxShadow: 'none' }}
                 >
-                    <Eye size={16} strokeWidth={2.5} /> <span className="hide-mobile">Détails</span>
+                    <Eye size={16} strokeWidth={2} /> <span className="hide-mobile">Détails</span>
                 </button>
                 
                 {canEdit && (
@@ -104,7 +104,7 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
                             style={{ background: 'white', width: '44px', height: '44px' }}
                             title="Modifier" aria-label="Modifier le participant"
                         >
-                            <Edit2 size={16} strokeWidth={2.5} />
+                            <Edit2 size={16} strokeWidth={2} />
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); handleDelete(participant.id); }}
@@ -112,7 +112,7 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
                             style={{ background: 'white', width: '44px', height: '44px' }}
                             title="Supprimer" aria-label="Supprimer le participant"
                         >
-                            <Trash2 size={16} strokeWidth={2.5} />
+                            <Trash2 size={16} strokeWidth={2} />
                         </button>
                     </>
                 )}

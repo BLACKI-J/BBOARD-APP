@@ -74,7 +74,13 @@ export default function Directory({ participants = [], setParticipants, groups =
 
     const toggleSelectAll = () => {
         if (!canEdit) return;
-        setSelectedParticipants(selectedParticipants.length === sortedParticipants.length ? [] : sortedParticipants.map(p => p.id));
+        // Comparer l'APPARTENANCE des lignes visibles (pas juste le compte) : sinon
+        // un filtre changé avec le même nombre d'éléments vidait la sélection à tort.
+        const visibleIds = sortedParticipants.map(p => p.id);
+        const allVisibleSelected = visibleIds.length > 0 && visibleIds.every(id => selectedParticipants.includes(id));
+        setSelectedParticipants(allVisibleSelected
+            ? selectedParticipants.filter(id => !visibleIds.includes(id))   // désélectionne les visibles, garde le reste
+            : [...new Set([...selectedParticipants, ...visibleIds])]);       // ajoute les visibles
     };
 
     const handleBulkDelete = async () => {
@@ -575,6 +581,7 @@ export default function Directory({ participants = [], setParticipants, groups =
         });
         if (ok) {
             setParticipants(safeParticipants.filter(p => p.id !== id));
+            setSelectedParticipants(prev => prev.filter(x => x !== id)); // ne pas garder un id supprimé sélectionné
             if (viewingParticipant && viewingParticipant.id === id) setViewingParticipant(null);
             ui.toast('Membre supprimé.', { type: 'success' });
         }
@@ -696,7 +703,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                         <div style={{ width: '90px', height: '90px', background: 'var(--bg-secondary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
                             <Search size={44} style={{ opacity: 0.15 }} />
                         </div>
-                        <h3 style={{ color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: '950', marginBottom: '0.75rem', letterSpacing: '-0.03em' }}>Aucun résultat</h3>
+                        <h3 style={{ color: 'var(--text-main)', fontSize: '1.5rem', fontWeight: '800', marginBottom: '0.75rem', letterSpacing: '-0.03em' }}>Aucun résultat</h3>
                         <p style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: '600' }}>Modifiez vos filtres pour voir plus de membres.</p>
                         {(searchTerm || filterGroup !== 'all' || filterRole !== 'all') && (
                             <button onClick={() => { setSearchTerm(''); setFilterGroup('all'); setFilterRole('all'); }} className="btn btn-primary" style={{ marginTop: '2rem', padding: '0.85rem 2rem', fontWeight: '950' }}>Réinitialiser</button>
@@ -780,11 +787,11 @@ export default function Directory({ participants = [], setParticipants, groups =
             {/* ── Modal Trombinoscope ── */}
             {trombiConfig && (
                 <div className="modal-overlay animate-fade-in" style={{ zIndex: 1100, background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(12px)' }}>
-                    <div className="modal-content animate-scale-in" style={{ background: 'white', borderRadius: '28px', padding: '2rem', maxWidth: '440px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 32px 80px rgba(0,0,0,0.25)' }}>
+                    <div className="modal-content animate-scale-in" style={{ background: 'var(--surface-color)', borderRadius: '28px', padding: '2rem', maxWidth: '440px', width: '100%', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxShadow: '0 32px 80px rgba(0,0,0,0.25)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <div style={{ background: 'linear-gradient(135deg,#c2703d,#8b5c2a)', borderRadius: '14px', padding: '10px', color: '#f2deb8', fontSize: '22px', lineHeight: 1 }}>🤠</div>
                             <div>
-                                <div style={{ fontWeight: '950', fontSize: '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Trombinoscope</div>
+                                <div style={{ fontWeight: '800', fontSize: '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Trombinoscope</div>
                                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700' }}>Impression thème cowboy</div>
                             </div>
                         </div>

@@ -67,10 +67,10 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
 
             <div className="card-glass animate-scale-in login-card" style={{
                 width: '100%', maxWidth: '440px', padding: '2.5rem',
-                borderRadius: '32px', boxShadow: '0 40px 100px rgba(0,0,0,0.12)',
-                background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(40px)',
+                borderRadius: '32px',
+                backdropFilter: 'blur(40px)',
                 display: 'flex', flexDirection: 'column', gap: '2rem',
-                margin: '1.5rem', border: '1.5px solid var(--glass-border)'
+                margin: '1.5rem'
             }}>
                 <header style={{ textAlign: 'center' }}>
                     <div style={{
@@ -79,9 +79,9 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                         justifyContent: 'center', margin: '0 auto 1.25rem',
                         boxShadow: '0 12px 32px var(--shadow-color)'
                     }}>
-                        <Zap size={32} color="white" strokeWidth={3} />
+                        <Zap size={32} color="white" strokeWidth={2} />
                     </div>
-                    <h1 style={{ fontSize: '1.75rem', fontWeight: '950', marginBottom: '0.5rem', color: 'var(--text-main)' }}>BBOARD</h1>
+                    <h1 style={{ fontSize: '1.75rem', fontWeight: '800', marginBottom: '0.5rem', color: 'var(--text-main)' }}>BBOARD</h1>
                     <p style={{ fontSize: '0.85rem', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
                         Session Été {new Date().getFullYear()}
                     </p>
@@ -103,7 +103,7 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                                     style={{
                                         display: 'flex', alignItems: 'center', gap: '1rem',
                                         padding: '1rem', borderRadius: '18px',
-                                        background: 'white', border: '1.5px solid var(--glass-border)',
+                                        background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)',
                                         textAlign: 'left', cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)',
                                         boxShadow: 'var(--shadow-sm)'
                                     }}

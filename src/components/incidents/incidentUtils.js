@@ -1,3 +1,5 @@
+import { todayISO } from '../../utils/dates';
+
 export const ROLE_OPTIONS = [
     'Vacancier', 'Anim', 'AS', 'AP', 'Directeur.trice', 'PDS', 'Gestionnaire de maison', 'Autre/externe'
 ];
@@ -12,7 +14,7 @@ export const createPerson = () => ({ firstName: '', lastName: '', role: 'Anim' }
 
 export const defaultForm = () => ({
     stayName: '', directorName: '',
-    eventDate: new Date().toISOString().split('T')[0],
+    eventDate: todayISO(),
     eventTime: '14:00',
     severity: 'white',
     eventTypes: [],
@@ -23,9 +25,9 @@ export const defaultForm = () => ({
     notifiedExternal: {},
     externalOthers: '',
     externalNotifiedBy: '',
-    externalNotifiedDate: new Date().toISOString().split('T')[0],
+    externalNotifiedDate: todayISO(),
     details: '',
-    signedOn: new Date().toISOString().split('T')[0]
+    signedOn: todayISO()
 });
 
 export const severityLabels = {

@@ -202,7 +202,6 @@ export default function App() {
     const menus = useAppStore(s => s.menus);
     const setMenus = useAppStore(s => s.setMenus);
 
-    const [isNavOpen, setIsNavOpen] = useState(false);
     const [isAlertsOpen, setIsAlertsOpen] = useState(false);
     const [isAttendanceEnabled, setIsAttendanceEnabled] = useState(() => localStorage.getItem('colo-attendance-enabled') === 'true');
     const [isUserSwitcherOpen, setIsUserSwitcherOpen] = useState(false);
@@ -615,7 +614,6 @@ export default function App() {
             if (!ok) return;
         }
         setActiveTab(tab);
-        setIsNavOpen(false);
     }, [activeTab, ui]);
 
     const setSyncedMenus = useCallback((v) => {
@@ -666,64 +664,53 @@ export default function App() {
     return (
         <div className="app-layout" style={{ background: 'transparent', overflow: 'hidden', display: 'flex', width: '100vw', height: '100dvh' }}>
             {/* Sidebar Navigation — desktop only */}
-            {!isMobile && <aside className={`nav-sidebar ${isNavOpen ? 'open' : ''}`} style={{ borderRight: '1.5px solid var(--glass-border)', background: 'var(--glass-bg)', backdropFilter: 'blur(32px)', zIndex: 110, transition: 'all 0.4s var(--ease-out-expo)', flexShrink: 0, width: '250px' }}>
-                <div style={{ padding: '1.75rem 1.5rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {!isMobile && <aside className="nav-sidebar" style={{ borderRight: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(20px) saturate(140%)', WebkitBackdropFilter: 'blur(20px) saturate(140%)', zIndex: 110, transition: 'all 0.4s var(--ease-out-expo)', flexShrink: 0, width: '256px', display: 'flex', flexDirection: 'column' }}>
+                {/* En-tête */}
+                <div style={{ padding: '1.25rem 1.25rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', borderBottom: '1px solid var(--border-color)' }}>
                     <Logo />
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                        <span style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontWeight: '950', fontSize: '1.4rem', color: 'var(--text-main)', letterSpacing: '-0.05em', lineHeight: 1 }}>BBOARD</span>
-                        <div style={{ fontSize: '9px', fontWeight: '950', color: 'var(--primary-color)', textTransform: 'uppercase', letterSpacing: '0.12em', marginTop: '2px' }}>Plateforme Session</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontFamily: 'Bricolage Grotesque, sans-serif', fontWeight: '800', fontSize: '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.04em', lineHeight: 1.05 }}>BBOARD</span>
+                        <span style={{ fontSize: '0.72rem', fontWeight: '600', color: 'var(--text-muted)', marginTop: '1px' }}>Plateforme session</span>
                     </div>
                 </div>
 
-                <nav style={{ padding: '0 0.85rem', display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
+                {/* Liste de navigation */}
+                <nav style={{ padding: '0.85rem 0.7rem', display: 'flex', flexDirection: 'column', gap: '0.25rem', flex: 1, overflowY: 'auto' }} className="no-scrollbar">
                     {navItems.map((item) => {
                         const isActive = activeTab === item.id;
                         const badge = navBadges[item.id] || 0;
                         return (
-                        <button
-                            key={item.id}
-                            onClick={() => guardedNavigate(item.id)}
-                            onMouseEnter={() => prefetchTab(item.id)}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem',
-                                border: 'none', background: isActive ? 'var(--primary-gradient)' : 'transparent',
-                                color: isActive ? 'white' : 'var(--text-muted)',
-                                borderRadius: '16px', fontWeight: '950', cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)',
-                                textAlign: 'left', fontSize: '0.9rem', boxShadow: isActive ? '0 8px 24px var(--shadow-color)' : 'none'
-                            }}
-                        >
-                            <span style={{ display: 'flex' }}>{item.icon}</span>
-                            <span>{item.label}</span>
-                            {badge > 0 ? (
-                                <span style={{
-                                    marginLeft: 'auto', minWidth: '20px', height: '20px', padding: '0 6px',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    background: isActive ? 'rgba(255,255,255,0.28)' : 'var(--danger-color)',
-                                    color: 'white', fontSize: '10px', fontWeight: '950', borderRadius: '10px'
-                                }}>{badge > 99 ? '99+' : badge}</span>
-                            ) : isActive ? (
-                                <Sparkles size={14} style={{ marginLeft: 'auto', opacity: 0.8 }} />
-                            ) : null}
+                        <button key={item.id} onClick={() => guardedNavigate(item.id)} onMouseEnter={() => prefetchTab(item.id)}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.5rem 0.6rem', border: '1px solid transparent', background: isActive ? 'var(--primary-gradient)' : 'transparent', color: isActive ? 'white' : 'oklch(42% 0.006 250)', borderRadius: '13px', fontWeight: isActive ? '750' : '600', cursor: 'pointer', transition: 'background 0.2s var(--ease-out-expo)', textAlign: 'left', fontSize: '0.9rem', letterSpacing: '-0.01em', width: '100%', boxShadow: isActive ? '0 8px 22px var(--shadow-color), inset 0 1px 0 rgba(255,255,255,0.18)' : 'none' }}
+                            onMouseOver={(e) => { if (!isActive) e.currentTarget.style.background = 'oklch(96.5% 0.003 250)'; }}
+                            onMouseOut={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
+                            <span style={{ width: '32px', height: '32px', borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,255,255,0.16)' : 'white', border: isActive ? '1px solid rgba(255,255,255,0.22)' : '1px solid var(--border-color)', boxShadow: isActive ? 'none' : 'var(--shadow-sm)', color: isActive ? 'white' : 'var(--text-main)', transition: 'all 0.2s var(--ease-out-expo)' }}>
+                                {React.cloneElement(item.icon, { size: 17, strokeWidth: 2 })}
+                            </span>
+                            <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                            {badge > 0 && <span style={{ minWidth: '20px', height: '20px', padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,255,255,0.92)' : 'var(--danger-color)', color: isActive ? 'var(--primary-color)' : 'white', fontSize: '10px', fontWeight: '800', borderRadius: '10px' }}>{badge > 99 ? '99+' : badge}</span>}
                         </button>
                         );
                     })}
+                </nav>
 
-                    {permissions.viewSettings && (
-                        <button
-                            onClick={() => guardedNavigate('settings')}
-                            style={{
-                                display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1.25rem', marginTop: 'auto', marginBottom: '1.5rem',
-                                border: 'none', background: activeTab === 'settings' ? 'var(--primary-gradient)' : 'transparent',
-                                color: activeTab === 'settings' ? 'white' : 'var(--text-muted)',
-                                borderRadius: '16px', fontWeight: '950', cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)',
-                                textAlign: 'left', fontSize: '0.9rem', boxShadow: activeTab === 'settings' ? '0 8px 24px var(--shadow-color)' : 'none'
-                            }}
-                        >
-                            <SettingsIcon size={22} strokeWidth={2.5} />
+                {/* Pied : Paramètres */}
+                <div style={{ padding: '0.6rem', borderTop: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    {permissions.viewSettings && (() => {
+                        const isActive = activeTab === 'settings';
+                        return (
+                        <button onClick={() => guardedNavigate('settings')}
+                            style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', padding: '0.5rem 0.6rem', border: '1px solid transparent', background: isActive ? 'var(--primary-gradient)' : 'transparent', color: isActive ? 'white' : 'oklch(42% 0.006 250)', borderRadius: '13px', fontWeight: isActive ? '750' : '600', cursor: 'pointer', transition: 'background 0.2s var(--ease-out-expo)', textAlign: 'left', fontSize: '0.9rem', letterSpacing: '-0.01em', width: '100%', boxShadow: isActive ? '0 8px 22px var(--shadow-color), inset 0 1px 0 rgba(255,255,255,0.18)' : 'none' }}
+                            onMouseOver={(e) => { if (!isActive) e.currentTarget.style.background = 'oklch(96.5% 0.003 250)'; }}
+                            onMouseOut={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
+                            <span style={{ width: '32px', height: '32px', borderRadius: '10px', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: isActive ? 'rgba(255,255,255,0.16)' : 'white', border: isActive ? '1px solid rgba(255,255,255,0.22)' : '1px solid var(--border-color)', boxShadow: isActive ? 'none' : 'var(--shadow-sm)', color: isActive ? 'white' : 'var(--text-main)' }}>
+                                <SettingsIcon size={17} strokeWidth={2} />
+                            </span>
                             <span>Paramètres</span>
                         </button>
-                    )}
-                </nav>
+                        );
+                    })()}
+                </div>
             </aside>}
 
             {/* Main Content */}

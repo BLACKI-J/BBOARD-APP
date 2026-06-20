@@ -732,7 +732,6 @@ io.use(async (socket, next) => {
         const session = getSession(token);
         const actor = session ? await getActor(session.userId) : null;
         if (!session || !actor || actor.disabled) return next(new Error('Authentication required'));
-        socket.actor = actor;
         next();
     } catch (err) {
         next(new Error('Authentication required'));
@@ -807,8 +806,7 @@ app.post('/api/auth/login', loginRateLimiter, async (req, res) => {
         setSessionCookie(res, token);
         res.json({ user: publicActor(actor), accessControl });
     } catch (err) {
-        console.error('Login failed:', err);
-        serverError(req, res, err);
+        serverError(req, res, err); // logue déjà l'erreur (pas de double log)
     }
 });
 
@@ -935,7 +933,7 @@ app.get('/api/participants', requireAnyPermission('viewDirectory', 'viewAttendan
 
 app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttendance', 'editHealth', 'manageUsers'), async (req, res) => {
     try {
-        const participants = req.body || [];
+        const participants = req.body;
         if (!Array.isArray(participants)) return res.status(400).json({ error: 'Participants must be an array' });
         const accessControl = await getAccessControl();
         const validRoles = new Set(['child', ...((accessControl.roles || []).map((r) => r.id))]);
@@ -1086,7 +1084,7 @@ app.get('/api/groups', requireAnyPermission('viewDirectory', 'viewAttendance'), 
 
 app.post('/api/groups', requireAnyPermission('editDirectory'), async (req, res) => {
     try {
-        const groups = req.body || [];
+        const groups = req.body;
         if (!Array.isArray(groups)) return res.status(400).json({ error: 'Groups must be an array' });
         const stmt = await db.prepare('INSERT INTO groups (id, data) VALUES (?, ?)');
         try {
@@ -1119,7 +1117,7 @@ app.get('/api/activities', requireAnyPermission('viewSchedule'), async (req, res
 
 app.post('/api/activities', requireAnyPermission('editSchedule'), async (req, res) => {
     try {
-        const activities = req.body || [];
+        const activities = req.body;
         if (!Array.isArray(activities)) return res.status(400).json({ error: 'Activities must be an array' });
         const stmt = await db.prepare('INSERT INTO activities (id, data) VALUES (?, ?)');
         try {

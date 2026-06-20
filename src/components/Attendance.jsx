@@ -107,7 +107,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 gap: '1rem', flexShrink: 0, zIndex: 10
             }}>
-                {!isMobile && <SectionHeader hue="var(--sec-pointage)" icon={UserCheck} title="Pointage" />}
+                {!isMobile && <SectionHeader icon={UserCheck} title="Pointage" />}
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginLeft: isMobile ? 0 : 'auto' }}>
                     <span style={{ fontWeight: '950', fontSize: isMobile ? '1rem' : '1.1rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
@@ -122,7 +122,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                 className="btn btn-primary"
                                 style={{ padding: isMobile ? '0.5rem 0.75rem' : '0.5rem 1rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: '900', gap: '0.5rem' }}
                             >
-                                <UserCheck size={16} strokeWidth={2.5} />
+                                <UserCheck size={16} strokeWidth={2} />
                                 {!isMobile && 'Tout cocher'}
                             </button>
                             <button
@@ -132,7 +132,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                 title="Réinitialiser"
                                 aria-label="Réinitialiser le pointage"
                             >
-                                <UserMinus size={18} strokeWidth={2.5} />
+                                <UserMinus size={18} strokeWidth={2} />
                             </button>
                         </>
                     )}
@@ -156,7 +156,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                     key={child.id}
                                     className="attendance-card"
                                     style={{
-                                        background: child.isPresent ? 'oklch(62% 0.18 145 / 0.05)' : 'white',
+                                        background: child.isPresent ? 'oklch(62% 0.18 145 / 0.05)' : 'var(--surface-color)',
                                         border: `1.5px solid ${child.isPresent ? 'var(--success-color)' : 'var(--glass-border)'}`,
                                         borderRadius: '20px',
                                         padding: isMobile ? '0.6rem' : '0.75rem 1rem',
@@ -182,8 +182,8 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                                     style={{ width: '100%', height: '100%', borderRadius: '18px', objectFit: 'cover', display: 'block', border: '2.5px solid white', boxShadow: '0 4px 12px rgba(0,0,0,0.12)' }}
                                                 />
                                                 {canEdit && (
-                                                    <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', width: '26px', height: '26px', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', color: 'var(--text-muted)' }}>
-                                                        <Camera size={13} strokeWidth={2.5} />
+                                                    <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', width: '26px', height: '26px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 8px rgba(0,0,0,0.12)', color: 'var(--text-muted)' }}>
+                                                        <Camera size={13} strokeWidth={2} />
                                                     </div>
                                                 )}
                                             </>
@@ -223,7 +223,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                             width: isMobile ? '52px' : '58px',
                                             height: isMobile ? '52px' : '58px',
                                             borderRadius: '16px',
-                                            background: child.isPresent ? 'var(--success-color)' : 'white',
+                                            background: child.isPresent ? 'var(--success-color)' : 'var(--surface-color)',
                                             color: child.isPresent ? 'white' : 'var(--glass-border)',
                                             border: `2px solid ${child.isPresent ? 'var(--success-color)' : 'var(--glass-border)'}`,
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -235,7 +235,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                         aria-label={child.isPresent ? 'Marquer absent' : 'Marquer présent'}
                                     >
                                         {child.isPresent
-                                            ? <Check size={26} strokeWidth={3.5} />
+                                            ? <Check size={26} strokeWidth={2} />
                                             : <div style={{ width: '11px', height: '11px', borderRadius: '50%', background: 'var(--glass-border)' }} />
                                         }
                                     </button>
@@ -264,16 +264,16 @@ export default function Attendance({ participants, setParticipants, groups, canE
                     <div
                         onClick={(e) => e.stopPropagation()}
                         className="animate-scale-in"
-                        style={{ width: '100%', maxWidth: '440px', background: 'white', borderRadius: isMobile ? '24px 24px 0 0' : '24px', padding: '1.5rem', paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
+                        style={{ width: '100%', maxWidth: '440px', background: 'var(--surface-color)', borderRadius: isMobile ? '24px 24px 0 0' : '24px', padding: '1.5rem', paddingBottom: 'calc(1.5rem + env(safe-area-inset-bottom))', boxShadow: '0 -8px 40px rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}
                     >
                         <div style={{ textAlign: 'center', marginBottom: '0.25rem' }}>
-                            <div style={{ fontWeight: '950', fontSize: '1.05rem', color: 'var(--text-main)' }}>Photo du vacancier</div>
+                            <div style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-main)' }}>Photo du vacancier</div>
                         </div>
                         <button onClick={choosePicCamera} className="btn btn-primary" style={{ height: '54px', borderRadius: '16px', fontWeight: '950', fontSize: '0.95rem', gap: '0.75rem', justifyContent: 'flex-start', paddingLeft: '1.5rem' }}>
-                            <Camera size={20} strokeWidth={2.5} /> Prendre une photo
+                            <Camera size={20} strokeWidth={2} /> Prendre une photo
                         </button>
                         <button onClick={choosePicGallery} className="btn btn-secondary" style={{ height: '54px', borderRadius: '16px', fontWeight: '950', fontSize: '0.95rem', gap: '0.75rem', justifyContent: 'flex-start', paddingLeft: '1.5rem', background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)' }}>
-                            <ImageIcon size={20} strokeWidth={2.5} /> Choisir depuis la galerie
+                            <ImageIcon size={20} strokeWidth={2} /> Choisir depuis la galerie
                         </button>
                         <button onClick={() => setPhotoMenuFor(null)} style={{ height: '48px', borderRadius: '16px', border: 'none', background: 'transparent', color: 'var(--text-muted)', fontWeight: '900', fontSize: '0.9rem', cursor: 'pointer' }}>
                             Annuler

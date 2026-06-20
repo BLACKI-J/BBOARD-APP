@@ -2,36 +2,33 @@
    Google Fonts (échouait en ERR_NAME_NOT_RESOLVED sur réseaux filtrant google). */
 
 :root {
-  /* Terracotta Med — warm earthy palette (OKLCH) */
-  --brand-hue: 40;     /* terracotta */
-  --accent-hue: 230;   /* bleu mer */
+  /* Mono graphite palette (OKLCH) */
+  --brand-hue: 250;    /* neutre (graphite) */
 
-  --primary-color: oklch(58% 0.14 var(--brand-hue));
-  --primary-hover: oklch(53% 0.16 var(--brand-hue));
-  --primary-light: oklch(95% 0.03 var(--brand-hue));
+  --primary-color: oklch(27% 0.012 250);     /* graphite quasi-noir */
+  --primary-hover: oklch(20% 0.012 250);
+  --primary-light: oklch(95% 0.003 250);     /* gris très clair (états actifs) */
 
-  --secondary-color: oklch(58% 0.09 120);    /* olive */
-  --cta-color: oklch(60% 0.12 var(--accent-hue));
-  --cta-hover: oklch(55% 0.14 var(--accent-hue));
+  --secondary-color: oklch(55% 0.008 250);   /* gris */
+  --cta-color: oklch(27% 0.012 250);         /* mono : CTA = graphite */
 
-  --danger-color: oklch(57% 0.20 28);
-  --warning-color: oklch(78% 0.14 75);
-  --success-color: oklch(58% 0.11 125);      /* olive/vert */
-  --accent-color: oklch(60% 0.12 230);       /* bleu mer */
+  --danger-color: oklch(57% 0.20 28);        /* statut (gardé) */
+  --warning-color: oklch(78% 0.14 75);       /* statut (gardé) */
+  --success-color: oklch(58% 0.13 150);      /* statut vert (gardé) */
+  --accent-color: oklch(27% 0.012 250);      /* mono graphite */
 
-  /* Warm earthy neutrals + brown text */
-  --text-main: oklch(30% 0.04 40);           /* brun */
-  --text-muted: oklch(48% 0.03 45);
-  --text-softer: oklch(62% 0.02 50);
-  --text-on-primary: oklch(98% 0.015 60);
+  /* Cool neutral greys + near-black text */
+  --text-main: oklch(22% 0.008 250);         /* noir profond */
+  --text-muted: oklch(52% 0.006 250);
+  --text-softer: oklch(64% 0.005 250);
+  --text-on-primary: oklch(99% 0 0);
 
-  --border-color: oklch(85% 0.025 55 / 0.6);
-  --surface-color: oklch(99% 0.01 60);
-  --bg-main: oklch(96% 0.02 60);             /* sable */
-  --bg-secondary: oklch(94% 0.025 58);
+  --border-color: oklch(91% 0.003 250 / 0.9);
+  --surface-color: oklch(100% 0 0);          /* blanc pur */
+  --bg-main: oklch(97.5% 0.002 250);         /* gris très clair */
+  --bg-secondary: oklch(95.5% 0.003 250);
 
   /* 4pt Spacing Scale - Fluidified */
-  --space-3xs: 0.125rem;
   --space-2xs: 0.25rem;
   --space-xs: clamp(0.25rem, 0.8vw, 0.5rem);
   --space-sm: clamp(0.375rem, 1.2vw, 0.75rem);
@@ -39,61 +36,40 @@
   --space-lg: clamp(0.75rem, 2.5vw, 1.5rem);
   --space-xl: clamp(1rem, 3.5vw, 2rem);
   --space-2xl: clamp(1.25rem, 5vw, 3rem);
-  --space-3xl: clamp(1.5rem, 7vw, 4rem);
 
   /* Modular Type Scale (Fluid & Bold) */
   --text-xs: clamp(0.7rem, 0.9vw, 0.75rem);
   --text-sm: clamp(0.8rem, 1vw, 0.875rem);
   --text-base: clamp(0.9rem, 1.2vw, 1rem);
-  --text-lg: clamp(1rem, 1.3vw, 1.25rem);
-  --text-xl: clamp(1.15rem, 1.5vw, 1.625rem);
-  --text-2xl: clamp(1.4rem, 2vw, 2.25rem);
-  --text-3xl: clamp(1.8rem, 3vw, 3.5rem);
 
-  /* Frosted warm glass */
-  /* V2 « éditorial » : verre atténué, bordures nettes — les cartes se
-     détachent par le trait et la couleur, plus par le flou. */
-  --glass-bg: rgba(253, 249, 243, 0.78);
-  --glass-bg-hover: rgba(253, 249, 243, 0.92);
-  --glass-border: oklch(82% 0.035 55 / 0.65);
+  /* Verre frosté neutre : translucide léger + bordures nettes. */
+  --glass-bg: rgba(252, 252, 253, 0.80);
+  --glass-bg-hover: rgba(252, 252, 253, 0.93);
+  --glass-border: oklch(91% 0.003 250 / 0.8);
   --glass-blur: 12px;
 
   /* ── Liquid Glass (iOS 26) — réservé au CHROME flottant (nav, modales,
      barres, boutons d'action). Verre épais + reflet spéculaire en haut +
      ombre interne en bas + saturation du fond. Pas pour le contenu. ── */
-  --lg-bg: rgba(255, 255, 255, 0.55);
-  --lg-bg-strong: rgba(255, 255, 255, 0.74);
+  --lg-bg: rgba(255, 255, 255, 0.60);
+  --lg-bg-strong: rgba(255, 255, 255, 0.80);
   --lg-blur: 22px;
-  --lg-saturate: 180%;
-  --lg-border: rgba(255, 255, 255, 0.6);
+  --lg-saturate: 130%;
+  --lg-border: oklch(91% 0.003 250 / 0.7);
   --lg-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.12) 16%, transparent 46%);
-  /* Gloss court pour cartes hautes : reflet spéculaire concentré tout en haut */
-  --lg-gloss-card: linear-gradient(180deg, rgba(255, 255, 255, 0.6) 0%, rgba(255, 255, 255, 0.1) 9%, transparent 24%);
-  --lg-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.25), inset 0 -1px 0 rgba(60, 32, 8, 0.06);
-  --lg-drop: 0 8px 32px oklch(40% 0.06 45 / 0.16);
+  --lg-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.25), inset 0 -1px 0 oklch(20% 0 0 / 0.05);
+  --lg-drop: 0 8px 28px oklch(20% 0 0 / 0.08);
 
-  /* Elevation & Depth — discret (terracotta chaud) */
-  --shadow-sm: 0 2px 8px oklch(38% 0.05 45 / 0.06);
-  --shadow-md: 0 8px 24px oklch(38% 0.06 45 / 0.08);
-  --shadow-lg: 0 18px 48px oklch(38% 0.07 42 / 0.12);
-  --shadow-color: oklch(58% 0.14 40 / 0.18);
-  --shadow-glass: 0 4px 16px oklch(40% 0.06 45 / 0.07);
+  /* Elevation & Depth — ombres neutres discrètes */
+  --shadow-sm: 0 1px 2px oklch(20% 0 0 / 0.04), 0 2px 6px oklch(20% 0 0 / 0.05);
+  --shadow-md: 0 4px 14px oklch(20% 0 0 / 0.07);
+  --shadow-lg: 0 16px 40px oklch(20% 0 0 / 0.10);
+  --shadow-color: oklch(20% 0 0 / 0.10);
+  --shadow-glass: 0 4px 16px oklch(20% 0 0 / 0.06);
 
   /* Couleur d'identité par section (teinte OKLCH) — en-têtes, accents, badges */
-  --sec-home: 40;          /* terracotta */
-  --sec-sante: 20;         /* corail */
-  --sec-planning: 232;     /* bleu */
-  --sec-pointage: 145;     /* vert */
-  --sec-annuaire: 62;      /* ocre */
-  --sec-coordination: 200; /* cyan */
-  --sec-sorties: 120;      /* olive */
   --sec-fei: 25;           /* rouge */
-  --sec-inventaire: 310;   /* magenta */
-  --sec-menus: 75;         /* miel */
-  --sec-params: 55;        /* brun neutre */
 
-  --radius-xs: 0.375rem;
-  --radius-sm: 0.625rem;
   --radius-md: 0.875rem;
   --radius-lg: 1.25rem;
   --radius-xl: 1.5rem;
@@ -105,10 +81,9 @@
   --transition-normal: 350ms var(--ease-out-expo);
   --transition-slow: 600ms var(--ease-out-expo);
 
-  /* Brand Accents — terracotta → ochre */
-  --primary-gradient: linear-gradient(135deg, oklch(58% 0.14 40) 0%, oklch(66% 0.15 62) 100%);
+  /* Dégradé primaire — graphite */
+  --primary-gradient: linear-gradient(180deg, oklch(30% 0.012 250) 0%, oklch(23% 0.012 250) 100%);
   --sidebar-width: 250px;
-  --collapsed-sidebar-width: 84px;
 }
 
 * {
@@ -122,11 +97,9 @@ body {
   font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-main);
   background:
-    radial-gradient(1100px 760px at -8% -12%, oklch(66% 0.17 45 / 0.26), transparent 58%),
-    radial-gradient(950px 620px at 112% 0%, oklch(74% 0.15 78 / 0.24), transparent 52%),
-    radial-gradient(1000px 760px at 50% 120%, oklch(62% 0.14 250 / 0.18), transparent 55%),
-    radial-gradient(720px 600px at 88% 68%, oklch(64% 0.15 330 / 0.12), transparent 55%),
-    linear-gradient(180deg, oklch(96% 0.025 62) 0%, oklch(93% 0.032 56) 100%);
+    radial-gradient(1200px 720px at 50% -8%, oklch(99% 0.003 250 / 0.7), transparent 60%),
+    radial-gradient(900px 600px at 100% 110%, oklch(95% 0.004 250 / 0.5), transparent 55%),
+    linear-gradient(180deg, oklch(97.5% 0.0015 250) 0%, oklch(95.5% 0.003 250) 100%);
   background-attachment: fixed;
   line-height: 1.6;
   min-height: 100vh;
@@ -135,26 +108,34 @@ body {
   overflow-y: auto;
   position: relative;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.006em;
+  text-rendering: optimizeLegibility;
 }
 
-/* Subtle earthy grain over the warm backdrop */
+/* Grain léger sur le fond neutre */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.3;
+  opacity: 0.06;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
 h1, h2, h3, h4, .font-sora {
   font-family: 'Bricolage Grotesque', 'Hanken Grotesk', sans-serif;
-  letter-spacing: -0.02em;
-  line-height: 1.1;
+  letter-spacing: -0.032em;
+  line-height: 1.08;
   font-weight: 800;
+  font-optical-sizing: auto;
+  text-wrap: balance;
 }
+
+/* Chiffres alignés (stats premium) */
+.tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
 button {
   cursor: pointer;
@@ -173,7 +154,7 @@ button {
   justify-content: center;
   gap: var(--space-xs);
   padding: 0.75rem 1.5rem;
-  border-radius: var(--radius-lg);
+  border-radius: 999px; /* boutons pilule (premium minimal) */
   font-weight: 800;
   transition: all var(--transition-normal);
   font-size: var(--text-sm);
@@ -234,19 +215,30 @@ button {
 
 /* ─── PREMIUM COMPONENTS ─── */
 .premium-card {
-  background: white;
-  border-radius: 24px;
-  border: 1.5px solid oklch(88% 0.02 55 / 0.4);
-  box-shadow: var(--shadow-sm);
-  transition: all 0.4s var(--ease-out-expo);
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(18px) saturate(150%);
+  -webkit-backdrop-filter: blur(18px) saturate(150%);
+  border-radius: 26px;
+  /* Contour travaillé : filet hairline + reflet interne haut + liseré sombre bas */
+  border: 1px solid oklch(90% 0.003 250 / 0.7);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
+    0 1px 2px oklch(20% 0 0 / 0.04),
+    0 12px 32px oklch(20% 0 0 / 0.06);
+  transition: transform 0.35s var(--ease-out-expo), box-shadow 0.35s var(--ease-out-expo), border-color 0.35s;
   position: relative;
   overflow: hidden;
 }
 
 .premium-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--primary-color);
+  transform: translateY(-2px);
+  border-color: oklch(85% 0.004 250 / 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+    0 2px 4px oklch(20% 0 0 / 0.05),
+    0 20px 48px oklch(20% 0 0 / 0.10);
 }
 
 .glass-pill {
@@ -304,14 +296,17 @@ button {
 }
 
 .card-glass {
-  /* V2 : carte quasi pleine, trait net, ombre légère — plus lisible, moins de
-     coût GPU (le blur n'est gardé que très atténué pour la profondeur). */
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid oklch(85% 0.025 55 / 0.55);
+  /* Premium frost mono : translucide léger + flou + arête travaillée (filet +
+     reflet interne + ombre douce étagée). Unifié avec .glass-card/.premium-card. */
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid oklch(90% 0.003 250 / 0.7);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-glass);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 2px oklch(20% 0 0 / 0.04),
+    0 10px 28px oklch(20% 0 0 / 0.06);
 }
 
 /* ── Liquid Glass utilitaire (chrome uniquement) ──────────────────────────── */
@@ -340,51 +335,30 @@ button {
    texte net, perf maîtrisée sur les listes. Bloc global réutilisable. */
 .glass-card {
   position: relative;
-  isolation: isolate;
-  background: var(--lg-gloss-card), rgba(255, 255, 255, 0.58);
-  backdrop-filter: blur(20px) saturate(200%);
-  -webkit-backdrop-filter: blur(20px) saturate(200%);
-  border: 1px solid rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  border: 1px solid oklch(90% 0.003 250 / 0.7);
   border-radius: var(--radius-2xl);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.95),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
     inset 0 0 0 1px rgba(255, 255, 255, 0.3),
-    inset 0 -12px 26px rgba(255, 255, 255, 0.22),
-    0 10px 30px oklch(40% 0.06 45 / 0.12),
-    0 28px 60px oklch(45% 0.08 45 / 0.16);
+    0 1px 2px oklch(20% 0 0 / 0.04),
+    0 12px 32px oklch(20% 0 0 / 0.06);
   transition: transform 0.3s var(--ease-out-expo), box-shadow 0.3s var(--ease-out-expo), border-color 0.3s;
 }
-/* Le contenu passe au-dessus du sheen */
-.glass-card > * { position: relative; z-index: 1; }
-/* Reflet spéculaire qui balaie la carte au survol */
-.glass-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: inherit;
-  background: linear-gradient(115deg, transparent 30%, rgba(255, 255, 255, 0.5) 46%, transparent 60%);
-  background-size: 250% 100%;
-  background-position: 130% 0;
-  transition: background-position 0.9s var(--ease-out-expo);
-  pointer-events: none;
-}
-/* Le relief interactif (soulèvement + balayage du reflet) ne s'applique qu'aux
-   cartes cliquables — les panneaux statiques (Réglages) ne doivent pas sauter. */
+/* Relief interactif réservé aux cartes cliquables (panneaux statiques fixes) */
 button.glass-card:hover,
 a.glass-card:hover {
-  transform: translateY(-4px) scale(1.008);
-  border-color: rgba(255, 255, 255, 0.95);
+  transform: translateY(-2px);
+  border-color: oklch(85% 0.004 250 / 0.85);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.95),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.35),
-    0 16px 38px oklch(40% 0.07 45 / 0.16),
-    0 38px 84px oklch(45% 0.09 45 / 0.22);
+    0 2px 4px oklch(20% 0 0 / 0.05),
+    0 20px 48px oklch(20% 0 0 / 0.10);
 }
-button.glass-card:hover::after,
-a.glass-card:hover::after { background-position: -40% 0; }
 button.glass-card:active,
-a.glass-card:active { transform: translateY(-1px) scale(1); }
+a.glass-card:active { transform: translateY(-1px); }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .glass-card { background: rgba(255, 255, 255, 0.97); }
 }
@@ -1675,11 +1649,17 @@ body.ui-solid {
 }
 
 body.ui-solid .glass-surface,
-body.ui-solid .card-glass {
+body.ui-solid .card-glass,
+body.ui-solid .glass-card,
+body.ui-solid .premium-card,
+body.ui-solid .liquid-glass,
+body.ui-solid .liquid-glass-strong {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: rgba(255, 255, 255, 0.98) !important;
 }
+/* Mode réduit : couper le reflet animé (perf + sobriété) */
+body.ui-solid .glass-card::after { display: none !important; }
 
 body.ui-compact {
   --space-xs: 0.4rem;

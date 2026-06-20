@@ -26,9 +26,9 @@ const DayNav = ({ date, onChange }) => {
         else el.click();
     };
     return (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '14px', padding: '0 0.25rem', height: '40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', borderRadius: '14px', padding: '0 0.25rem', height: '40px' }}>
             <button onClick={() => onChange(addDays(date, -1))} style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: 'pointer', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-                <ChevronLeft size={18} strokeWidth={2.5} />
+                <ChevronLeft size={18} strokeWidth={2} />
             </button>
             <button onClick={openPicker} style={{ border: 'none', background: 'none', cursor: 'pointer', fontWeight: '950', fontSize: '0.82rem', color: 'var(--primary-color)', whiteSpace: 'nowrap', padding: '0 0.25rem', textTransform: 'capitalize', textDecoration: 'underline dotted', textUnderlineOffset: '3px' }}>
                 {fmtDay(date)}
@@ -42,7 +42,7 @@ const DayNav = ({ date, onChange }) => {
                 style={{ position: 'absolute', opacity: 0, width: 0, height: 0, pointerEvents: 'none' }}
             />
             <button onClick={() => onChange(addDays(date, 1))} disabled={date >= todayIso()} style={{ width: '32px', height: '32px', border: 'none', background: 'none', cursor: date >= todayIso() ? 'default' : 'pointer', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: date >= todayIso() ? 'var(--glass-border)' : 'var(--text-muted)' }}>
-                <ChevronRight size={18} strokeWidth={2.5} />
+                <ChevronRight size={18} strokeWidth={2} />
             </button>
         </div>
     );
@@ -100,7 +100,7 @@ const StaffAutocomplete = ({ value, onChange, staff, placeholder, style }) => {
             {open && filtered.length > 0 && (
                 <div style={{
                     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200,
-                    background: 'white', border: '1.5px solid var(--glass-border)',
+                    background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)',
                     borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.14)',
                     marginTop: '4px', overflow: 'hidden'
                 }}>
@@ -198,19 +198,19 @@ const RegistreMeds = ({ children, staff = [], updateParticipantHealth, canEdit, 
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <DayNav date={selectedDate} onChange={setSelectedDate} />
                     <button onClick={handleExport} disabled={filteredLogs.length === 0} title="Exporter / imprimer le registre"
-                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', cursor: filteredLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: filteredLogs.length === 0 ? 0.5 : 1 }}>
-                        <Printer size={16} strokeWidth={2.5} /> Exporter PDF
+                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', color: 'var(--text-muted)', cursor: filteredLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: filteredLogs.length === 0 ? 0.5 : 1 }}>
+                        <Printer size={16} strokeWidth={2} /> Exporter PDF
                     </button>
                     {canEdit && (
                         <button onClick={() => setShowForm(v => !v)} className="btn btn-primary" style={{ height: '40px', padding: '0 1.25rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Plus size={16} strokeWidth={3} /> Nouvelle entrée
+                            <Plus size={16} strokeWidth={2} /> Nouvelle entrée
                         </button>
                     )}
                 </div>
             </div>
 
             {showForm && (
-                <div className="card-glass animate-fade-in" style={{ padding: '1.5rem', borderRadius: '24px', border: '2px solid var(--primary-color)', background: 'white' }}>
+                <div className="card-glass animate-fade-in" style={{ padding: '1.5rem', borderRadius: '24px', border: '2px solid var(--primary-color)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
                         <div>
                             <label style={labelStyle}>Vacancier</label>
@@ -237,7 +237,7 @@ const RegistreMeds = ({ children, staff = [], updateParticipantHealth, canEdit, 
                         </div>
                     </div>
                     <div className="u-flex u-justify-end u-gap-sm">
-                        <button onClick={() => setShowForm(false)} style={{ height: '44px', padding: '0 1.25rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}>Annuler</button>
+                        <button onClick={() => setShowForm(false)} style={{ height: '44px', padding: '0 1.25rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', color: 'var(--text-muted)', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}>Annuler</button>
                         <button onClick={handleAdd} className="btn btn-primary" style={{ height: '44px', padding: '0 1.5rem', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem' }}>Enregistrer</button>
                     </div>
                 </div>
@@ -267,13 +267,13 @@ const RegistreMeds = ({ children, staff = [], updateParticipantHealth, canEdit, 
                                     <td style={tdStyle}><span style={{ fontWeight: '900' }}>{log.childName}</span></td>
                                     <td style={tdStyle}><span style={{ fontSize: '0.85rem', opacity: log.medicaments ? 1 : 0.3 }}>{log.medicaments || '—'}</span></td>
                                     <td style={tdStyle}>{log.traitement
-                                        ? <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'oklch(55% 0.22 30)', background: 'oklch(96% 0.06 30)', padding: '3px 10px', borderRadius: '8px' }}>{log.traitement}</span>
+                                        ? <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-main)', background: 'var(--bg-secondary)', padding: '3px 10px', borderRadius: '8px' }}>{log.traitement}</span>
                                         : <span style={{ opacity: 0.3 }}>—</span>}
                                     </td>
                                     <td style={tdStyle}><span style={{ fontWeight: '800' }}>{log.soignant}</span></td>
                                     {canEdit && (
                                         <td style={{ padding: '0.75rem 1rem' }}>
-                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Trash2 size={14} />
                                             </button>
                                         </td>
@@ -348,7 +348,7 @@ const SuiviPassage = ({ children, staff = [], updateParticipantHealth, canEdit, 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             <div className="u-flex u-flex-between" style={{ flexWrap: 'wrap', gap: '0.75rem', alignItems: 'center' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.03em', margin: 0 }}>Suivi Passage Infirmerie</h2>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.03em', margin: 0 }}>Suivi Passage Infirmerie</h2>
                     <p className="u-text-sm u-text-muted u-font-bold" style={{ margin: '4px 0 0' }}>
                         {filteredLogs.length} passage{filteredLogs.length !== 1 ? 's' : ''} enregistré{filteredLogs.length !== 1 ? 's' : ''}
                     </p>
@@ -356,19 +356,19 @@ const SuiviPassage = ({ children, staff = [], updateParticipantHealth, canEdit, 
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
                     <DayNav date={selectedDate} onChange={setSelectedDate} />
                     <button onClick={handleExport} disabled={filteredLogs.length === 0} title="Exporter / imprimer le suivi"
-                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', cursor: filteredLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: filteredLogs.length === 0 ? 0.5 : 1 }}>
-                        <Printer size={16} strokeWidth={2.5} /> Exporter PDF
+                        style={{ height: '40px', padding: '0 1.1rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', color: 'var(--text-muted)', cursor: filteredLogs.length === 0 ? 'not-allowed' : 'pointer', opacity: filteredLogs.length === 0 ? 0.5 : 1 }}>
+                        <Printer size={16} strokeWidth={2} /> Exporter PDF
                     </button>
                     {canEdit && (
                         <button onClick={() => setShowForm(v => !v)} className="btn btn-primary" style={{ height: '40px', padding: '0 1.25rem', borderRadius: '12px', fontSize: '0.82rem', fontWeight: '950', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <Plus size={16} strokeWidth={3} /> Nouveau passage
+                            <Plus size={16} strokeWidth={2} /> Nouveau passage
                         </button>
                     )}
                 </div>
             </div>
 
             {showForm && (
-                <div className="card-glass animate-fade-in" style={{ padding: '1.5rem', borderRadius: '24px', border: '2px solid var(--primary-color)', background: 'white' }}>
+                <div className="card-glass animate-fade-in" style={{ padding: '1.5rem', borderRadius: '24px', border: '2px solid var(--primary-color)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
                         <div>
                             <label style={labelStyle}>Vacancier</label>
@@ -395,7 +395,7 @@ const SuiviPassage = ({ children, staff = [], updateParticipantHealth, canEdit, 
                         </div>
                     </div>
                     <div className="u-flex u-justify-end u-gap-sm">
-                        <button onClick={() => setShowForm(false)} style={{ height: '44px', padding: '0 1.25rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--text-muted)', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}>Annuler</button>
+                        <button onClick={() => setShowForm(false)} style={{ height: '44px', padding: '0 1.25rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', color: 'var(--text-muted)', fontWeight: '900', fontSize: '0.85rem', cursor: 'pointer' }}>Annuler</button>
                         <button onClick={handleAdd} className="btn btn-primary" style={{ height: '44px', padding: '0 1.5rem', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem' }}>Enregistrer</button>
                     </div>
                 </div>
@@ -426,14 +426,14 @@ const SuiviPassage = ({ children, staff = [], updateParticipantHealth, canEdit, 
                                     <td style={tdStyle}><span style={{ fontWeight: '900' }}>{log.childName}</span></td>
                                     <td style={tdStyle}><span style={{ fontWeight: '800' }}>{log.soignant}</span></td>
                                     <td style={tdStyle}>{log.nature
-                                        ? <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'oklch(52% 0.22 232)', background: 'oklch(96% 0.06 232)', padding: '3px 10px', borderRadius: '8px' }}>{log.nature}</span>
+                                        ? <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-main)', background: 'var(--bg-secondary)', padding: '3px 10px', borderRadius: '8px' }}>{log.nature}</span>
                                         : <span style={{ opacity: 0.3 }}>—</span>}
                                     </td>
                                     <td style={tdStyle}><span style={{ fontSize: '0.85rem' }}>{log.soins || '—'}</span></td>
                                     <td style={{ ...tdStyle, maxWidth: '220px' }}><span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{log.observation || '—'}</span></td>
                                     {canEdit && (
                                         <td style={{ padding: '0.75rem 1rem' }}>
-                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'white', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <button onClick={() => handleDelete(log.childId, log.id)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '8px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', color: 'var(--danger-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Trash2 size={14} />
                                             </button>
                                         </td>
@@ -474,7 +474,7 @@ const RegistreInfi = ({ children, groups, staff = [], updateParticipantHealth, i
                             padding: '0.55rem 1.1rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
                             fontSize: '0.78rem', transition: 'all 0.2s',
                             display: 'flex', alignItems: 'center', gap: '0.5rem',
-                            background: activeSection === tab.id ? 'white' : 'transparent',
+                            background: activeSection === tab.id ? 'var(--surface-color)' : 'transparent',
                             boxShadow: activeSection === tab.id ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
                             color: activeSection === tab.id ? 'var(--primary-color)' : 'var(--text-muted)',
                             fontWeight: activeSection === tab.id ? '950' : '800'

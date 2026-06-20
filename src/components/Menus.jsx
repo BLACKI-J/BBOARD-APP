@@ -1,14 +1,33 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 import { Utensils, AlertCircle, Wheat, Clock, Sparkles, ChefHat, Coffee, Sun, Moon } from 'lucide-react';
 import SectionHeader from './common/SectionHeader';
 
 const DEFAULT_DAY = { matin: '', midi: '', gouter: '', soir: '' };
 
+// Champ menu : draft local + sauvegarde différée. Sans ça, chaque frappe émettait
+// un POST de toute la collection menus (et le refetch socket écrasait la frappe).
+const MealField = ({ value, disabled, placeholder, isMobile, onCommit }) => {
+    const [draft, setDraft] = useState(value || '');
+    const focusedRef = useRef(false);
+    const timerRef = useRef(null);
+    useEffect(() => { if (!focusedRef.current) setDraft(value || ''); }, [value]);
+    useEffect(() => () => clearTimeout(timerRef.current), []);
+    return (
+        <textarea
+            value={draft} disabled={disabled} placeholder={placeholder} className="glass-input"
+            onChange={e => { const v = e.target.value; setDraft(v); clearTimeout(timerRef.current); timerRef.current = setTimeout(() => onCommit(v), 600); }}
+            onFocus={() => { focusedRef.current = true; }}
+            onBlur={() => { focusedRef.current = false; clearTimeout(timerRef.current); onCommit(draft); }}
+            style={{ width: '100%', height: isMobile ? '120px' : '160px', padding: isMobile ? '1.25rem' : '1.5rem', fontSize: isMobile ? '0.9rem' : '1rem', lineHeight: '1.6', borderRadius: '24px', background: 'var(--bg-secondary)', border: '2px solid transparent', resize: 'none', fontWeight: '750' }}
+        />
+    );
+};
+
 const MEALS = [
-    { id: 'matin', label: 'Petit-Déjeuner', icon: <Coffee size={24} />, time: '08:00', gradient: 'oklch(71% 0.19 45 / 0.1)' },
-    { id: 'midi', label: 'Déjeuner', icon: <Sun size={24} />, time: '12:30', gradient: 'oklch(62% 0.18 200 / 0.1)' },
-    { id: 'gouter', label: 'Goûter', icon: <ChefHat size={24} />, time: '16:00', gradient: 'oklch(62% 0.18 320 / 0.1)' },
-    { id: 'soir', label: 'Dîner', icon: <Moon size={24} />, time: '19:30', gradient: 'oklch(62% 0.18 260 / 0.1)' }
+    { id: 'matin', label: 'Petit-Déjeuner', icon: <Coffee size={24} />, time: '08:00', gradient: 'oklch(52% 0.006 250 / 0.1)' },
+    { id: 'midi', label: 'Déjeuner', icon: <Sun size={24} />, time: '12:30', gradient: 'oklch(52% 0.006 250 / 0.1)' },
+    { id: 'gouter', label: 'Goûter', icon: <ChefHat size={24} />, time: '16:00', gradient: 'oklch(52% 0.006 250 / 0.1)' },
+    { id: 'soir', label: 'Dîner', icon: <Moon size={24} />, time: '19:30', gradient: 'oklch(52% 0.006 250 / 0.1)' }
 ];
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
@@ -26,10 +45,11 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
 
     const handleChange = (mealId, value) => {
         if (!setMenus || !canEdit) return;
-        setMenus({
-            ...menus,
-            [currentDayName]: { ...dayMenus, [mealId]: value }
-        });
+        // Updater fonctionnel : ne pas écraser un autre jour édité ailleurs (sync multi-appareils).
+        setMenus(prev => ({
+            ...prev,
+            [currentDayName]: { ...(prev?.[currentDayName] || DEFAULT_DAY), [mealId]: value }
+        }));
     };
 
     return (
@@ -38,10 +58,10 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
 
                 {/* Repas du jour */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: isMobile ? 'visible' : 'hidden' }}>
-                    <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '1.5rem 2rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', background: 'white', gap: '1rem' }}>
-                        <SectionHeader hue="var(--sec-menus)" icon={Utensils} title={`Menu du ${currentDayName}`} subtitle="Synchronisé entre tous les appareils" />
+                    <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '1.5rem 2rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
+                        <SectionHeader icon={Utensils} title={`Menu du ${currentDayName}`} subtitle="Synchronisé entre tous les appareils" />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)' }}>
-                            <Clock size={16} strokeWidth={2.5} style={{ color: 'var(--primary-color)' }} />
+                            <Clock size={16} strokeWidth={2} style={{ color: 'var(--primary-color)' }} />
                             <span style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                     </div>
@@ -51,8 +71,8 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                             {MEALS.map((m, idx) => (
                                 <div key={m.id} className="card-glass animate-fade-in" style={{
                                     '--i': idx, animationDelay: `calc(var(--i) * 50ms)`,
-                                    padding: 'clamp(1rem, 3vw, 2rem)', display: 'flex', flexDirection: 'column', gap: '1.5rem', background: 'white',
-                                    border: '1.5px solid var(--glass-border)', position: 'relative', overflow: 'hidden'
+                                    padding: 'clamp(1rem, 3vw, 2rem)', display: 'flex', flexDirection: 'column', gap: '1.5rem',
+                                    position: 'relative', overflow: 'hidden'
                                 }}>
                                     <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '4px', background: m.gradient.replace('/ 0.1)', '/ 1)') }} />
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -60,28 +80,22 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                             {m.icon}
                                         </div>
                                         <div>
-                                            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{m.label}</h3>
+                                            <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{m.label}</h3>
                                             <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <Clock size={10} strokeWidth={3} /> {m.time}
+                                                <Clock size={10} strokeWidth={2} /> {m.time}
                                             </div>
                                         </div>
                                     </div>
                                     <div style={{ position: 'relative' }}>
-                                        <textarea
+                                        <MealField
                                             value={dayMenus[m.id] || ''}
-                                            onChange={e => handleChange(m.id, e.target.value)}
                                             disabled={!canEdit}
                                             placeholder={canEdit ? "Composer le menu..." : "Lecture seule"}
-                                            className="glass-input"
-                                            style={{
-                                                width: '100%', height: isMobile ? '120px' : '160px',
-                                                padding: isMobile ? '1.25rem' : '1.5rem', fontSize: isMobile ? '0.9rem' : '1rem',
-                                                lineHeight: '1.6', borderRadius: '24px', background: 'var(--bg-secondary)',
-                                                border: '2px solid transparent', resize: 'none', fontWeight: '750'
-                                            }}
+                                            isMobile={isMobile}
+                                            onCommit={v => handleChange(m.id, v)}
                                         />
                                         <div style={{ position: 'absolute', bottom: '1.25rem', right: '1.25rem', opacity: 0.4 }}>
-                                            <ChefHat size={20} strokeWidth={2.5} />
+                                            <ChefHat size={20} strokeWidth={2} />
                                         </div>
                                     </div>
                                 </div>
@@ -92,13 +106,13 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
 
                 {/* Sidebar allergies */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: isMobile ? 'visible' : 'hidden' }}>
-                    <div className="card-glass" style={{ flex: 1, padding: isMobile ? '1.25rem' : '2rem', display: 'flex', flexDirection: 'column', background: 'white', border: '1.5px solid var(--glass-border)', overflow: 'hidden' }}>
+                    <div className="card-glass" style={{ flex: 1, padding: isMobile ? '1.25rem' : '2rem', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '2rem' }}>
                             <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '0.625rem', borderRadius: '12px', color: 'var(--danger-color)', display: 'flex' }}>
-                                <AlertCircle size={20} strokeWidth={2.5} />
+                                <AlertCircle size={20} strokeWidth={2} />
                             </div>
                             <div>
-                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>Allergies & Régimes</h3>
+                                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>Allergies & Régimes</h3>
                                 <div style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Données Cruciales</div>
                             </div>
                         </div>
@@ -117,10 +131,10 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                             {child.firstName} <span style={{ textTransform: 'uppercase', fontSize: '0.85em', opacity: 0.7 }}>{child.lastName}</span>
                                         </div>
                                         {groupName && (
-                                            <div style={{ fontSize: '9px', fontWeight: '950', background: 'white', padding: '2px 8px', borderRadius: '6px', color: 'var(--text-muted)', border: '1px solid var(--glass-border)' }}>{groupName}</div>
+                                            <div style={{ fontSize: '9px', fontWeight: '950', background: 'var(--surface-color)', padding: '2px 8px', borderRadius: '6px', color: 'var(--text-muted)', border: '1px solid var(--glass-border)' }}>{groupName}</div>
                                         )}
                                     </div>
-                                    <div style={{ background: 'white', padding: '0.75rem 1rem', borderRadius: '14px', border: '1.5px solid oklch(62% 0.18 20 / 0.1)', color: 'oklch(20% 0.05 20)', fontSize: '0.85rem', fontWeight: '800', lineHeight: '1.5' }}>
+                                    <div style={{ background: 'var(--surface-color)', padding: '0.75rem 1rem', borderRadius: '14px', border: '1.5px solid oklch(62% 0.18 20 / 0.1)', color: 'oklch(20% 0.05 20)', fontSize: '0.85rem', fontWeight: '800', lineHeight: '1.5' }}>
                                         {child.allergies}
                                     </div>
                                 </div>
@@ -128,7 +142,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                             })}
                         </div>
                         <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'var(--primary-gradient)', borderRadius: '20px', display: 'flex', gap: '1rem', color: 'white' }}>
-                            <Sparkles size={20} strokeWidth={2.5} style={{ flexShrink: 0, marginTop: '2px' }} />
+                            <Sparkles size={20} strokeWidth={2} style={{ flexShrink: 0, marginTop: '2px' }} />
                             <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: '1.5', fontWeight: '900', opacity: 0.9 }}>
                                 Ces informations proviennent directement des fiches sanitaires de l'Annuaire.
                             </p>

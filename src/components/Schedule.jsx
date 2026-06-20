@@ -10,6 +10,7 @@ import Menus from './Menus';
 import { printHtml } from '../utils/printHtml';
 import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
+import { parseISO } from '../utils/dates';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -157,7 +158,7 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
                     minWidth: isMobile ? '60px' : '70px',
                     padding: isMobile ? '6px 8px' : '8px 12px',
                     borderRadius: isMobile ? '12px' : '16px',
-                    background: isDone ? 'rgba(255,255,255,0.45)' : 'white',
+                    background: isDone ? 'rgba(255,255,255,0.45)' : 'var(--surface-color)',
                     border: '2px solid',
                     borderColor: isDone ? 'var(--glass-border)' : color,
                     color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
@@ -176,7 +177,7 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
                         marginTop: '0.5rem',
                         fontSize: '9px',
                         fontWeight: '950',
-                        color: 'oklch(50% 0.02 var(--brand-hue) / 0.6)',
+                        color: 'var(--text-muted)',
                         textTransform: 'uppercase',
                         letterSpacing: '0.1em',
                         background: 'oklch(0% 0 0 / 0.03)',
@@ -202,7 +203,7 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
                     <h3 style={{
                         margin: 0,
                         fontSize: isMobile ? '1.1rem' : '1.25rem',
-                        fontWeight: '950',
+                        fontWeight: '800',
                         fontFamily: 'Bricolage Grotesque, sans-serif',
                         color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                         lineHeight: '1.2',
@@ -226,17 +227,17 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
                         )}
                         {activity.description && (
                             <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontWeight: '750' }}>
-                                <MapPin size={12} strokeWidth={2.5} style={{ color: 'var(--accent-color)' }} /> {activity.description}
+                                <MapPin size={12} strokeWidth={2} style={{ color: 'var(--accent-color)' }} /> {activity.description}
                             </span>
                         )}
                         {activity.participants && activity.participants.length > 0 && (
                             <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--text-muted)', fontWeight: '750' }}>
-                                <Users size={12} strokeWidth={2.5} style={{ color: 'var(--secondary-color)' }} /> {activity.participants.length}
+                                <Users size={12} strokeWidth={2} style={{ color: 'var(--secondary-color)' }} /> {activity.participants.length}
                             </span>
                         )}
                         {hasConflict && (
                             <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '950', color: 'var(--danger-color)', background: 'oklch(96% 0.05 28)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.12 28)' }}>
-                                <AlertTriangle size={12} strokeWidth={2.8} /> Chevauchement
+                                <AlertTriangle size={12} strokeWidth={2} /> Chevauchement
                             </span>
                         )}
                         {isWaterActivity && nonTestedCount > 0 && (
@@ -263,22 +264,22 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
                                 width: '44px', height: '44px', borderRadius: '12px',
                                 border: '2px solid',
                                 borderColor: isDone ? 'var(--success-color)' : 'var(--glass-border)',
-                                background: isDone ? 'var(--success-color)' : 'white',
+                                background: isDone ? 'var(--success-color)' : 'var(--surface-color)',
                                 color: isDone ? 'white' : 'var(--glass-border)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                                 cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)'
                             }}
                         >
-                            {isDone ? <Check size={20} strokeWidth={3} /> : <Circle size={20} strokeWidth={3} />}
+                            {isDone ? <Check size={20} strokeWidth={2} /> : <Circle size={20} strokeWidth={2} />}
                         </button>
-                        <button aria-label="Modifier l'activité" onClick={() => onEdit(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
-                            <Edit2 size={16} strokeWidth={2.5} />
+                        <button aria-label="Modifier l'activité" onClick={() => onEdit(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
+                            <Edit2 size={16} strokeWidth={2} />
                         </button>
-                        <button aria-label="Dupliquer l'activité" onClick={() => onDuplicate(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
-                            <Copy size={15} strokeWidth={2.5} />
+                        <button aria-label="Dupliquer l'activité" onClick={() => onDuplicate(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
+                            <Copy size={15} strokeWidth={2} />
                         </button>
-                        <button aria-label="Supprimer l'activité" onClick={() => onDelete(activity.id)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'white', border: '1.5px solid var(--glass-border)', color: 'var(--danger-color)' }}>
-                            <Trash2 size={16} strokeWidth={2.5} />
+                        <button aria-label="Supprimer l'activité" onClick={() => onDelete(activity.id)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', color: 'var(--danger-color)' }}>
+                            <Trash2 size={16} strokeWidth={2} />
                         </button>
                     </div>
                 )}
@@ -508,7 +509,7 @@ export default function Schedule({ activities, setActivities, participants, grou
             const isToday = dateStr === todayStr;
             const count = activities.filter(a => a.date === dateStr).length;
             cells.push(
-                <button key={d} onClick={() => setCurrentDate(new Date(dateStr))}
+                <button key={d} onClick={() => setCurrentDate(parseISO(dateStr))}
                     onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.zIndex = '10'; }}
                     onDragLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.zIndex = '1'; }}
                     onDrop={(e) => {
@@ -580,7 +581,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                             fontWeight: '950', fontSize: '0.85rem', transition: 'all 0.3s',
                             boxShadow: viewMode === 'activities' ? 'var(--shadow-sm)' : 'none'
                         }}>
-                        <CalendarIcon size={18} strokeWidth={2.5} /> Activités
+                        <CalendarIcon size={18} strokeWidth={2} /> Activités
                     </button>
                     )}
                     {canViewMenus && (
@@ -593,16 +594,16 @@ export default function Schedule({ activities, setActivities, participants, grou
                             fontWeight: '950', fontSize: '0.85rem', transition: 'all 0.3s',
                             boxShadow: viewMode === 'menus' ? 'var(--shadow-sm)' : 'none'
                         }}>
-                        <Utensils size={18} strokeWidth={2.5} /> Menus
+                        <Utensils size={18} strokeWidth={2} /> Menus
                     </button>
                     )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '0.5rem', justifyContent: isMobile ? 'center' : 'flex-end', flexWrap: 'wrap' }}>
-                    <button aria-label="Aller à aujourd'hui" onClick={goToToday} className="btn-icon" style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', background: 'white', border: '1.5px solid var(--glass-border)' }}>
+                    <button aria-label="Aller à aujourd'hui" onClick={goToToday} className="btn-icon" style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)' }} />
                     </button>
-                    <div style={{ display: 'flex', alignItems: 'center', background: 'white', borderRadius: '14px', border: '1.5px solid var(--glass-border)', overflow: 'hidden' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-color)', borderRadius: '14px', border: '1.5px solid var(--glass-border)', overflow: 'hidden' }}>
                         <button aria-label="Jour précédent" onClick={() => navigateDay(-1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronLeft size={isMobile ? 16 : 18} /></button>
                         <div style={{ width: '1px', height: isMobile ? '16px' : '20px', background: 'var(--glass-border)' }} />
                         <button aria-label="Jour suivant" onClick={() => navigateDay(1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronRight size={isMobile ? 16 : 18} /></button>
@@ -620,7 +621,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                     <div style={{ flex: 1, textAlign: 'center', fontSize: '0.82rem', fontWeight: '900', color: 'var(--text-main)', textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {currentDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })}
                     </div>
-                    <div style={{ display: 'flex', background: 'white', borderRadius: '10px', border: '1px solid var(--glass-border)', overflow: 'hidden', flexShrink: 0 }}>
+                    <div style={{ display: 'flex', background: 'var(--surface-color)', borderRadius: '10px', border: '1px solid var(--glass-border)', overflow: 'hidden', flexShrink: 0 }}>
                         <button aria-label="Jour précédent" onClick={() => navigateDay(-1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}><ChevronLeft size={15} /></button>
                         <div style={{ width: '1px', background: 'var(--glass-border)' }} />
                         <button aria-label="Jour suivant" onClick={() => navigateDay(1)} style={{ padding: '6px 10px', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '44px', minHeight: '44px' }}><ChevronRight size={15} /></button>
@@ -640,12 +641,11 @@ export default function Schedule({ activities, setActivities, participants, grou
                             {/* Date Header Card */}
                             <div className="card-glass" style={{
                                 padding: isMobile ? '1rem' : '1.5rem 2rem', marginBottom: isMobile ? '1.5rem' : '3rem', borderLeft: '8px solid var(--primary-color)',
-                                background: 'white', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center',
-                                gap: isMobile ? '1.25rem' : '1rem',
-                                boxShadow: '0 15px 40px oklch(0% 0 0 / 0.05)'
+                                display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center',
+                                gap: isMobile ? '1.25rem' : '1rem'
                             }}>
                                 <div>
-                                    <h2 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
+                                    <h2 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
                                         {scheduleView === 'week'
                                             ? `Semaine du ${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${addDays(weekStart, 6).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
                                             : currentDateLabel}
@@ -661,25 +661,25 @@ export default function Schedule({ activities, setActivities, participants, grou
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                     <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '12px', padding: '3px' }}>
-                                        {[['day', 'Jour', <CalendarIcon size={13} strokeWidth={2.8} key="d" />], ['week', 'Semaine', <LayoutGrid size={13} strokeWidth={2.8} key="w" />]].map(([v, label, icon]) => (
+                                        {[['day', 'Jour', <CalendarIcon size={13} strokeWidth={2} key="d" />], ['week', 'Semaine', <LayoutGrid size={13} strokeWidth={2} key="w" />]].map(([v, label, icon]) => (
                                             <button key={v} onClick={() => setScheduleView(v)} style={{ padding: '0.4rem 0.7rem', borderRadius: '9px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', background: scheduleView === v ? 'white' : 'transparent', color: scheduleView === v ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: scheduleView === v ? 'var(--shadow-sm)' : 'none' }}>
                                                 {icon} {label}
                                             </button>
                                         ))}
                                     </div>
                                     {groups.length > 0 && (
-                                        <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} title="Filtrer par groupe" style={{ height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'white', fontWeight: '800', fontSize: '0.8rem', padding: '0 0.6rem', cursor: 'pointer', maxWidth: '160px' }}>
+                                        <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} title="Filtrer par groupe" style={{ height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', fontWeight: '800', fontSize: '0.8rem', padding: '0 0.6rem', cursor: 'pointer', maxWidth: '160px' }}>
                                             <option value="all">Tous les groupes</option>
                                             {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
                                         </select>
                                     )}
-                                    <button onClick={printSchedule} className="btn-icon" title="Imprimer le planning" style={{ width: '38px', height: '38px', background: 'white', border: '1.5px solid var(--glass-border)' }}><Printer size={16} strokeWidth={2.5} /></button>
+                                    <button onClick={printSchedule} className="btn-icon" title="Imprimer le planning" style={{ width: '38px', height: '38px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><Printer size={16} strokeWidth={2} /></button>
                                     {canEditActivities && scheduleView === 'day' && (
-                                        <button onClick={handleDuplicateDay} className="btn-icon" title="Dupliquer la journée vers une autre date" style={{ width: '38px', height: '38px', background: 'white', border: '1.5px solid var(--glass-border)' }}><Copy size={16} strokeWidth={2.5} /></button>
+                                        <button onClick={handleDuplicateDay} className="btn-icon" title="Dupliquer la journée vers une autre date" style={{ width: '38px', height: '38px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><Copy size={16} strokeWidth={2} /></button>
                                     )}
                                     {canEditActivities && (
                                         <button onClick={openNewForm} className="btn btn-primary" style={{ padding: isMobile ? '0.6rem 0.9rem' : '0.7rem 1.2rem', fontWeight: '950', gap: '0.5rem', borderRadius: '14px', fontSize: isMobile ? '0.8rem' : '0.88rem' }}>
-                                            <Plus size={isMobile ? 16 : 18} strokeWidth={3} /> {isMobile ? 'Activité' : 'Nouvelle Activité'}
+                                            <Plus size={isMobile ? 16 : 18} strokeWidth={2} /> {isMobile ? 'Activité' : 'Nouvelle Activité'}
                                         </button>
                                     )}
                                 </div>
@@ -696,7 +696,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                                 onDragOver={canEditActivities ? (e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'inset 0 0 0 2px var(--primary-color)'; } : undefined}
                                                 onDragLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                                                 onDrop={canEditActivities ? (e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'none'; const id = e.dataTransfer.getData('text/plain'); if (id) handleMoveActivity(id, ds); } : undefined}
-                                                style={{ background: 'white', border: `1.5px solid ${isSel ? 'var(--primary-color)' : 'var(--glass-border)'}`, borderRadius: '16px', padding: '0.5rem', minHeight: '130px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                style={{ background: 'var(--surface-color)', border: `1.5px solid ${isSel ? 'var(--primary-color)' : 'var(--glass-border)'}`, borderRadius: '16px', padding: '0.5rem', minHeight: '130px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
                                                 <button onClick={() => { setCurrentDate(new Date(date)); setScheduleView('day'); }} title="Ouvrir cette journée"
                                                     style={{ border: 'none', background: isToday ? 'oklch(58% 0.2 var(--brand-hue) / 0.1)' : 'transparent', cursor: 'pointer', textAlign: 'left', padding: '0.3rem 0.4rem', borderRadius: '9px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span style={{ fontWeight: '950', fontSize: '0.8rem', textTransform: 'capitalize', color: isToday ? 'var(--primary-color)' : 'var(--text-main)' }}>
@@ -723,7 +723,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     <div style={{ width: '90px', height: '90px', background: 'var(--bg-secondary)', borderRadius: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2.5rem', opacity: 0.5 }}>
                                         <CalendarIcon size={44} />
                                     </div>
-                                    <h3 style={{ fontSize: '1.5rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.03em' }}>Journée Libre</h3>
+                                    <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.03em' }}>Journée Libre</h3>
                                     <p style={{ color: 'var(--text-muted)', fontWeight: '700', marginTop: '0.5rem' }}>Profitez-en pour vous reposer ou préparer la suite.</p>
                                 </div>
                             ) : (
@@ -755,9 +755,9 @@ export default function Schedule({ activities, setActivities, participants, grou
                         overflowY: 'auto' 
                     }} className="no-scrollbar">
                         <div style={{ padding: '2.5rem 1.5rem' }}>
-                            <div className="card-glass" style={{ background: 'white', padding: '1.5rem', boxShadow: '0 10px 30px oklch(0% 0 0 / 0.04)' }}>
+                            <div className="card-glass" style={{ padding: '1.5rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                    <h4 style={{ margin: 0, fontWeight: '950', fontSize: '1rem', textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
+                                    <h4 style={{ margin: 0, fontWeight: '800', fontSize: '1rem', textTransform: 'capitalize', letterSpacing: '-0.02em' }}>
                                         {calendarMonth.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}
                                     </h4>
                                     <div style={{ display: 'flex', gap: '4px' }}>
@@ -789,7 +789,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                 <div style={{ width: '42px', height: '42px', background: 'rgba(255,255,255,0.2)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                     <Plus size={24} />
                                 </div>
-                                <h3 style={{ margin: 0, fontWeight: '950', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
+                                <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
                                     {editingId ? 'Modifier l\'activité' : 'Nouvelle Activité'}
                                 </h3>
                             </div>
@@ -809,7 +809,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                         autoFocus
                                     />
                                     {showSuggestions && suggestions.length > 0 && (
-                                        <div className="card-glass" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, marginTop: '8px', padding: '8px', background: 'white', border: '1.5px solid var(--glass-border)', boxShadow: '0 20px 40px rgba(0,0,0,0.1)' }}>
+                                        <div className="card-glass" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 200, marginTop: '8px', padding: '8px' }}>
                                             {suggestions.slice(0, 8).map((s, i) => (
                                                 <div key={i} onClick={() => { setFormData({ ...formData, title: s }); setShowSuggestions(false); }}
                                                     style={{ padding: '0.75rem 1rem', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '800', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '0.75rem', transition: 'all 0.2s' }}
@@ -828,7 +828,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     <label className="form-label">Date</label>
                                     <input type="date" required value={formData.date}
                                         onChange={e => setFormData({ ...formData, date: e.target.value })}
-                                        style={{ width: '100%', padding: '0.85rem', borderRadius: '16px', border: '1.5px solid var(--glass-border)', fontWeight: '700', background: 'white' }}
+                                        style={{ width: '100%', padding: '0.85rem', borderRadius: '16px', border: '1.5px solid var(--glass-border)', fontWeight: '700', background: 'var(--surface-color)' }}
                                     />
                                 </div>
                                 <div>

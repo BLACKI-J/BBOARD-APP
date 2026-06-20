@@ -37,8 +37,8 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
             {/* Action layer behind */}
             {canEdit && (
                 <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'stretch' }}>
-                    <button onClick={() => { setOffset(0); handleEdit(p); }} style={{ width: '56px', border: 'none', background: 'oklch(58% 0.12 235)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Edit2 size={18} strokeWidth={2.5} /></button>
-                    <button onClick={() => { setOffset(0); handleDelete(p.id); }} style={{ width: '56px', border: 'none', background: 'var(--danger-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Trash2 size={18} strokeWidth={2.5} /></button>
+                    <button onClick={() => { setOffset(0); handleEdit(p); }} style={{ width: '56px', border: 'none', background: 'var(--primary-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Edit2 size={18} strokeWidth={2} /></button>
+                    <button onClick={() => { setOffset(0); handleDelete(p.id); }} style={{ width: '56px', border: 'none', background: 'var(--danger-color)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Trash2 size={18} strokeWidth={2} /></button>
                 </div>
             )}
             {/* Foreground row */}
@@ -48,7 +48,7 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
                 style={{
                     position: 'relative', display: 'flex', alignItems: 'center', gap: '0.75rem',
                     padding: '0.625rem 0.75rem',
-                    background: isSelected ? 'var(--primary-light)' : 'white',
+                    background: isSelected ? 'var(--primary-light)' : 'var(--surface-color)',
                     border: `1.5px solid ${isSelected ? 'var(--primary-color)' : 'var(--glass-border)'}`,
                     borderRadius: '16px', boxShadow: 'var(--shadow-sm)', cursor: 'pointer',
                     transform: `translateX(${offset}px)`, transition: startX.current == null ? 'transform 0.25s var(--ease-out-expo)' : 'none',
@@ -58,7 +58,7 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
                     <div onClick={(e) => { e.stopPropagation(); toggleSelection(p.id); }}
                         style={{ flexShrink: 0, width: '44px', height: '44px', margin: '-8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                         <div style={{ width: '28px', height: '28px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: isSelected ? 'var(--primary-color)' : 'white', border: '1.5px solid var(--glass-border)', color: 'white' }}>
-                            {isSelected && <Check size={16} strokeWidth={3} />}
+                            {isSelected && <Check size={16} strokeWidth={2} />}
                         </div>
                     </div>
                 )}
@@ -72,7 +72,7 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
                     </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-                    {hasAlert && <span title="Alerte santé" style={{ display: 'flex', color: 'var(--danger-color)' }}><ShieldAlert size={16} strokeWidth={2.5} /></span>}
+                    {hasAlert && <span title="Alerte santé" style={{ display: 'flex', color: 'var(--danger-color)' }}><ShieldAlert size={16} strokeWidth={2} /></span>}
                     <RoleBadge role={p.role} />
                 </div>
             </div>
@@ -81,6 +81,8 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
 };
 
 const ParticipantTable = ({ participants, selectedParticipants, toggleSelection, toggleSelectAll, sortConfig, requestSort, handleViewDetails, handleEdit, handleDelete, groups, canEdit, isMobile }) => {
+    // « Tout sélectionné » = toutes les lignes VISIBLES sont dans la sélection (appartenance, pas le compte).
+    const allVisibleSelected = participants.length > 0 && participants.every(p => selectedParticipants.includes(p.id));
     // Group participants by group for mobile section headers
     const sections = useMemo(() => {
         if (!isMobile) return [];
@@ -136,12 +138,12 @@ const ParticipantTable = ({ participants, selectedParticipants, toggleSelection,
                                     style={{
                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                         width: '28px', height: '28px', borderRadius: '8px',
-                                        background: selectedParticipants.length > 0 && selectedParticipants.length === participants.length ? 'var(--primary-color)' : 'white',
+                                        background: allVisibleSelected ? 'var(--primary-color)' : 'white',
                                         border: '1.5px solid var(--glass-border)',
                                         color: 'white', transition: 'all 0.2s'
                                     }}
                                 >
-                                    {selectedParticipants.length > 0 && selectedParticipants.length === participants.length && <Check size={18} strokeWidth={3} />}
+                                    {allVisibleSelected && <Check size={18} strokeWidth={2} />}
                                 </div>
                             </div>
                         </th>
@@ -174,7 +176,7 @@ const ParticipantTable = ({ participants, selectedParticipants, toggleSelection,
                                                 color: 'white', transition: 'all 0.2s'
                                             }}
                                         >
-                                            {isSelected && <Check size={18} strokeWidth={3} />}
+                                            {isSelected && <Check size={18} strokeWidth={2} />}
                                         </div>
                                     </div>
                                 </td>
@@ -194,11 +196,11 @@ const ParticipantTable = ({ participants, selectedParticipants, toggleSelection,
                                 <td><HealthIndicators participant={p} /></td>
                                 <td style={{ textAlign: 'right', paddingRight: '2.5rem' }}>
                                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
-                                        <button onClick={() => handleViewDetails(p)} className="btn-icon-ref" title="Voir détails"><Eye size={16} strokeWidth={2.5} /></button>
+                                        <button onClick={() => handleViewDetails(p)} className="btn-icon-ref" title="Voir détails"><Eye size={16} strokeWidth={2} /></button>
                                         {canEdit && (
                                             <>
-                                                <button onClick={() => handleEdit(p)} className="btn-icon-ref" title="Éditer"><Edit2 size={16} strokeWidth={2.5} /></button>
-                                                <button onClick={() => handleDelete(p.id)} className="btn-icon-ref danger" title="Supprimer"><Trash2 size={16} strokeWidth={2.5} /></button>
+                                                <button onClick={() => handleEdit(p)} className="btn-icon-ref" title="Éditer"><Edit2 size={16} strokeWidth={2} /></button>
+                                                <button onClick={() => handleDelete(p.id)} className="btn-icon-ref danger" title="Supprimer"><Trash2 size={16} strokeWidth={2} /></button>
                                             </>
                                         )}
                                     </div>

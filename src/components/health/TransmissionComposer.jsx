@@ -48,10 +48,10 @@ export default function TransmissionComposer({ children = [], transmissions = []
     if (!canEdit) return null;
 
     return (
-        <div className="card-glass" style={{ borderRadius: '20px', border: '1.5px solid var(--glass-border)', background: 'white', overflow: 'hidden' }}>
+        <div className="card-glass" style={{ borderRadius: '20px', overflow: 'hidden' }}>
             <button onClick={() => setOpen(o => !o)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '1rem 1.25rem', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                 <div style={{ background: 'var(--primary-light)', color: 'var(--primary-color)', borderRadius: '10px', padding: '0.5rem', display: 'flex' }}>
-                    <MessageSquareText size={18} strokeWidth={2.5} />
+                    <MessageSquareText size={18} strokeWidth={2} />
                 </div>
                 <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: '900', fontSize: '0.92rem', color: 'var(--text-main)' }}>Laisser une consigne / relève</div>
@@ -86,10 +86,10 @@ export default function TransmissionComposer({ children = [], transmissions = []
                                 <button key={p.id} onClick={() => setPriority(p.id)} style={{
                                     display: 'flex', alignItems: 'center', gap: '4px', padding: '0.45rem 0.85rem', borderRadius: '10px', cursor: 'pointer',
                                     border: '1.5px solid', borderColor: priority === p.id ? p.color : 'var(--glass-border)',
-                                    background: priority === p.id ? p.color : 'white', color: priority === p.id ? 'white' : 'var(--text-muted)',
+                                    background: priority === p.id ? p.color : 'var(--surface-color)', color: priority === p.id ? 'white' : 'var(--text-muted)',
                                     fontWeight: '900', fontSize: '0.75rem'
                                 }}>
-                                    {priority === p.id && <Check size={12} strokeWidth={3} />} {p.label}
+                                    {priority === p.id && <Check size={12} strokeWidth={2} />} {p.label}
                                 </button>
                             ))}
                         </div>

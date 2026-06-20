@@ -41,7 +41,7 @@ const DirectoryFilters = ({ searchTerm, setSearchTerm, filterRole, setFilterRole
                         onClick={() => setSearchTerm('')}
                         style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', background: 'rgba(0,0,0,0.05)', border: 'none', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)' }}
                     >
-                        <X size={14} strokeWidth={3} />
+                        <X size={14} strokeWidth={2} />
                     </button>
                 )}
             </div>
@@ -71,12 +71,12 @@ const DirectoryFilters = ({ searchTerm, setSearchTerm, filterRole, setFilterRole
                         <button
                             style={{ width: '36px', height: '36px', borderRadius: '10px', background: viewMode === 'table' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'table' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}
                             onClick={() => setViewMode('table')} title="Vue Liste">
-                            <LayoutList size={18} color={viewMode === 'table' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={viewMode === 'table' ? 2.5 : 2} />
+                            <LayoutList size={18} color={viewMode === 'table' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={2} />
                         </button>
                         <button
                             style={{ width: '36px', height: '36px', borderRadius: '10px', background: viewMode === 'grid' ? 'white' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: viewMode === 'grid' ? 'var(--shadow-sm)' : 'none', transition: 'all 0.3s' }}
                             onClick={() => setViewMode('grid')} title="Vue Cartes">
-                            <LayoutGrid size={18} color={viewMode === 'grid' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={viewMode === 'grid' ? 2.5 : 2} />
+                            <LayoutGrid size={18} color={viewMode === 'grid' ? 'var(--primary-color)' : 'var(--text-muted)'} strokeWidth={2} />
                         </button>
                     </div>
                 )}

@@ -35,7 +35,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                 }}>
                     <button onClick={() => setViewingParticipant(null)}
                         style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: '12px', padding: '8px', border: 'none', cursor: 'pointer', backdropFilter: 'blur(10px)', display: 'flex' }}>
-                        <X size={20} strokeWidth={2.5} />
+                        <X size={20} strokeWidth={2} />
                     </button>
                 </div>
 
@@ -49,7 +49,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                 <div style={{ flex: 1, minHeight: 0, padding: '1.25rem 2rem 2.5rem 2.5rem', overflowY: 'auto' }} className="no-scrollbar">
                     {/* Profile Header (nom + badges) */}
                     <div style={{ marginBottom: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)', margin: '0 0 0.5rem 0', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', textAlign: 'center', letterSpacing: '-0.03em' }}>
+                        <h2 style={{ fontSize: '1.75rem', color: 'var(--text-main)', margin: '0 0 0.5rem 0', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', textAlign: 'center', letterSpacing: '-0.03em' }}>
                             {viewingParticipant.firstName} <span style={{ textTransform: 'uppercase' }}>{viewingParticipant.lastName}</span>
                         </h2>
                         <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -60,11 +60,11 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
 
                     {/* Quick Stats Grid */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '2rem' }}>
-                        <div className="card-glass" style={{ padding: '1rem', background: 'white', textAlign: 'center', borderRadius: '20px' }}>
+                        <div className="card-glass" style={{ padding: '1rem', textAlign: 'center', borderRadius: '20px' }}>
                             <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Âge</div>
                             <div style={{ color: 'var(--text-main)', fontWeight: '900', fontSize: '1.1rem' }}>{age || '—'}</div>
                         </div>
-                        <div className="card-glass" style={{ padding: '1rem', background: 'white', textAlign: 'center', borderRadius: '20px' }}>
+                        <div className="card-glass" style={{ padding: '1rem', textAlign: 'center', borderRadius: '20px' }}>
                             <div style={{ color: 'var(--text-muted)', fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '4px' }}>Date Naiss.</div>
                             <div style={{ color: 'var(--text-main)', fontWeight: '900', fontSize: '1.1rem' }}>{viewingParticipant.birthDate || '—'}</div>
                         </div>
@@ -74,10 +74,10 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         
                         {/* Medical / Alerte Section */}
-                        {(viewingParticipant.allergies || viewingParticipant.constraints) ? (
+                        {(viewingParticipant.allergies || viewingParticipant.diet || viewingParticipant.constraints) ? (
                             <div style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: '1.5px solid oklch(62% 0.2 28 / 0.15)', borderRadius: '24px', padding: '1.5rem', color: 'var(--danger-color)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '0.85rem', marginBottom: '1rem' }}>
-                                    <ShieldAlert size={20} strokeWidth={2.5} /> SÉCURITÉ MÉDICALE
+                                    <ShieldAlert size={20} strokeWidth={2} /> SÉCURITÉ MÉDICALE
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     {viewingParticipant.allergies && (
@@ -86,9 +86,15 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                                             <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem' }}>{viewingParticipant.allergies}</div>
                                         </div>
                                     )}
+                                    {viewingParticipant.diet && (
+                                        <div>
+                                            <div style={{ fontSize: '10px', fontWeight: '950', opacity: 0.6, marginBottom: '2px' }}>RÉGIME ALIMENTAIRE</div>
+                                            <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem' }}>{viewingParticipant.diet}</div>
+                                        </div>
+                                    )}
                                     {viewingParticipant.constraints && (
                                         <div>
-                                            <div style={{ fontSize: '10px', fontWeight: '950', opacity: 0.6, marginBottom: '2px' }}>CONTRAINTES / RÉGIME</div>
+                                            <div style={{ fontSize: '10px', fontWeight: '950', opacity: 0.6, marginBottom: '2px' }}>REMARQUES</div>
                                             <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem' }}>{viewingParticipant.constraints}</div>
                                         </div>
                                     )}
@@ -105,7 +111,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                         {viewingParticipant.role !== 'child' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <h3 style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0.5rem 0 0 0' }}>Informations Professionnelles</h3>
-                                <div className="card-glass" style={{ background: 'white', padding: '1.5rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                                <div className="card-glass" style={{ padding: '1.5rem', borderRadius: '24px', display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
                                     {viewingParticipant.training && (
                                         <div style={{ display: 'flex', gap: '1rem' }}>
                                             <GraduationCap size={18} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
@@ -150,7 +156,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                         {viewingParticipant.role === 'child' && viewingParticipant.pocketMoney && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 <h3 style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.12em', margin: '0.5rem 0 0 0' }}>Gestion de l'argent de poche</h3>
-                                <div className="card-glass" style={{ background: 'white', padding: '1.75rem', borderRadius: '24px' }}>
+                                <div className="card-glass" style={{ padding: '1.75rem', borderRadius: '24px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                                         <div>
                                             <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', marginBottom: '4px' }}>SOLDE ACTUEL</div>
@@ -183,7 +189,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                                             </div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                                 {viewingParticipant.pocketMoney.history.slice(0, 3).map((tx) => (
-                                                    <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '12px', fontSize: '0.85rem' }}>
+                                                    <div key={tx.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', borderRadius: '12px', fontSize: '0.85rem' }}>
                                                         <span style={{ fontWeight: '800' }}>{tx.description}</span>
                                                         <span style={{ fontWeight: '950', color: 'var(--danger-color)' }}>-{Number(tx.amount || 0).toFixed(2)} €</span>
                                                     </div>
@@ -205,7 +211,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                                 setViewingParticipant(null);
                                 handleEdit(p);
                             }} className="btn btn-primary" style={{ flex: 1.5, padding: '1rem', borderRadius: '16px', fontWeight: '950', gap: '0.75rem' }}>
-                                <Edit2 size={18} strokeWidth={2.5} /> Modifier la fiche
+                                <Edit2 size={18} strokeWidth={2} /> Modifier la fiche
                             </button>
                         </div>
                     )}

@@ -17,7 +17,7 @@ export default function SyncStatus({ status, isSyncing, lastSyncAt, onRefresh, i
             title={timeLabel ? `Dernière synchro à ${timeLabel} — appuyer pour actualiser` : 'Actualiser'}
             className="btn-icon-ref"
             style={{
-                background: 'white', borderRadius: '100px', height: '44px',
+                background: 'var(--surface-color)', borderRadius: '100px', height: '44px',
                 padding: isMobile ? '0' : '0 1rem', width: isMobile ? '44px' : 'auto',
                 flexShrink: 0,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
@@ -25,9 +25,9 @@ export default function SyncStatus({ status, isSyncing, lastSyncAt, onRefresh, i
                 whiteSpace: 'nowrap'
             }}
         >
-            {isSyncing ? <RefreshCw size={16} strokeWidth={3} className="spin" style={{ flexShrink: 0 }} />
-                : offline ? <CloudOff size={16} strokeWidth={2.5} style={{ flexShrink: 0 }} />
-                : <Cloud size={16} strokeWidth={2.5} style={{ flexShrink: 0 }} />}
+            {isSyncing ? <RefreshCw size={16} strokeWidth={2} className="spin" style={{ flexShrink: 0 }} />
+                : offline ? <CloudOff size={16} strokeWidth={2} style={{ flexShrink: 0 }} />
+                : <Cloud size={16} strokeWidth={2} style={{ flexShrink: 0 }} />}
             {!isMobile && (
                 <span style={{ whiteSpace: 'nowrap' }}>{label}{!isSyncing && !offline && timeLabel ? ` · ${timeLabel}` : ''}</span>
             )}

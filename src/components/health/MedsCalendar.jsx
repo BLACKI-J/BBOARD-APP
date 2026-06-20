@@ -39,23 +39,23 @@ export default function MedsCalendar({ selectedDate, onSelect, datesWithRecords 
     const longLabel = selDate.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
     return (
-        <div style={{ background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '20px', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+        <div style={{ background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', borderRadius: '20px', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
             {/* Bar */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem' }}>
                 <button onClick={() => shiftDay(-1)} title="Jour précédent"
-                    style={{ width: '38px', height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 }}>
+                    style={{ width: '38px', height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-muted)', flexShrink: 0 }}>
                     <ChevronLeft size={18} />
                 </button>
 
                 <button onClick={() => setOpen(o => !o)}
-                    style={{ flex: 1, height: '38px', borderRadius: '12px', border: '1.5px solid', borderColor: open ? 'var(--primary-color)' : 'var(--glass-border)', background: open ? 'var(--primary-light)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-main)', fontWeight: '900', fontSize: isMobile ? '0.8rem' : '0.9rem', textTransform: 'capitalize', minWidth: 0 }}>
+                    style={{ flex: 1, height: '38px', borderRadius: '12px', border: '1.5px solid', borderColor: open ? 'var(--primary-color)' : 'var(--glass-border)', background: open ? 'var(--primary-light)' : 'var(--surface-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-main)', fontWeight: '900', fontSize: isMobile ? '0.8rem' : '0.9rem', textTransform: 'capitalize', minWidth: 0 }}>
                     <Calendar size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
                     <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{longLabel}</span>
                     <ChevronDown size={15} style={{ transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'none', flexShrink: 0, opacity: 0.5 }} />
                 </button>
 
                 <button onClick={() => shiftDay(1)} disabled={isToday} title="Jour suivant"
-                    style={{ width: '38px', height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isToday ? 'not-allowed' : 'pointer', color: 'var(--text-muted)', opacity: isToday ? 0.4 : 1, flexShrink: 0 }}>
+                    style={{ width: '38px', height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: isToday ? 'not-allowed' : 'pointer', color: 'var(--text-muted)', opacity: isToday ? 0.4 : 1, flexShrink: 0 }}>
                     <ChevronRight size={18} />
                 </button>
 
@@ -71,11 +71,11 @@ export default function MedsCalendar({ selectedDate, onSelect, datesWithRecords 
             {open && (
                 <div className="animate-fade-in" style={{ borderTop: '1px solid var(--glass-border)', padding: '0.75rem 1rem 1rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                        <button onClick={() => shiftMonth(-1)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <button onClick={() => shiftMonth(-1)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                             <ChevronLeft size={16} />
                         </button>
-                        <div style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)' }}>{MONTHS[m]} {y}</div>
-                        <button onClick={() => shiftMonth(1)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <div style={{ fontWeight: '800', fontSize: '0.95rem', color: 'var(--text-main)' }}>{MONTHS[m]} {y}</div>
+                        <button onClick={() => shiftMonth(1)} style={{ minWidth: '44px', minHeight: '44px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                             <ChevronRight size={16} />
                         </button>
                     </div>

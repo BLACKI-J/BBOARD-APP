@@ -18,15 +18,15 @@ const returnStats = (items = []) => {
     return { total, done, pending: total - done };
 };
 const escapeHtml = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const tabStyle = (active) => ({ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '0.5rem 0.85rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', whiteSpace: 'nowrap', background: active ? 'white' : 'transparent', color: active ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: active ? 'var(--shadow-sm)' : 'none' });
+const tabStyle = (active) => ({ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '0.5rem 0.85rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', whiteSpace: 'nowrap', background: active ? 'var(--surface-color)' : 'transparent', color: active ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: active ? 'var(--shadow-sm)' : 'none' });
 
 const EmptyPanel = ({ icon: Icon = Box, title, text }) => (
     <div style={{ height: '70%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', border: '2px dashed var(--glass-border)', borderRadius: '40px', background: 'rgba(255,255,255,0.15)', backdropFilter: 'blur(10px)', margin: '1rem', position: 'relative', overflow: 'hidden' }}>
         <div style={{ position: 'absolute', width: '200px', height: '200px', background: 'var(--primary-gradient)', filter: 'blur(100px)', opacity: 0.1, zIndex: -1 }} />
-        <div style={{ width: '100px', height: '100px', background: 'white', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)', marginBottom: '1.5rem', border: '1.5px solid var(--glass-border)' }}>
-            <Icon size={40} strokeWidth={2.5} style={{ color: 'var(--primary-color)', opacity: 0.8 }} />
+        <div style={{ width: '100px', height: '100px', background: 'var(--surface-color)', borderRadius: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-md)', marginBottom: '1.5rem', border: '1.5px solid var(--glass-border)' }}>
+            <Icon size={40} strokeWidth={2} style={{ color: 'var(--primary-color)', opacity: 0.8 }} />
         </div>
-        <p style={{ fontWeight: '950', fontSize: '1.25rem', color: 'var(--text-main)', opacity: 0.8, letterSpacing: '-0.02em' }}>{title}</p>
+        <p style={{ fontWeight: '800', fontSize: '1.25rem', color: 'var(--text-main)', opacity: 0.8, letterSpacing: '-0.02em' }}>{title}</p>
         <p style={{ fontSize: '0.85rem', fontWeight: '800', opacity: 0.5, marginTop: '0.5rem', maxWidth: '320px', textAlign: 'center' }}>{text}</p>
     </div>
 );
@@ -45,8 +45,7 @@ const ChildCard = ({ child, itemCount, isActive, onClick, isCollapsed, progress 
             justifyContent: isCollapsed ? 'center' : 'flex-start',
             gap: isCollapsed ? '0' : '1rem',
             cursor: 'pointer',
-            border: isActive ? '1.5px solid var(--primary-color)' : '1.5px solid var(--glass-border)',
-            background: isActive ? 'white' : 'rgba(255, 255, 255, 0.4)',
+            border: isActive ? '1.5px solid var(--primary-color)' : undefined,
             transition: 'all 0.3s var(--ease-out-expo)',
             textAlign: 'left',
             borderRadius: isCollapsed ? '16px' : '20px',
@@ -78,7 +77,7 @@ const ChildCard = ({ child, itemCount, isActive, onClick, isCollapsed, progress 
                     {child.firstName} <span style={{ textTransform: 'uppercase', fontSize: '0.85em', opacity: 0.7 }}>{child.lastName}</span>
                 </div>
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '900', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <ShoppingBag size={10} strokeWidth={3} /> {itemCount} objets
+                    <ShoppingBag size={10} strokeWidth={2} /> {itemCount} objets
                     {progress && progress.total > 0 && (
                         <span style={{ marginLeft: 'auto', color: progress.done === progress.total ? 'var(--success-color)' : 'var(--text-muted)' }}>{progress.done}/{progress.total}</span>
                     )}
@@ -91,7 +90,7 @@ const ChildCard = ({ child, itemCount, isActive, onClick, isCollapsed, progress 
             </div>
         )}
         
-        {isActive && !isCollapsed && <ChevronRight size={18} strokeWidth={3} style={{ color: 'var(--primary-color)' }} />}
+        {isActive && !isCollapsed && <ChevronRight size={18} strokeWidth={2} style={{ color: 'var(--primary-color)' }} />}
     </button>
 );
 
@@ -107,7 +106,7 @@ const CategoryChip = ({ category, isActive, onClick, count }) => (
             cursor: 'pointer',
             border: '1.5px solid',
             borderColor: isActive ? 'var(--primary-color)' : 'var(--glass-border)',
-            background: isActive ? 'white' : 'rgba(255, 255, 255, 0.5)',
+            background: isActive ? 'var(--surface-color)' : 'rgba(255, 255, 255, 0.5)',
             color: isActive ? 'var(--primary-color)' : 'var(--text-muted)',
             display: 'flex',
             alignItems: 'center',
@@ -153,11 +152,11 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
     // ── Stepper de retour (départ), partagé mobile/desktop ──
     const stepper = (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button type="button" disabled={!canEdit || dep <= 0} onClick={() => setDep(dep - 1)} className="btn-icon-ref" style={{ width: '30px', height: '30px', borderRadius: '9px', background: 'white', opacity: (!canEdit || dep <= 0) ? 0.4 : 1 }}><Minus size={15} strokeWidth={3} /></button>
+            <button type="button" disabled={!canEdit || dep <= 0} onClick={() => setDep(dep - 1)} className="btn-icon-ref" style={{ width: '30px', height: '30px', borderRadius: '9px', background: 'var(--surface-color)', opacity: (!canEdit || dep <= 0) ? 0.4 : 1 }}><Minus size={15} strokeWidth={2} /></button>
             <div style={{ minWidth: '44px', textAlign: 'center', fontWeight: '950', fontSize: '0.95rem', color: returned ? 'var(--success-color)' : 'var(--text-main)' }}>{dep}/{arr}</div>
-            <button type="button" disabled={!canEdit || dep >= arr} onClick={() => setDep(dep + 1)} className="btn-icon-ref" style={{ width: '30px', height: '30px', borderRadius: '9px', background: 'white', opacity: (!canEdit || dep >= arr) ? 0.4 : 1 }}><Plus size={15} strokeWidth={3} /></button>
+            <button type="button" disabled={!canEdit || dep >= arr} onClick={() => setDep(dep + 1)} className="btn-icon-ref" style={{ width: '30px', height: '30px', borderRadius: '9px', background: 'var(--surface-color)', opacity: (!canEdit || dep >= arr) ? 0.4 : 1 }}><Plus size={15} strokeWidth={2} /></button>
             <button type="button" disabled={!canEdit} onClick={() => setDep(returned ? 0 : arr)} title={returned ? 'Annuler le retour' : 'Tout rendu'} style={{ marginLeft: '4px', display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '7px 11px', borderRadius: '10px', border: 'none', cursor: canEdit ? 'pointer' : 'default', fontWeight: '950', fontSize: '0.72rem', background: returned ? 'var(--success-color)' : 'var(--bg-secondary)', color: returned ? 'white' : 'var(--text-muted)' }}>
-                <Check size={13} strokeWidth={3.5} /> {returned ? 'Rendu' : 'Rendre'}
+                <Check size={13} strokeWidth={2} /> {returned ? 'Rendu' : 'Rendre'}
             </button>
         </div>
     );
@@ -165,21 +164,21 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
     // ── Méta (catégorie, enfant en vue globale, note) ──
     const meta = (
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '3px', flexWrap: 'wrap' }}>
-            {childName && <span style={{ fontSize: '9px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--cta-color)', background: 'oklch(60% 0.12 230 / 0.12)', padding: '2px 7px', borderRadius: '7px' }}>{childName}</span>}
+            {childName && <span style={{ fontSize: '9px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--cta-color)', background: 'var(--bg-secondary)', padding: '2px 7px', borderRadius: '7px' }}>{childName}</span>}
             <span style={{ fontSize: '9px', color: 'var(--primary-color)', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{item.category}</span>
             <span style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-muted)' }}>· {arr} arr.</span>
-            {item.notes && <span title={item.notes} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', fontWeight: '800', color: 'var(--warning-color)' }}><FileText size={11} strokeWidth={2.8} />{item.notes.length > 22 ? item.notes.slice(0, 22) + '…' : item.notes}</span>}
+            {item.notes && <span title={item.notes} style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '10px', fontWeight: '800', color: 'var(--warning-color)' }}><FileText size={11} strokeWidth={2} />{item.notes.length > 22 ? item.notes.slice(0, 22) + '…' : item.notes}</span>}
         </div>
     );
 
     const editPanel = editing && (
         <div style={{ flex: '1 1 100%', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--glass-border)' }}>
-            <input autoFocus value={draft.label} onChange={e => setDraft(d => ({ ...d, label: e.target.value }))} placeholder="Désignation" style={{ flex: '2 1 160px', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', padding: '0 0.75rem', fontWeight: '800', background: 'white' }} />
-            <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))} style={{ flex: '1 1 110px', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', fontWeight: '800', background: 'white' }}>
+            <input autoFocus value={draft.label} onChange={e => setDraft(d => ({ ...d, label: e.target.value }))} placeholder="Désignation" style={{ flex: '2 1 160px', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', padding: '0 0.75rem', fontWeight: '800', background: 'var(--surface-color)' }} />
+            <select value={draft.category} onChange={e => setDraft(d => ({ ...d, category: e.target.value }))} style={{ flex: '1 1 110px', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', fontWeight: '800', background: 'var(--surface-color)' }}>
                 {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
-            <input type="number" min="1" value={draft.arrival_qty} onChange={e => setDraft(d => ({ ...d, arrival_qty: e.target.value }))} title="Quantité à l'arrivée" style={{ flex: '0 0 68px', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', textAlign: 'center', fontWeight: '950', background: 'white' }} />
-            <input value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Note (ex : prénom marqué, tache…)" style={{ flex: '1 1 100%', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', padding: '0 0.75rem', fontWeight: '700', background: 'white' }} />
+            <input type="number" min="1" value={draft.arrival_qty} onChange={e => setDraft(d => ({ ...d, arrival_qty: e.target.value }))} title="Quantité à l'arrivée" style={{ flex: '0 0 68px', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', textAlign: 'center', fontWeight: '950', background: 'var(--surface-color)' }} />
+            <input value={draft.notes} onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))} placeholder="Note (ex : prénom marqué, tache…)" style={{ flex: '1 1 100%', height: '40px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', padding: '0 0.75rem', fontWeight: '700', background: 'var(--surface-color)' }} />
             <div style={{ display: 'flex', gap: '0.5rem', flex: '1 1 100%' }}>
                 <button onClick={saveEdit} className="btn btn-primary" style={{ flex: 1, height: '40px', borderRadius: '12px', fontWeight: '900' }}>Enregistrer</button>
                 <button onClick={() => setEditing(false)} className="btn btn-secondary" style={{ flex: 1, height: '40px', borderRadius: '12px', fontWeight: '900' }}>Annuler</button>
@@ -190,7 +189,7 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
     const thumb = photo ? (
         <img src={photo} alt={item.label} style={{ width: isMobile ? '52px' : '56px', height: isMobile ? '52px' : '56px', borderRadius: '16px', objectFit: 'cover', flexShrink: 0, border: '2px solid white', boxShadow: 'var(--shadow-sm)' }} />
     ) : (
-        <div style={{ width: isMobile ? '52px' : '56px', height: isMobile ? '52px' : '56px', borderRadius: '16px', flexShrink: 0, background: 'var(--bg-secondary)', border: '2px dashed var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Package size={isMobile ? 22 : 24} strokeWidth={2.5} style={{ opacity: 0.3 }} /></div>
+        <div style={{ width: isMobile ? '52px' : '56px', height: isMobile ? '52px' : '56px', borderRadius: '16px', flexShrink: 0, background: 'var(--bg-secondary)', border: '2px dashed var(--glass-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}><Package size={isMobile ? 22 : 24} strokeWidth={2} style={{ opacity: 0.3 }} /></div>
     );
 
     // ── Mobile : carte compacte ──
@@ -199,7 +198,7 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
             <div className="animate-fade-in" style={{
                 '--i': index, animationDelay: `calc(var(--i) * 30ms)`,
                 padding: '0.75rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.625rem',
-                background: returned ? 'oklch(62% 0.18 145 / 0.06)' : 'white', border: `1.5px solid ${returned ? 'var(--success-color)' : 'var(--glass-border)'}`, borderRadius: '18px', marginBottom: '8px'
+                background: returned ? 'oklch(62% 0.18 145 / 0.06)' : 'var(--surface-color)', border: `1.5px solid ${returned ? 'var(--success-color)' : 'var(--glass-border)'}`, borderRadius: '18px', marginBottom: '8px'
             }}>
                 {thumb}
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -208,10 +207,10 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
                 </div>
                 {canEdit && (
                     <div style={{ display: 'flex', gap: '0.375rem', flexShrink: 0 }}>
-                        {onAssign && <button onClick={() => onAssign(item)} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'white' }} title="Attribuer"><UserPlus size={17} strokeWidth={2.5} /></button>}
-                        <button onClick={openEdit} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'white' }} title="Modifier"><Pencil size={16} strokeWidth={2.5} /></button>
-                        <button onClick={() => onTakePhoto(item.id)} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'white' }} title="Photo"><Camera size={17} strokeWidth={2.5} /></button>
-                        <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'white' }} title="Supprimer"><Trash2 size={17} strokeWidth={2.5} /></button>
+                        {onAssign && <button onClick={() => onAssign(item)} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'var(--surface-color)' }} title="Attribuer"><UserPlus size={17} strokeWidth={2} /></button>}
+                        <button onClick={openEdit} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'var(--surface-color)' }} title="Modifier"><Pencil size={16} strokeWidth={2} /></button>
+                        <button onClick={() => onTakePhoto(item.id)} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'var(--surface-color)' }} title="Photo"><Camera size={17} strokeWidth={2} /></button>
+                        <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '40px', height: '40px', borderRadius: '11px', background: 'var(--surface-color)' }} title="Supprimer"><Trash2 size={17} strokeWidth={2} /></button>
                     </div>
                 )}
                 <div style={{ flex: '1 1 100%' }}>{stepper}</div>
@@ -242,14 +241,14 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
             <div style={{ display: 'flex', gap: '0.5rem', marginLeft: 'auto' }}>
                 {canEdit && (
                     <>
-                        {onAssign && <button onClick={() => onAssign(item)} className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px' }} title="Attribuer à un enfant"><UserPlus size={17} strokeWidth={2.5} /></button>}
-                        <button onClick={openEdit} className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px' }} title="Modifier"><Pencil size={16} strokeWidth={2.5} /></button>
-                        <button onClick={() => onTakePhoto(item.id)} className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px' }} title="Prendre une photo"><Camera size={17} strokeWidth={2.5} /></button>
+                        {onAssign && <button onClick={() => onAssign(item)} className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px' }} title="Attribuer à un enfant"><UserPlus size={17} strokeWidth={2} /></button>}
+                        <button onClick={openEdit} className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px' }} title="Modifier"><Pencil size={16} strokeWidth={2} /></button>
+                        <button onClick={() => onTakePhoto(item.id)} className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px' }} title="Prendre une photo"><Camera size={17} strokeWidth={2} /></button>
                         <label className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px', cursor: 'pointer' }} title="Téléverser une image">
-                            <Upload size={17} strokeWidth={2.5} />
+                            <Upload size={17} strokeWidth={2} />
                             <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUpload(item.id, e.target.files?.[0])} />
                         </label>
-                        <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '38px', height: '38px', borderRadius: '12px' }} title="Supprimer"><Trash2 size={17} strokeWidth={2.5} /></button>
+                        <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '38px', height: '38px', borderRadius: '12px' }} title="Supprimer"><Trash2 size={17} strokeWidth={2} /></button>
                     </>
                 )}
             </div>
@@ -264,7 +263,6 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
     const ui = useUi();
     const allItems = inventoryItems;
     const [selectedChildId, setSelectedChildId] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [activeCategory, setActiveCategory] = useState('all');
     const [viewMode, setViewMode] = useState('inventory'); // inventory | departure | found
@@ -541,9 +539,11 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                 headers: actorHeaders,
                 body: JSON.stringify({ participantId: ownerId, imageBase64: compressed })
             });
-            if (res.ok) { 
+            if (res.ok) {
                 if (onRefresh) await onRefresh();
-                ui.toast('Photo ajoutée.', { type: 'success' }); 
+                ui.toast('Photo ajoutée.', { type: 'success' });
+            } else {
+                ui.toast('Échec de l\'envoi de la photo.', { type: 'error' });
             }
         } catch (err) { ui.toast('Erreur photo.', { type: 'error' }); }
     };
@@ -573,7 +573,8 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
         if (!canEdit || batchEntries.length === 0) return;
         setIsProcessingBatch(true);
         try {
-            let ok = 0, fail = 0, photoFail = 0;
+            let ok = 0, photoFail = 0;
+            const remaining = []; // n'est gardé que les ÉCHECS de création → réessai sans doublon
             for (const entry of batchEntries) {
                 const itemId = await saveItem({
                     label: entry.label,
@@ -593,18 +594,18 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         photoFail++; // objet créé, mais la photo n'a pas pu être envoyée
                     }
                 } else {
-                    fail++;
+                    remaining.push(entry);
                 }
             }
-            if (fail === 0 && photoFail === 0) {
+            if (remaining.length === 0 && photoFail === 0) {
                 ui.toast(`Lot importé (${ok}).`, { type: 'success' });
-                setBatchEntries([]); // ne vide que si tout a réussi (sinon on garde pour réessayer)
-            } else if (fail === 0) {
+            } else if (remaining.length === 0) {
                 ui.toast(`${ok} importé(s), ${photoFail} photo(s) en échec.`, { type: 'error' });
-                setBatchEntries([]); // objets créés : ne pas re-importer (doublons)
             } else {
-                ui.toast(`${ok} importé(s), ${fail} échec(s).`, { type: 'error' });
+                ui.toast(`${ok} importé(s), ${remaining.length} échec(s) conservé(s) pour réessai.`, { type: 'error' });
             }
+            // Les objets créés sont retirés (évite les doublons au réessai) ; seuls les échecs restent.
+            setBatchEntries(remaining);
             if (onRefresh) await onRefresh();
         } finally { setIsProcessingBatch(false); }
     };
@@ -640,12 +641,12 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                     {!isSidebarCollapsed && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                             <div style={{ background: 'var(--primary-gradient)', borderRadius: '10px', padding: '6px', color: 'white', display: 'flex' }}>
-                                <Users size={16} strokeWidth={2.5} />
+                                <Users size={16} strokeWidth={2} />
                             </div>
-                            <h3 style={{ margin: 0, fontSize: '11px', fontWeight: '950', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.12em' }}>Participants</h3>
+                            <h3 style={{ margin: 0, fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.12em' }}>Participants</h3>
                         </div>
                     )}
-                    <button className="btn-icon-ref" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}><List size={20} strokeWidth={2.5} /></button>
+                    <button className="btn-icon-ref" onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}><List size={20} strokeWidth={2} /></button>
                 </div>
                 <div style={{ 
                     flex: 1, 
@@ -661,8 +662,8 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         </div>
                     ))}
                     {foundItems.length > 0 && !isSidebarCollapsed && (
-                        <button onClick={() => setViewMode('found')} style={{ width: isMobile ? '180px' : '100%', flexShrink: 0, padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', borderRadius: '20px', border: viewMode === 'found' ? '1.5px solid var(--cta-color)' : '1.5px dashed var(--glass-border)', background: viewMode === 'found' ? 'oklch(60% 0.12 230 / 0.08)' : 'rgba(255,255,255,0.4)', textAlign: 'left' }}>
-                            <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'oklch(60% 0.12 230 / 0.15)', color: 'var(--cta-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><PackageSearch size={20} strokeWidth={2.5} /></div>
+                        <button onClick={() => setViewMode('found')} style={{ width: isMobile ? '180px' : '100%', flexShrink: 0, padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer', borderRadius: '20px', border: viewMode === 'found' ? '1.5px solid var(--cta-color)' : '1.5px dashed var(--glass-border)', background: viewMode === 'found' ? 'var(--bg-secondary)' : 'rgba(255,255,255,0.4)', textAlign: 'left' }}>
+                            <div style={{ width: '44px', height: '44px', borderRadius: '14px', background: 'var(--primary-light)', color: 'var(--cta-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><PackageSearch size={20} strokeWidth={2} /></div>
                             <div style={{ minWidth: 0 }}>
                                 <div style={{ fontWeight: '950', fontSize: '0.9rem', color: 'var(--text-main)' }}>Objets trouvés</div>
                                 <div style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{foundItems.length} non attribué(s)</div>
@@ -686,23 +687,23 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         <div style={{ position: 'relative', flex: 1, minWidth: '240px', maxWidth: '520px' }}>
                             <Search size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', opacity: 0.6 }} />
                             <input className="glass-input" placeholder={globalSearch ? 'Rechercher chez TOUS les enfants…' : 'Rechercher dans le matériel…'} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} style={{ paddingLeft: '48px', paddingRight: '110px', borderRadius: '100px', height: '48px', background: 'rgba(255,255,255,0.8)', fontWeight: '750' }} />
-                            <button onClick={() => setGlobalSearch(v => !v)} title="Chercher chez tous les enfants" style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', height: '36px', padding: '0 12px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '5px', background: globalSearch ? 'var(--primary-color)' : 'var(--bg-secondary)', color: globalSearch ? 'white' : 'var(--text-muted)' }}><Users size={13} strokeWidth={2.8} /> Tous</button>
+                            <button onClick={() => setGlobalSearch(v => !v)} title="Chercher chez tous les enfants" style={{ position: 'absolute', right: '6px', top: '50%', transform: 'translateY(-50%)', height: '36px', padding: '0 12px', borderRadius: '100px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.7rem', display: 'inline-flex', alignItems: 'center', gap: '5px', background: globalSearch ? 'var(--primary-color)' : 'var(--bg-secondary)', color: globalSearch ? 'white' : 'var(--text-muted)' }}><Users size={13} strokeWidth={2} /> Tous</button>
                         </div>
                         <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                            <button className="btn btn-secondary" style={{ padding: '0.75rem 1rem', borderRadius: '14px' }} onClick={() => onRefresh && onRefresh()} title="Actualiser"><RefreshCcw size={18} strokeWidth={2.5} /></button>
-                            {canEdit && <button className="btn btn-secondary" style={{ padding: '0.75rem 1rem', borderRadius: '14px' }} onClick={printChild} title="Imprimer le trousseau (enfant sélectionné)"><Printer size={18} strokeWidth={2.5} /></button>}
-                            {canEdit && <button className="btn btn-secondary" style={{ padding: '0.75rem 1rem', borderRadius: '14px' }} onClick={exportChildCsv} title="Exporter le trousseau (CSV)"><Download size={18} strokeWidth={2.5} /></button>}
-                            {isMobile && <button onClick={() => setIsControlHubOpen(true)} className="btn btn-primary" style={{ padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '950' }}><Plus size={18} strokeWidth={3} /> Scanner</button>}
+                            <button className="btn btn-secondary" style={{ padding: '0.75rem 1rem', borderRadius: '14px' }} onClick={() => onRefresh && onRefresh()} title="Actualiser"><RefreshCcw size={18} strokeWidth={2} /></button>
+                            {canEdit && <button className="btn btn-secondary" style={{ padding: '0.75rem 1rem', borderRadius: '14px' }} onClick={printChild} title="Imprimer le trousseau (enfant sélectionné)"><Printer size={18} strokeWidth={2} /></button>}
+                            {canEdit && <button className="btn btn-secondary" style={{ padding: '0.75rem 1rem', borderRadius: '14px' }} onClick={exportChildCsv} title="Exporter le trousseau (CSV)"><Download size={18} strokeWidth={2} /></button>}
+                            {isMobile && <button onClick={() => setIsControlHubOpen(true)} className="btn btn-primary" style={{ padding: '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '950' }}><Plus size={18} strokeWidth={2} /> Scanner</button>}
                         </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
                         <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-secondary)', borderRadius: '14px', padding: '4px' }}>
-                            <button onClick={() => { setViewMode('inventory'); setGlobalSearch(false); }} style={tabStyle(viewMode === 'inventory' && !globalSearch)}><Package size={14} strokeWidth={2.8} /> Inventaire</button>
-                            <button onClick={() => { setViewMode('departure'); setGlobalSearch(false); }} style={tabStyle(viewMode === 'departure')}><ClipboardCheck size={14} strokeWidth={2.8} /> Mode départ{departureGroups.length > 0 ? ` (${departureGroups.length})` : ''}</button>
+                            <button onClick={() => { setViewMode('inventory'); setGlobalSearch(false); }} style={tabStyle(viewMode === 'inventory' && !globalSearch)}><Package size={14} strokeWidth={2} /> Inventaire</button>
+                            <button onClick={() => { setViewMode('departure'); setGlobalSearch(false); }} style={tabStyle(viewMode === 'departure')}><ClipboardCheck size={14} strokeWidth={2} /> Mode départ{departureGroups.length > 0 ? ` (${departureGroups.length})` : ''}</button>
                         </div>
                         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.78rem', fontWeight: '900', color: 'var(--text-muted)' }}>
-                            <PackageCheck size={15} strokeWidth={2.8} style={{ color: 'var(--success-color)' }} /> {globalProgress.done}/{globalProgress.total} rendus
-                            {canEdit && <button onClick={exportAllCsv} title="Exporter tout l'inventaire (CSV)" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', padding: '4px' }}><Download size={15} strokeWidth={2.8} /></button>}
+                            <PackageCheck size={15} strokeWidth={2} style={{ color: 'var(--success-color)' }} /> {globalProgress.done}/{globalProgress.total} rendus
+                            {canEdit && <button onClick={exportAllCsv} title="Exporter tout l'inventaire (CSV)" style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', display: 'inline-flex', padding: '4px' }}><Download size={15} strokeWidth={2} /></button>}
                         </div>
                     </div>
                     {viewMode === 'inventory' && !globalSearch && (
@@ -714,9 +715,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                 </header>
 
                     <div style={{ flex: 1, overflowY: 'auto', overflowX: 'auto', padding: isMobile ? '1rem' : '2.5rem' }} className="no-scrollbar">
-                    {isLoading ? (
-                        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner-small" /></div>
-                    ) : globalSearch ? (
+                    {globalSearch ? (
                         !searchQuery.trim()
                             ? <EmptyPanel icon={Search} title="Recherche globale" text="Tapez un mot pour retrouver un objet chez n'importe quel enfant." />
                             : globalResults.length === 0
@@ -739,7 +738,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                                             <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>{childNameById[g.child.id]}</div>
                                             <span style={{ fontSize: '0.72rem', fontWeight: '900', color: 'var(--danger-color)', background: 'oklch(62% 0.18 20 / 0.1)', padding: '2px 8px', borderRadius: '8px' }}>{g.items.length} à rendre</span>
-                                            {canEdit && <button onClick={() => markGroupReturned(g.items)} style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.74rem', background: 'var(--success-color)', color: 'white' }}><Check size={14} strokeWidth={3} /> Tout rendu</button>}
+                                            {canEdit && <button onClick={() => markGroupReturned(g.items)} style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.74rem', background: 'var(--success-color)', color: 'white' }}><Check size={14} strokeWidth={2} /> Tout rendu</button>}
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                             {g.items.map((item, idx) => <ItemRow key={item.id} index={idx} item={item} onPatch={patchItem} onDelete={deleteItem} canEdit={canEdit} onTakePhoto={(id) => requestCapture(p => handleUploadAction(id, p))} onUpload={handleUploadAction} isMobile={isMobile} />)}
@@ -774,14 +773,14 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         display: 'flex', justifyContent: isActionPanelCollapsed ? 'center' : 'space-between', alignItems: 'center'
                     }}>
                         <button className="btn-icon-ref" onClick={() => setIsActionPanelCollapsed(!isActionPanelCollapsed)}>
-                            <RefreshCcw size={20} strokeWidth={2.5} style={{ transform: isActionPanelCollapsed ? 'rotate(90deg)' : 'none', transition: 'transform 0.3s' }} />
+                            <RefreshCcw size={20} strokeWidth={2} style={{ transform: isActionPanelCollapsed ? 'rotate(90deg)' : 'none', transition: 'transform 0.3s' }} />
                         </button>
                         {!isActionPanelCollapsed && (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '8px', padding: '6px', color: 'oklch(62% 0.18 20)' }}>
-                                    <Sparkles size={16} strokeWidth={2.5} />
+                                <div style={{ background: 'var(--primary-light)', borderRadius: '8px', padding: '6px', color: 'var(--primary-color)' }}>
+                                    <Sparkles size={16} strokeWidth={2} />
                                 </div>
-                                <h3 style={{ margin: 0, fontSize: '11px', fontWeight: '950', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.12em' }}>Actions & Scan</h3>
+                                <h3 style={{ margin: 0, fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.12em' }}>Actions & Scan</h3>
                             </div>
                         )}
                     </div>
@@ -800,7 +799,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                 <>
                     {isControlHubOpen && <div className="modal-overlay animate-fade-in" style={{ zIndex: 100 }} onClick={() => setIsControlHubOpen(false)} />}
                     <div style={{ 
-                        position: 'fixed', bottom: 0, left: 0, right: 0, background: 'white', borderTopLeftRadius: '32px', borderTopRightRadius: '32px', 
+                        position: 'fixed', bottom: 0, left: 0, right: 0, background: 'var(--surface-color)', borderTopLeftRadius: '32px', borderTopRightRadius: '32px',
                         zIndex: 101, transform: isControlHubOpen ? 'translateY(0)' : 'translateY(100%)', transition: 'transform 0.4s var(--ease-out-expo)',
                         maxHeight: '90vh', overflowY: 'auto', boxShadow: '0 -20px 60px oklch(0% 0 0 / 0.15)',
                         paddingBottom: 'calc(1rem + env(safe-area-inset-bottom))'
@@ -808,7 +807,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                         <div style={{ width: '40px', height: '5px', background: 'var(--bg-secondary)', borderRadius: '10px', margin: '1rem auto', opacity: 0.5 }} />
                         <div style={{ padding: '0 2rem 2rem 2rem' }}>
                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Scan & Ajout</h3>
+                                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Scan & Ajout</h3>
                                 <button className="btn-icon-ref" onClick={() => setIsControlHubOpen(false)}><X size={24} /></button>
                             </div>
                             <ControlHub
@@ -817,7 +816,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                                 canSearchAI={canSearchAI} aiResults={aiResults} isSearchingAi={isSearchingAi} runAiSearch={runAiSearch} CATEGORIES={CATEGORIES}
                                 onScanObject={() => requestCapture(photo => handleUploadAction('quick-add', photo))}
                                 onScanSearch={() => requestCapture(photo => runAiSearch(photo))}
-                                selectedChildId={selectedChildId} onRefresh={onRefresh} actorHeaders={actorHeaders}
+                                selectedChildId={selectedChildId} onRefresh={onRefresh} actorHeaders={actorHeaders} childNameById={childNameById}
                             />
                         </div>
                     </div>
@@ -853,8 +852,8 @@ const ControlHub = ({
         <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
             <section>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                    <div style={{ background: 'var(--primary-light)', padding: '6px', borderRadius: '8px', color: 'var(--primary-color)' }}><Plus size={16} strokeWidth={3} /></div>
-                    <h4 style={{ margin: 0, fontSize: '11px', fontWeight: '950', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Saisie Directe</h4>
+                    <div style={{ background: 'var(--primary-light)', padding: '6px', borderRadius: '8px', color: 'var(--primary-color)' }}><Plus size={16} strokeWidth={2} /></div>
+                    <h4 style={{ margin: 0, fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Saisie Directe</h4>
                 </div>
                 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -873,11 +872,11 @@ const ControlHub = ({
                             <img src={newItem.photo} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(0,0,0,0.4), transparent)', padding: '1.25rem' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <div style={{ background: 'white', padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950', color: 'var(--primary-color)' }}>
+                                    <div style={{ background: 'var(--surface-color)', padding: '4px 10px', borderRadius: '8px', fontSize: '10px', fontWeight: '950', color: 'var(--primary-color)' }}>
                                         {isSearchingAi ? 'Analyse IA...' : 'Objet détecté'}
                                     </div>
-                                    <button onClick={() => setNewItem(prev => ({ ...prev, photo: '', label: '' }))} aria-label="Retirer la photo" style={{ background: 'white', color: 'var(--danger-color)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        <X size={18} strokeWidth={3} />
+                                    <button onClick={() => setNewItem(prev => ({ ...prev, photo: '', label: '' }))} aria-label="Retirer la photo" style={{ background: 'var(--surface-color)', color: 'var(--danger-color)', border: 'none', borderRadius: '50%', width: '40px', height: '40px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <X size={18} strokeWidth={2} />
                                     </button>
                                 </div>
                             </div>
@@ -895,16 +894,16 @@ const ControlHub = ({
                                     clearTimeout(focusScrollTimer.current);
                                     focusScrollTimer.current = setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 250);
                                 }}
-                                style={{ height: '52px', background: 'white', borderRadius: '16px', border: '1.5px solid var(--glass-border)', paddingLeft: '1.25rem', fontWeight: '800' }}
+                                style={{ height: '52px', background: 'var(--surface-color)', borderRadius: '16px', border: '1.5px solid var(--glass-border)', paddingLeft: '1.25rem', fontWeight: '800' }}
                             />
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 90px', gap: '0.75rem' }}>
-                            <select className="glass-input" value={newItem.category} onChange={(e) => setNewItem(p => ({ ...p, category: e.target.value }))} style={{ height: '52px', background: 'white', borderRadius: '16px', border: '1.5px solid var(--glass-border)', fontWeight: '800', cursor: 'pointer', paddingRight: '2rem' }}>
+                            <select className="glass-input" value={newItem.category} onChange={(e) => setNewItem(p => ({ ...p, category: e.target.value }))} style={{ height: '52px', background: 'var(--surface-color)', borderRadius: '16px', border: '1.5px solid var(--glass-border)', fontWeight: '800', cursor: 'pointer', paddingRight: '2rem' }}>
                                 {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat.toUpperCase()}</option>)}
                             </select>
                             <div style={{ position: 'relative' }}>
-                                <input className="glass-input" type="number" value={newItem.arrival_qty} onChange={(e) => setNewItem(p => ({ ...p, arrival_qty: Number(e.target.value) }))} style={{ height: '52px', background: 'white', borderRadius: '16px', border: '1.5px solid var(--glass-border)', textAlign: 'center', fontWeight: '950', padding: '0 5px' }} />
-                                <div style={{ position: 'absolute', top: '-8px', right: '10px', background: 'white', padding: '0 4px', fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)' }}>QTY</div>
+                                <input className="glass-input" type="number" value={newItem.arrival_qty} onChange={(e) => setNewItem(p => ({ ...p, arrival_qty: Number(e.target.value) }))} style={{ height: '52px', background: 'var(--surface-color)', borderRadius: '16px', border: '1.5px solid var(--glass-border)', textAlign: 'center', fontWeight: '950', padding: '0 5px' }} />
+                                <div style={{ position: 'absolute', top: '-8px', right: '10px', background: 'var(--surface-color)', padding: '0 4px', fontSize: '9px', fontWeight: '950', color: 'var(--text-muted)' }}>QTY</div>
                             </div>
                         </div>
                     </div>
@@ -937,12 +936,12 @@ const ControlHub = ({
 
             <section>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                    <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '6px', borderRadius: '8px', color: 'oklch(62% 0.18 20)' }}><Layers size={16} strokeWidth={3} /></div>
-                    <h4 style={{ margin: 0, fontSize: '11px', fontWeight: '950', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Import Express (Lot)</h4>
+                    <div style={{ background: 'var(--primary-light)', padding: '6px', borderRadius: '8px', color: 'var(--primary-color)' }}><Layers size={16} strokeWidth={2} /></div>
+                    <h4 style={{ margin: 0, fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Import Express (Lot)</h4>
                 </div>
                 <label style={{ 
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px', 
-                    background: 'white', borderRadius: '24px', border: '2px dashed var(--glass-border)', cursor: 'pointer', transition: 'all 0.3s'
+                    background: 'var(--surface-color)', borderRadius: '24px', border: '2px dashed var(--glass-border)', cursor: 'pointer', transition: 'all 0.3s'
                 }}>
                     <Upload size={24} style={{ opacity: 0.3, marginBottom: '8px' }} />
                     <span style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)' }}>Télécharger les photos</span>
@@ -960,19 +959,19 @@ const ControlHub = ({
             {canSearchAI && (
                 <section>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
-                        <div style={{ background: 'oklch(62% 0.18 232 / 0.1)', padding: '6px', borderRadius: '8px', color: 'oklch(62% 0.18 232)' }}><Search size={16} strokeWidth={3} /></div>
-                        <h4 style={{ margin: 0, fontSize: '11px', fontWeight: '950', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Scan Perdu (IA)</h4>
+                        <div style={{ background: 'var(--primary-light)', padding: '6px', borderRadius: '8px', color: 'var(--primary-color)' }}><Search size={16} strokeWidth={2} /></div>
+                        <h4 style={{ margin: 0, fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.08em' }}>Scan Perdu (IA)</h4>
                     </div>
                     <div style={{ background: 'rgba(255,255,255,0.6)', padding: '1.5rem', borderRadius: '24px', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                            <button onClick={onScanSearch} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', minHeight: '44px' }}><Camera size={16} strokeWidth={2.5} /></button>
-                            <label className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', cursor: 'pointer' }}><Upload size={16} strokeWidth={2.5} /><input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => runAiSearch(ev.target.result); r.readAsDataURL(f); } }} /></label>
+                            <button onClick={onScanSearch} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', minHeight: '44px' }}><Camera size={16} strokeWidth={2} /></button>
+                            <label className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', cursor: 'pointer' }}><Upload size={16} strokeWidth={2} /><input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => runAiSearch(ev.target.result); r.readAsDataURL(f); } }} /></label>
                         </div>
                         {isSearchingAi && <div style={{ textAlign: 'center' }}><div className="spinner-small" style={{ width: '18px', height: '18px', margin: '0 auto' }} /></div>}
                         {aiResults.length > 0 && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 {aiResults.map((res, i) => (
-                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'white', borderRadius: '16px', border: '1.5px solid var(--glass-border)' }}>
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.75rem', background: 'var(--surface-color)', borderRadius: '16px', border: '1.5px solid var(--glass-border)' }}>
                                         <img src={res.imageBase64} alt="Match" style={{ width: '40px', height: '40px', borderRadius: '10px', objectFit: 'cover' }} />
                                         <div style={{ minWidth: 0, flex: 1 }}>
                                             <div style={{ fontWeight: '950', fontSize: '0.85rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{res.label || 'Sans nom'}</div>

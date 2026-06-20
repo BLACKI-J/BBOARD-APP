@@ -43,6 +43,9 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// Préférence d'affichage « réduire la transparence » appliquée AVANT le rendu (sans flash).
+try { if (localStorage.getItem('colo-ui-solid') === '1') document.body.classList.add('ui-solid'); } catch { /* storage indispo */ }
+
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
         <UiProvider>

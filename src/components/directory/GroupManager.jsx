@@ -13,7 +13,7 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                     width: '100%',
                     maxWidth: '440px',
                     borderRadius: '28px',
-                    background: 'white',
+                    background: 'var(--surface-color)',
                     boxShadow: '0 25px 80px oklch(0% 0 0 / 0.15)',
                     overflow: 'hidden',
                     border: '1.5px solid var(--glass-border)'
@@ -30,16 +30,16 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
                         <div style={{ width: '36px', height: '36px', background: 'rgba(255,255,255,0.2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <LayoutGrid size={20} strokeWidth={2.5} />
+                            <LayoutGrid size={20} strokeWidth={2} />
                         </div>
-                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.02em' }}>Gestion des Groupes</h3>
+                        <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.02em' }}>Gestion des Groupes</h3>
                     </div>
                     <button
                         onClick={onClose}
                         aria-label="Fermer"
                         style={{ background: 'rgba(255,255,255,0.2)', border: 'none', cursor: 'pointer', color: 'white', borderRadius: '10px', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                     >
-                        <X size={20} strokeWidth={2.5} />
+                        <X size={20} strokeWidth={2} />
                     </button>
                 </div>
 
@@ -76,7 +76,7 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                                     width: '48px', height: '48px', borderRadius: '14px', padding: 0, flexShrink: 0
                                 }}
                             >
-                                <Plus size={24} strokeWidth={3} />
+                                <Plus size={24} strokeWidth={2} />
                             </button>
                         </form>
                      )}
@@ -95,9 +95,8 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                                     className="card-glass animate-fade-in" 
                                     style={{ 
                                         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                                        padding: '1.25rem 1.5rem', background: 'white', 
+                                        padding: '1.25rem 1.5rem',
                                         borderRadius: '18px',
-                                        border: '1.5px solid var(--glass-border)',
                                         borderLeft: `8px solid ${group.color}`,
                                         transition: 'transform 0.3s var(--ease-out-expo)'
                                     }}
@@ -111,7 +110,7 @@ const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setPar
                                             aria-label="Supprimer le groupe"
                                             style={{ width: '44px', height: '44px', borderRadius: '12px' }}
                                         >
-                                            <Trash2 size={16} strokeWidth={2.5} />
+                                            <Trash2 size={16} strokeWidth={2} />
                                         </button>
                                     )}
                                 </div>

@@ -58,7 +58,7 @@ export const GroupBadge = ({ groupId, groups = [] }) => {
     return (
         <span style={{ 
             padding: '2px 10px', borderRadius: '8px', fontWeight: '950', fontSize: '10px',
-            background: 'white', color: color, 
+            background: 'var(--surface-color)', color: color,
             border: '1.5px solid oklch(from ' + color + ' l c h / 0.25)',
             textTransform: 'uppercase', letterSpacing: '0.04em'
         }}>

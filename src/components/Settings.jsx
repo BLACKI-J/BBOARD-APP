@@ -100,6 +100,13 @@ export default function Settings({
     const [lastBackup, setLastBackup] = useState(() => {
         try { return localStorage.getItem('colo-last-backup') || ''; } catch { return ''; }
     });
+    // Affichage : « réduire la transparence » (verre → aplats). Persisté + appliqué sur <body>.
+    const [uiSolid, setUiSolid] = useState(() => typeof document !== 'undefined' && document.body.classList.contains('ui-solid'));
+    const toggleUiSolid = (on) => {
+        setUiSolid(on);
+        try { localStorage.setItem('colo-ui-solid', on ? '1' : '0'); } catch { /* storage indispo */ }
+        document.body.classList.toggle('ui-solid', on);
+    };
 
     const disabledUsers = accessControl?.disabledUsers || {};
 
@@ -196,7 +203,7 @@ export default function Settings({
         }));
     };
 
-    const updateUserRole = (userId, newRole) => {
+    const updateUserRole = async (userId, newRole) => {
         if (!canManageUsers) return;
         // Promouvoir/rétrograder en Direction exige manageAccess (anti-escalade)
         const target = participants.find(p => p.id === userId);
@@ -204,7 +211,8 @@ export default function Settings({
             ui.toast('Seule la Direction peut gérer le rôle Direction.', { type: 'error' });
             return;
         }
-        setParticipants(prev => prev.map(p => p.id === userId ? { ...p, role: newRole } : p));
+        const ok = await setParticipants(prev => prev.map(p => p.id === userId ? { ...p, role: newRole } : p));
+        if (ok === false) return; // échec serveur : pas de faux succès
         ui.toast('Rôle de l\'utilisateur mis à jour.', { type: 'success' });
     };
 
@@ -257,7 +265,10 @@ export default function Settings({
         const updatedPermissions = { ...accessControl.rolePermissions };
         delete updatedPermissions[key];
 
-        setParticipants(prev => prev.map(p => p.role === key ? { ...p, role: 'animator' } : p));
+        // Réassigner les membres AVANT de retirer le rôle : si l'écriture échoue,
+        // on n'orpheline pas des membres sur un rôle supprimé.
+        const saved = await setParticipants(prev => prev.map(p => p.role === key ? { ...p, role: 'animator' } : p));
+        if (saved === false) return;
 
         if (selectedConfigRole === key) {
             setSelectedConfigRole('animator');
@@ -613,11 +624,11 @@ export default function Settings({
     if (!isUnlocked) {
         return (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '2rem' }}>
-                <div className="card-glass animate-scale-in" style={{ maxWidth: '440px', width: '100%', padding: isMobile ? '2rem 1.5rem' : '3.5rem 2.5rem', textAlign: 'center', background: 'white', borderRadius: isMobile ? '28px' : '40px', boxShadow: '0 40px 100px oklch(0% 0 0 / 0.15)', border: '1.5px solid var(--glass-border)' }}>
+                <div className="card-glass animate-scale-in" style={{ maxWidth: '440px', width: '100%', padding: isMobile ? '2rem 1.5rem' : '3.5rem 2.5rem', textAlign: 'center', borderRadius: isMobile ? '28px' : '40px' }}>
                     <div style={{ background: 'var(--primary-gradient)', width: '80px', height: '80px', borderRadius: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem', color: 'white', transform: 'rotate(-5deg)', boxShadow: '0 12px 32px var(--shadow-color)' }}>
-                        <Lock size={36} strokeWidth={2.5} />
+                        <Lock size={36} strokeWidth={2} />
                     </div>
-                    <h2 style={{ fontSize: '1.85rem', fontWeight: '950', marginBottom: '0.75rem', color: 'var(--text-main)', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.04em' }}>Espace Direction</h2>
+                    <h2 style={{ fontSize: '1.85rem', fontWeight: '800', marginBottom: '0.75rem', color: 'var(--text-main)', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.04em' }}>Espace Direction</h2>
                     <p style={{ color: 'var(--text-muted)', marginBottom: '2.5rem', fontSize: '0.95rem', fontWeight: '850', lineHeight: '1.5' }}>Authentification requise pour accéder aux paramètres de sécurité et droits d'accès.</p>
                     <form onSubmit={handleUnlock}>
                         <div style={{ position: 'relative', marginBottom: '1.5rem' }}>
@@ -642,15 +653,13 @@ export default function Settings({
                 flexDirection: isMobile ? 'column' : 'row',
                 justifyContent: 'space-between',
                 alignItems: isMobile ? 'flex-start' : 'center',
-                background: 'white',
                 borderRadius: '24px',
-                border: '1.5px solid var(--glass-border)',
                 gap: '1rem'
             }}>
-                <SectionHeader hue="var(--sec-params)" icon={ShieldCheck} title="Paramètres" subtitle={currentUser?.firstName} />
+                <SectionHeader icon={ShieldCheck} title="Paramètres" subtitle={currentUser?.firstName} />
                 <div style={{ display: 'flex', gap: '0.75rem', width: isMobile ? '100%' : 'auto' }}>
                     <button className="btn btn-secondary" style={{ flex: isMobile ? 1 : 'none', padding: '0.625rem 1rem', borderRadius: '12px', fontWeight: '950', fontSize: '0.85rem', minHeight: '44px' }} onClick={() => setIsUnlocked(false)}>
-                        <Lock size={16} strokeWidth={2.5} /> Verrouiller
+                        <Lock size={16} strokeWidth={2} /> Verrouiller
                     </button>
                 </div>
             </div>
@@ -666,13 +675,13 @@ export default function Settings({
                     flexShrink: 0
                 }} className="no-scrollbar">
                     {[
-                        { id: 'overview', label: 'Vue d\'ensemble', icon: <LayoutDashboard size={18} strokeWidth={2.5} /> },
-                        { id: 'users', label: 'Équipe & Droits', icon: <Users size={18} strokeWidth={2.5} /> },
-                        { id: 'create_user', label: 'Créer Utilisateur', icon: <Sparkles size={18} strokeWidth={2.5} /> },
-                        { id: 'roles', label: 'Gestion des Rôles', icon: <Unlock size={18} strokeWidth={2.5} /> },
-                        { id: 'sections', label: 'Modules Visibles', icon: <Settings2 size={18} strokeWidth={2.5} /> },
-                        { id: 'security', label: 'Sécurité & PIN', icon: <KeyRound size={18} strokeWidth={2.5} /> },
-                        { id: 'maintenance', label: 'Maintenance & Logs', icon: <Database size={18} strokeWidth={2.5} /> },
+                        { id: 'overview', label: 'Vue d\'ensemble', icon: <LayoutDashboard size={18} strokeWidth={2} /> },
+                        { id: 'users', label: 'Équipe & Droits', icon: <Users size={18} strokeWidth={2} /> },
+                        { id: 'create_user', label: 'Créer Utilisateur', icon: <Sparkles size={18} strokeWidth={2} /> },
+                        { id: 'roles', label: 'Gestion des Rôles', icon: <Unlock size={18} strokeWidth={2} /> },
+                        { id: 'sections', label: 'Modules Visibles', icon: <Settings2 size={18} strokeWidth={2} /> },
+                        { id: 'security', label: 'Sécurité & PIN', icon: <KeyRound size={18} strokeWidth={2} /> },
+                        { id: 'maintenance', label: 'Maintenance & Logs', icon: <Database size={18} strokeWidth={2} /> },
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -688,7 +697,7 @@ export default function Settings({
                         >
                             <span style={{ display: 'flex', flexShrink: 0 }}>{tab.icon}</span>
                             <span>{tab.label}</span>
-                            {activeTab === tab.id && !isMobile && <ChevronRight size={14} style={{ marginLeft: 'auto' }} strokeWidth={3} />}
+                            {activeTab === tab.id && !isMobile && <ChevronRight size={14} style={{ marginLeft: 'auto' }} strokeWidth={2} />}
                         </button>
                     ))}
                 </div>
@@ -711,7 +720,7 @@ export default function Settings({
                                             <div style={{ background: 'var(--bg-secondary)', padding: '6px', borderRadius: '8px', color: stat.color }}>{stat.icon}</div>
                                             <div style={{ fontSize: '10px', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-muted)' }}>{stat.label}</div>
                                         </div>
-                                        <div style={{ fontSize: '2.5rem', fontWeight: '950', color: 'var(--text-main)', letterSpacing: '-0.04em', fontFamily: 'Bricolage Grotesque, sans-serif' }}>{stat.value}</div>
+                                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: 'var(--text-main)', letterSpacing: '-0.04em', fontFamily: 'Bricolage Grotesque, sans-serif' }}>{stat.value}</div>
                                     </div>
                                 ))}
                             </div>
@@ -719,8 +728,8 @@ export default function Settings({
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 400px', gap: '2rem' }}>
                                 <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                                        <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--danger-color)' }}><ShieldAlert size={20} strokeWidth={2.5} /></div>
-                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Points de Vigilance</h4>
+                                        <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--danger-color)' }}><ShieldAlert size={20} strokeWidth={2} /></div>
+                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Points de Vigilance</h4>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {vigilance.length === 0 ? (
@@ -740,8 +749,8 @@ export default function Settings({
                                 </div>
                                 <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                                        <div style={{ background: 'var(--bg-secondary)', padding: '8px', borderRadius: '10px', color: 'var(--text-main)' }}><History size={20} strokeWidth={2.5} /></div>
-                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Audit Récent</h4>
+                                        <div style={{ background: 'var(--bg-secondary)', padding: '8px', borderRadius: '10px', color: 'var(--text-main)' }}><History size={20} strokeWidth={2} /></div>
+                                        <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Audit Récent</h4>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                         {logs.slice(0, 6).map((log, i) => (
@@ -763,7 +772,7 @@ export default function Settings({
                     {activeTab === 'users' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                             <div style={{
-                                background: 'white', borderRadius: '24px', padding: isMobile ? '1rem' : '1.25rem 1.75rem',
+                                background: 'var(--surface-color)', borderRadius: '24px', padding: isMobile ? '1rem' : '1.25rem 1.75rem',
                                 border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: isMobile ? 'column' : 'row',
                                 gap: '1rem', alignItems: isMobile ? 'stretch' : 'center', position: 'sticky', top: 0, zIndex: 10, boxShadow: 'var(--shadow-lg)'
                             }}>
@@ -779,7 +788,7 @@ export default function Settings({
                                 <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-secondary)', borderRadius: '14px', padding: '4px', flexShrink: 0 }}>
                                     {[['all', 'Tous'], ['nopin', 'Sans PIN'], ['disabled', `Désactivés${staffDisabled ? ` (${staffDisabled})` : ''}`]].map(([val, lab]) => (
                                         <button key={val} type="button" onClick={() => setStatusFilter(val)}
-                                            style={{ padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', background: statusFilter === val ? 'white' : 'transparent', color: statusFilter === val ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: statusFilter === val ? 'var(--shadow-sm)' : 'none' }}>
+                                            style={{ padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.72rem', fontWeight: '900', border: 'none', cursor: 'pointer', whiteSpace: 'nowrap', background: statusFilter === val ? 'var(--surface-color)' : 'transparent', color: statusFilter === val ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: statusFilter === val ? 'var(--shadow-sm)' : 'none' }}>
                                             {lab}
                                         </button>
                                     ))}
@@ -827,16 +836,16 @@ export default function Settings({
                                                         </select>
                                                         {user.hasPin === false ? (
                                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'oklch(95% 0.05 28)', color: 'var(--danger-color)' }}>
-                                                                <AlertCircle size={10} strokeWidth={3} /> Aucun PIN
+                                                                <AlertCircle size={10} strokeWidth={2} /> Aucun PIN
                                                             </span>
                                                         ) : user.hasPin === true ? (
                                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'oklch(95% 0.06 145)', color: 'oklch(46% 0.16 145)' }}>
-                                                                <CheckCircle2 size={10} strokeWidth={3} /> PIN défini
+                                                                <CheckCircle2 size={10} strokeWidth={2} /> PIN défini
                                                             </span>
                                                         ) : null}
                                                         {isDisabled && (
                                                             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'var(--bg-secondary)', color: 'var(--text-muted)' }}>
-                                                                <Ban size={10} strokeWidth={3} /> Désactivé
+                                                                <Ban size={10} strokeWidth={2} /> Désactivé
                                                             </span>
                                                         )}
                                                     </div>
@@ -888,14 +897,14 @@ export default function Settings({
                                                     {canManageAccess && (
                                                         <button type="button" onClick={() => toggleUserDisabled(user.id)} className="btn btn-secondary"
                                                             style={{ flex: 1, padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', color: isDisabled ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                                                            <Power size={13} strokeWidth={2.8} /> {isDisabled ? 'Réactiver' : 'Désactiver'}
+                                                            <Power size={13} strokeWidth={2} /> {isDisabled ? 'Réactiver' : 'Désactiver'}
                                                         </button>
                                                     )}
                                                     {canManageUsers && (
                                                         <button type="button" onClick={() => handleDeleteUser(user.id)} className="btn btn-secondary"
                                                             style={{ padding: '0.5rem 0.7rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '900', color: 'var(--danger-color)', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
                                                             title="Supprimer ce membre">
-                                                            <Trash2 size={13} strokeWidth={2.8} />
+                                                            <Trash2 size={13} strokeWidth={2} />
                                                         </button>
                                                     )}
                                                 </div>
@@ -961,8 +970,8 @@ export default function Settings({
                     {activeTab === 'create_user' && (
                         <div className="glass-card animate-fade-in" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px', maxWidth: '600px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-                                <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Sparkles size={24} strokeWidth={2.5} /></div>
-                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Nouveau Membre</h3>
+                                <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Sparkles size={24} strokeWidth={2} /></div>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Nouveau Membre</h3>
                             </div>
 
                             <form onSubmit={handleAddUser} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
@@ -1008,8 +1017,8 @@ export default function Settings({
                             {/* Role management card */}
                             <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                                    <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '10px', color: 'var(--primary-color)' }}><Sparkles size={20} strokeWidth={2.5} /></div>
-                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '950' }}>Ajouter un Rôle personnalisé</h3>
+                                    <div style={{ background: 'var(--primary-light)', padding: '8px', borderRadius: '10px', color: 'var(--primary-color)' }}><Sparkles size={20} strokeWidth={2} /></div>
+                                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800' }}>Ajouter un Rôle personnalisé</h3>
                                 </div>
                                 <div style={{ display: 'flex', gap: '1rem', flexDirection: isMobile ? 'column' : 'row' }}>
                                     <input
@@ -1065,7 +1074,7 @@ export default function Settings({
                                 {/* Permissions configuration panel */}
                                 <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '20px' : '28px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                                     <div>
-                                        <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
+                                        <h3 style={{ margin: 0, fontSize: '1.3rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>
                                             Configuration : {roleLabels[selectedConfigRole] || selectedConfigRole}
                                         </h3>
                                         <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: '850' }}>
@@ -1153,24 +1162,24 @@ export default function Settings({
                     {activeTab === 'sections' && (
                         <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                                <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Settings2 size={24} strokeWidth={2.5} /></div>
-                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Modules de l'Interface</h3>
+                                <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Settings2 size={24} strokeWidth={2} /></div>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Modules de l'Interface</h3>
                             </div>
                             <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '3rem', fontWeight: '850', maxWidth: '600px', lineHeight: '1.6' }}>Masquez les modules non-essentiels pour optimiser le workflow de l'équipe d'animation pendant le séjour.</p>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '1.5rem' }}>
                                 {Object.entries(SECTION_LABELS).map(([key, label]) => (
                                     <label key={key} className="glass-card" style={{
                                         padding: '1.75rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer',
-                                        background: accessControl?.hiddenSections?.[key] ? 'var(--bg-secondary)' : 'white',
+                                        background: accessControl?.hiddenSections?.[key] ? 'var(--bg-secondary)' : undefined,
                                         opacity: accessControl?.hiddenSections?.[key] ? 0.6 : 1,
-                                        border: accessControl?.hiddenSections?.[key] ? '1.5px solid var(--glass-border)' : '1.5px solid var(--primary-color)',
+                                        border: accessControl?.hiddenSections?.[key] ? undefined : '1.5px solid var(--primary-color)',
                                         borderRadius: '24px', transition: 'all 0.3s var(--ease-out-expo)'
                                     }}>
                                         <span style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>{label}</span>
                                         <input
                                             type="checkbox"
                                             checked={!accessControl?.hiddenSections?.[key]}
-                                            onChange={e => setAccessControl(prev => ({ ...prev, hiddenSections: { ...prev.hiddenSections, [key]: !e.target.checked } }))}
+                                            onChange={e => { if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; } setAccessControl(prev => ({ ...prev, hiddenSections: { ...prev.hiddenSections, [key]: !e.target.checked } })); }}
                                             style={{ width: '24px', height: '24px' }}
                                         />
                                     </label>
@@ -1184,8 +1193,8 @@ export default function Settings({
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
                             <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-                                    <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><KeyRound size={24} strokeWidth={2.5} /></div>
-                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Paramètres de Sécurité</h3>
+                                    <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><KeyRound size={24} strokeWidth={2} /></div>
+                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Paramètres de Sécurité</h3>
                                 </div>
 
                                 <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '1.75rem 2rem', background: 'var(--bg-secondary)', borderRadius: '24px', marginBottom: '2.5rem', cursor: 'pointer' }}>
@@ -1196,10 +1205,18 @@ export default function Settings({
                                     <input type="checkbox" checked={isAttendanceEnabled} onChange={e => setIsAttendanceEnabled(e.target.checked)} style={{ width: '28px', height: '28px', flexShrink: 0, cursor: 'pointer', accentColor: 'var(--primary-color)' }} />
                                 </label>
 
-                                <div style={{ background: 'white', border: '2px solid var(--glass-border)', padding: isMobile ? '1.25rem' : '2.5rem', borderRadius: isMobile ? '20px' : '28px' }}>
+                                <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', padding: '1.75rem 2rem', background: 'var(--bg-secondary)', borderRadius: '24px', marginBottom: '2.5rem', cursor: 'pointer' }}>
+                                    <div>
+                                        <div style={{ fontWeight: '950', fontSize: '1.1rem', color: 'var(--text-main)' }}>Réduire la transparence</div>
+                                        <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '850', marginTop: '4px' }}>Remplace l'effet verre par des fonds pleins (lisibilité + fluidité sur appareils plus lents).</div>
+                                    </div>
+                                    <input type="checkbox" checked={uiSolid} onChange={e => toggleUiSolid(e.target.checked)} style={{ width: '28px', height: '28px', flexShrink: 0, cursor: 'pointer', accentColor: 'var(--primary-color)' }} />
+                                </label>
+
+                                <div style={{ background: 'var(--surface-color)', border: '2px solid var(--glass-border)', padding: isMobile ? '1.25rem' : '2.5rem', borderRadius: isMobile ? '20px' : '28px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
-                                        <Lock size={18} strokeWidth={2.5} style={{ color: 'var(--text-muted)' }} />
-                                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '950' }}>Modifier le code PIN d'accès Direction</h4>
+                                        <Lock size={18} strokeWidth={2} style={{ color: 'var(--text-muted)' }} />
+                                        <h4 style={{ margin: 0, fontSize: '1rem', fontWeight: '800' }}>Modifier le code PIN d'accès Direction</h4>
                                     </div>
                                     {!isChangingPin ? (
                                         <button className="btn btn-primary" onClick={() => setIsChangingPin(true)} style={{ width: '100%', height: '54px', borderRadius: '16px', fontWeight: '950' }}>Modifier mon code PIN</button>
@@ -1231,8 +1248,8 @@ export default function Settings({
                             </div>
                             <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2.5rem' }}>
-                                    <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Database size={24} strokeWidth={2.5} /></div>
-                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Maintenance & Data</h3>
+                                    <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><Database size={24} strokeWidth={2} /></div>
+                                    <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Maintenance & Data</h3>
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                                     {canManageAccess && (
@@ -1287,12 +1304,12 @@ export default function Settings({
                             <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2.5rem' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                        <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '12px', color: 'var(--text-main)' }}><FileClock size={24} strokeWidth={2.5} /></div>
-                                        <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Journal d'Activité</h3>
+                                        <div style={{ background: 'var(--bg-secondary)', padding: '10px', borderRadius: '12px', color: 'var(--text-main)' }}><FileClock size={24} strokeWidth={2} /></div>
+                                        <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Journal d'Activité</h3>
                                     </div>
                                     <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                                         <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px' }} onClick={fetchLogs}>Actualiser</button>
-                                        <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={exportLogsCsv}><Download size={15} strokeWidth={2.5} /> Exporter CSV</button>
+                                        <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px', display: 'inline-flex', alignItems: 'center', gap: '6px' }} onClick={exportLogsCsv}><Download size={15} strokeWidth={2} /> Exporter CSV</button>
                                         {canManageAccess && <button className="btn btn-secondary" style={{ padding: '0.75rem 1.25rem', borderRadius: '12px', fontWeight: '950', fontSize: '13px', color: 'var(--danger-color)' }} onClick={handleClearLogs}>Effacer</button>}
                                     </div>
                                 </div>
@@ -1312,8 +1329,8 @@ export default function Settings({
                                     ) : (
                                         filteredLogs.map((log, i) => (
                                             <div key={log.id || i} style={{ padding: '1.5rem', borderBottom: '1.5px solid var(--bg-secondary)', display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'oklch(20% 0.05 45 / 0.4)' }}>
-                                                    <FileClock size={22} strokeWidth={2.5} />
+                                                <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--text-muted)' }}>
+                                                    <FileClock size={22} strokeWidth={2} />
                                                 </div>
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)', letterSpacing: '-0.01em' }}>{log.action}</div>

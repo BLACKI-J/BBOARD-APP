@@ -79,14 +79,14 @@ export default function PullToRefresh({ onRefresh, disabled = false, className, 
                 <div style={{
                     position: 'absolute', top: 0, left: '50%', zIndex: 50,
                     transform: `translateX(-50%) translateY(${Math.max(pull - 36, 4)}px)`,
-                    width: '40px', height: '40px', borderRadius: '50%', background: 'white',
+                    width: '40px', height: '40px', borderRadius: '50%', background: 'var(--surface-color)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     boxShadow: '0 6px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--glass-border)',
                     color: ready || refreshing ? 'var(--primary-color)' : 'var(--text-muted)',
                     transition: refreshing ? 'transform 0.2s' : 'none', pointerEvents: 'none'
                 }}>
                     <RefreshCw
-                        size={18} strokeWidth={2.5}
+                        size={18} strokeWidth={2}
                         className={refreshing ? 'spin' : ''}
                         style={refreshing ? undefined : { transform: `rotate(${pull * 3}deg)` }}
                     />

@@ -3,7 +3,6 @@ import { AlertTriangle, Save, Printer, Trash2, Eye, ArrowLeft, Plus, History, Sp
 import { useUi } from '../ui/UiProvider';
 import { useUnsavedGuard } from '../utils/unsavedGuard';
 import { printHtml } from '../utils/printHtml';
-import SectionHeader from './common/SectionHeader';
 
 // Imports harmonisés depuis le sous-dossier incidents/
 import PrintContent from './incidents/IncidentPrint';
@@ -127,7 +126,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
     };
 
     const saveIncident = async (silent = false) => {
-        if (!canEdit && !silent) return;
+        if (!canEdit) return; // jamais d'écriture serveur pour un lecteur seul (même via impression)
         if (!silent) setSaveStatus('saving');
         const id = form.id || `incident_${Date.now()}`;
         const payload = { ...form, id, timestamp: new Date().toISOString() };
@@ -218,10 +217,10 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                 {/* Icon + titre compact sur mobile */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
                                     <div style={{ background: 'oklch(62% 0.2 var(--sec-fei))', borderRadius: '14px', padding: '10px', color: 'white', display: 'flex', flexShrink: 0 }}>
-                                        <AlertTriangle size={isMobile ? 18 : 22} strokeWidth={2.5} />
+                                        <AlertTriangle size={isMobile ? 18 : 22} strokeWidth={2} />
                                     </div>
                                     <div style={{ minWidth: 0 }}>
-                                        <div style={{ fontWeight: '950', fontSize: isMobile ? '0.88rem' : '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        <div style={{ fontWeight: '800', fontSize: isMobile ? '0.88rem' : '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.02em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {isMobile ? 'FEI' : "Feuille d'Événement Indésirable"}
                                         </div>
                                         <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Questionnaire FEI</div>
@@ -243,7 +242,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                             cursor: canEdit ? 'pointer' : 'not-allowed', flexShrink: 0
                                         }}
                                     >
-                                        {saveStatus === 'saved' ? <CheckCircle2 size={18} strokeWidth={2.5} /> : <Save size={18} strokeWidth={2.5} />}
+                                        {saveStatus === 'saved' ? <CheckCircle2 size={18} strokeWidth={2} /> : <Save size={18} strokeWidth={2} />}
                                     </button>
                                     <button
                                         className="btn-icon-ref"
@@ -251,11 +250,11 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                         title="Aperçu"
                                         style={{
                                             width: '44px', height: '44px', borderRadius: '12px',
-                                            background: 'white', color: 'var(--text-main)',
+                                            background: 'var(--surface-color)', color: 'var(--text-main)',
                                             cursor: 'pointer', flexShrink: 0
                                         }}
                                     >
-                                        <Eye size={18} strokeWidth={2.5} />
+                                        <Eye size={18} strokeWidth={2} />
                                     </button>
                                     <button
                                         onClick={handlePrint}
@@ -268,13 +267,13 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                             cursor: 'pointer', flexShrink: 0
                                         }}
                                     >
-                                        <Printer size={16} strokeWidth={2.5} />
+                                        <Printer size={16} strokeWidth={2} />
                                         {!isMobile && 'Imprimer'}
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="card-glass fei-form-card" style={{ background: 'white' }}>
+                            <div className="card-glass fei-form-card">
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: isMobile ? '1rem' : '1.5rem', marginBottom: isMobile ? '1.5rem' : '2.5rem' }}>
                                     <div style={{ flex: isMobile ? '1 1 100%' : '1', display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
                                         <label className="fei-label">Nom du Séjour</label>
@@ -363,11 +362,11 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                     <div style={{ 
                                                         width: '24px', height: '24px', borderRadius: '8px', 
                                                         border: isSelected ? 'none' : '2px solid var(--glass-border)', 
-                                                        background: isSelected ? 'var(--primary-color)' : 'white', 
+                                                        background: isSelected ? 'var(--primary-color)' : 'var(--surface-color)', 
                                                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                                                         transition: 'all 0.2s', color: 'white'
                                                     }}>
-                                                        {isSelected && <Check size={16} strokeWidth={3} />}
+                                                        {isSelected && <Check size={16} strokeWidth={2} />}
                                                     </div>
                                                     <span style={{ fontSize: '0.9rem', fontWeight: isSelected ? '800' : '700', color: isSelected ? 'var(--primary-color)' : 'var(--text-main)' }}>{type}</span>
                                                 </label>
@@ -377,7 +376,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2.5rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)' }}>
                                         <Users size={20} /> Membres Impliqués
                                     </div>
                                     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? '1rem' : '1.5rem' }}>
@@ -386,7 +385,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                 {form.reporters.map((row, i) => (
                                                     <div key={`rep-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', position: 'relative' }}>
-                                                        <div style={{ display: 'flex', gap: '0.5rem', background: 'white', padding: '0.5rem', borderRadius: '14px', border: '1px solid var(--glass-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
+                                                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '14px', border: '1px solid var(--glass-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                                                             <input className="glass-input" 
                                                                 style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.85rem', border: 'none', background: 'transparent' }} 
                                                                 placeholder="Prénom Nom" 
@@ -408,7 +407,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                             </button>
                                                         </div>
                                                         {autocomplete.section === 'reporters' && autocomplete.index === i && autocomplete.results.length > 0 && (
-                                                            <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'white', marginTop: '4px', padding: '0.5rem', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--glass-border)' }}>
+                                                            <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px', padding: '0.5rem', borderRadius: '12px' }}>
                                                                 {autocomplete.results.map(p => (
                                                                     <div key={p.id} onClick={() => selectParticipant('reporters', i, p)} style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="autocomplete-item">
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: '800' }}>{p.firstName} {p.lastName}</span>
@@ -419,7 +418,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                         )}
                                                     </div>
                                                 ))}
-                                                <button onClick={() => addPerson('reporters')} style={{ width: '100%', padding: '0.6rem', background: 'white', border: '1.5px dashed var(--glass-border)', borderRadius: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.85rem', fontWeight: '800' }}>
+                                                <button onClick={() => addPerson('reporters')} style={{ width: '100%', padding: '0.6rem', background: 'var(--surface-color)', border: '1.5px dashed var(--glass-border)', borderRadius: '12px', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.85rem', fontWeight: '800' }}>
                                                     <Plus size={16} /> Ajouter un déclarant
                                                 </button>
                                             </div>
@@ -429,7 +428,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                 {form.concerned.map((row, i) => (
                                                     <div key={`con-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', position: 'relative' }}>
-                                                        <div style={{ display: 'flex', gap: '0.5rem', background: 'white', padding: '0.5rem', borderRadius: '14px', border: '1px solid oklch(58% 0.2 var(--brand-hue) / 0.1)', boxShadow: '0 2px 8px oklch(58% 0.2 var(--brand-hue) / 0.05)' }}>
+                                                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '14px', border: '1px solid oklch(58% 0.2 var(--brand-hue) / 0.1)', boxShadow: '0 2px 8px oklch(58% 0.2 var(--brand-hue) / 0.05)' }}>
                                                             <input className="glass-input" 
                                                                 style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.85rem', border: 'none', background: 'transparent' }} 
                                                                 placeholder="Prénom Nom" 
@@ -451,7 +450,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                             </button>
                                                         </div>
                                                         {autocomplete.section === 'concerned' && autocomplete.index === i && autocomplete.results.length > 0 && (
-                                                            <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, background: 'white', marginTop: '4px', padding: '0.5rem', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid var(--glass-border)' }}>
+                                                            <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50, marginTop: '4px', padding: '0.5rem', borderRadius: '12px' }}>
                                                                 {autocomplete.results.map(p => (
                                                                     <div key={p.id} onClick={() => selectParticipant('concerned', i, p)} style={{ padding: '0.6rem 0.75rem', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }} className="autocomplete-item">
                                                                         <span style={{ fontSize: '0.85rem', fontWeight: '800' }}>{p.firstName} {p.lastName}</span>
@@ -485,7 +484,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                     </div>
                                     {rewriteError && (
                                         <div style={{ marginTop: '-0.5rem', padding: '0.75rem 1rem', borderRadius: '12px', background: 'oklch(95% 0.05 28)', color: 'var(--danger-color)', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <AlertTriangle size={16} strokeWidth={2.5} /> {rewriteError}
+                                            <AlertTriangle size={16} strokeWidth={2} /> {rewriteError}
                                         </div>
                                     )}
                                     {aiDraft && (
@@ -497,7 +496,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                                 <button type="button" onClick={() => { setForm(prev => ({ ...prev, details: aiDraft })); setAiDraft(''); ui.toast('Texte appliqué aux détails.', { type: 'success' }); }}
                                                     className="btn btn-primary" style={{ padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: '900', fontSize: '0.85rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                                    <Check size={15} strokeWidth={3} /> Remplacer les détails
+                                                    <Check size={15} strokeWidth={2} /> Remplacer les détails
                                                 </button>
                                                 <button type="button" onClick={() => setAiDraft('')} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: '900', fontSize: '0.85rem' }}>Ignorer</button>
                                             </div>
@@ -509,8 +508,8 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
 
                         {/* Right Sidebar - History & Tools */}
                         <div className="fei-sidebar" style={{ flex: '1 1 380px', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                            <div className="card-glass" style={{ padding: '2rem', background: 'white', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>
+                            <div className="card-glass" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)' }}>
                                     <History size={20} /> Archives
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '600px', overflowY: 'auto' }} className="no-scrollbar">
@@ -521,7 +520,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                     ) : (
                                         history.map((incident, idx) => (
                                             <div key={incident.id || idx} onClick={() => { const loaded = { ...defaultForm(), ...incident }; setForm(loaded); cleanSnapshot.current = JSON.stringify(loaded); setShowPreview(true); }}
-                                                style={{ padding: '1rem', borderRadius: '16px', background: 'white', border: '1.5px solid var(--glass-border)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
+                                                style={{ padding: '1rem', borderRadius: '16px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', cursor: 'pointer', transition: 'all 0.2s', position: 'relative' }}
                                                 className="fei-history-item"
                                             >
                                                 <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: '4px', background: severityColors[incident.severity], borderRadius: '0 4px 4px 0' }} />
@@ -542,12 +541,12 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                     </div>
                 </div>
             ) : (
-                <div className="no-print" style={{ flex: 1, overflowY: 'auto', background: 'oklch(20% 0.05 40)', padding: 'clamp(1rem, 3vw, 2.5rem)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div style={{ maxWidth: '920px', width: '100%', background: 'white', borderRadius: '24px', padding: '1rem 2rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 20px 40px oklch(0% 0 0 / 0.2)' }}>
+                <div className="no-print" style={{ flex: 1, overflowY: 'auto', background: 'oklch(20% 0.01 250)', padding: 'clamp(1rem, 3vw, 2.5rem)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <div style={{ maxWidth: '920px', width: '100%', background: 'var(--surface-color)', borderRadius: '24px', padding: '1rem 2rem', marginBottom: '2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 20px 40px oklch(0% 0 0 / 0.2)' }}>
                         <button onClick={() => setShowPreview(false)} className="btn btn-secondary" style={{ padding: '0.625rem 1rem' }}><ArrowLeft size={18} /> Retour Édition</button>
-                        <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>Aperçu du Cerfa FEI</div>
+                        <div style={{ fontWeight: '800', fontSize: '1rem', color: 'var(--text-main)' }}>Aperçu du Cerfa FEI</div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <button onClick={handlePrint} className="btn btn-primary" style={{ padding: '0.625rem 1.5rem' }}><Printer size={18} strokeWidth={2.5} /> Imprimer Maintenant</button>
+                            <button onClick={handlePrint} className="btn btn-primary" style={{ padding: '0.625rem 1.5rem' }}><Printer size={18} strokeWidth={2} /> Imprimer Maintenant</button>
                         </div>
                     </div>
                     {/* Mesure de la largeur réellement disponible (sert au calcul du scale) */}
@@ -618,7 +617,6 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                     gap: 1.5rem;
                     justify-content: space-between;
                     align-items: center;
-                    background: white;
                     border-left: 8px solid var(--primary-color);
                     min-width: 0;
                     width: 100% !important;

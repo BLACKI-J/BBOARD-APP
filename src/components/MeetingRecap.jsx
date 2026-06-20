@@ -4,7 +4,6 @@ import {
     ChevronLeft, ChevronRight, ChevronDown, Star, Zap, Check
 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
-import { useUi } from '../ui/UiProvider';
 import SectionHeader from './common/SectionHeader';
 
 const PRIORITY_CONFIG = {
@@ -19,7 +18,6 @@ const todayISO = () => { const d = new Date(); return isoDate(d.getFullYear(), d
 const WEEKDAYS = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
 export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMeetingRecaps, isMobile }) {
-    const ui = useUi();
     const [selectedDate, setSelectedDate] = useState(todayISO);
     const [calOpen, setCalOpen] = useState(false);
     const [viewMonth, setViewMonth] = useState(new Date());
@@ -117,13 +115,13 @@ export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMe
         <div style={{ height: '100%', overflowY: 'auto', background: 'transparent' }} className="no-scrollbar">
             <div style={{ maxWidth: '760px', margin: '0 auto', minHeight: '100%', display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: isMobile ? '1rem' : '1.5rem' }}>
 
-                {!isMobile && <SectionHeader hue="var(--sec-coordination)" icon={FileText} title="Coordination" />}
+                {!isMobile && <SectionHeader icon={FileText} title="Coordination" />}
 
                 {/* ── Day bar ── */}
-                <div style={{ background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '18px', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
+                <div style={{ background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', borderRadius: '18px', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.6rem 0.75rem' }}>
                         <button onClick={() => shiftDay(-1)} className="btn-icon-ref" style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'var(--bg-secondary)', flexShrink: 0 }}><ChevronLeft size={18} /></button>
-                        <button onClick={() => setCalOpen(o => !o)} style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1.5px solid', borderColor: calOpen ? 'var(--primary-color)' : 'var(--glass-border)', background: calOpen ? 'var(--primary-light)' : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-main)', fontWeight: '900', fontSize: isMobile ? '0.82rem' : '0.95rem', textTransform: 'capitalize', minWidth: 0 }}>
+                        <button onClick={() => setCalOpen(o => !o)} style={{ flex: 1, height: '40px', borderRadius: '12px', border: '1.5px solid', borderColor: calOpen ? 'var(--primary-color)' : 'var(--glass-border)', background: calOpen ? 'var(--primary-light)' : 'var(--surface-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', cursor: 'pointer', color: 'var(--text-main)', fontWeight: '900', fontSize: isMobile ? '0.82rem' : '0.95rem', textTransform: 'capitalize', minWidth: 0 }}>
                             <CalendarIcon size={16} style={{ color: 'var(--primary-color)', flexShrink: 0 }} />
                             <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{dateLabel}</span>
                             <ChevronDown size={15} style={{ flexShrink: 0, opacity: 0.5, transition: 'transform 0.2s', transform: calOpen ? 'rotate(180deg)' : 'none' }} />
@@ -171,11 +169,11 @@ export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMe
                         </h2>
                         {canEdit && noteDraft.trim() && (
                             <span style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', fontWeight: '800', color: noteSaved ? 'var(--success-color)' : 'var(--text-muted)' }}>
-                                {noteSaved ? <><Check size={13} strokeWidth={3} /> Enregistré</> : 'Enregistrement…'}
+                                {noteSaved ? <><Check size={13} strokeWidth={2} /> Enregistré</> : 'Enregistrement…'}
                             </span>
                         )}
                     </div>
-                    <div style={{ flex: 1, display: 'flex', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '18px', padding: isMobile ? '1rem' : '1.25rem 1.5rem', boxShadow: 'var(--shadow-sm)' }}>
+                    <div style={{ flex: 1, display: 'flex', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', borderRadius: '18px', padding: isMobile ? '1rem' : '1.25rem 1.5rem', boxShadow: 'var(--shadow-sm)' }}>
                         <textarea
                             value={noteDraft}
                             onChange={handleNoteChange}
@@ -202,17 +200,17 @@ export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMe
                     {canEdit && (
                         <form onSubmit={addTodo} style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem' }}>
                             <select value={newPriority} onChange={e => setNewPriority(e.target.value)}
-                                style={{ background: 'white', border: '1.5px solid var(--glass-border)', fontWeight: '900', color: PRIORITY_CONFIG[newPriority].color, outline: 'none', cursor: 'pointer', padding: '0 0.625rem', borderRadius: '12px', fontSize: '0.7rem', textTransform: 'uppercase', flexShrink: 0, minHeight: '46px' }}>
+                                style={{ background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', fontWeight: '900', color: PRIORITY_CONFIG[newPriority].color, outline: 'none', cursor: 'pointer', padding: '0 0.625rem', borderRadius: '12px', fontSize: '0.7rem', textTransform: 'uppercase', flexShrink: 0, minHeight: '46px' }}>
                                 {Object.entries(PRIORITY_CONFIG).map(([k, c]) => <option key={k} value={k}>{c.label}</option>)}
                             </select>
                             <input type="text" placeholder="Nouvelle tâche…" value={newTodo} onChange={e => setNewTodo(e.target.value)}
                                 className="glass-input" style={{ flex: 1, height: '46px', borderRadius: '12px', paddingLeft: '0.875rem', fontWeight: '700', minWidth: 0 }} />
-                            <button type="submit" className="btn btn-primary" style={{ width: '46px', height: '46px', padding: 0, borderRadius: '12px', flexShrink: 0 }}><Plus size={22} strokeWidth={3} /></button>
+                            <button type="submit" className="btn btn-primary" style={{ width: '46px', height: '46px', padding: 0, borderRadius: '12px', flexShrink: 0 }}><Plus size={22} strokeWidth={2} /></button>
                         </form>
                     )}
 
                     {sortedTodos.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)', background: 'white', borderRadius: '18px', border: '1.5px dashed var(--glass-border)' }}>
+                        <div style={{ textAlign: 'center', padding: '2rem 1rem', color: 'var(--text-muted)', background: 'var(--surface-color)', borderRadius: '18px', border: '1.5px dashed var(--glass-border)' }}>
                             <CheckCircle2 size={28} strokeWidth={1.5} style={{ opacity: 0.3, marginBottom: '0.5rem' }} />
                             <p style={{ fontWeight: '800', fontSize: '0.88rem', margin: 0 }}>Aucune tâche pour ce jour.</p>
                         </div>
@@ -221,9 +219,9 @@ export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMe
                             {sortedTodos.map(todo => {
                                 const prio = PRIORITY_CONFIG[todo.priority || 'normal'];
                                 return (
-                                    <div key={todo.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'white', border: '1.5px solid var(--glass-border)', borderRadius: '14px', opacity: todo.completed ? 0.55 : 1 }}>
+                                    <div key={todo.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', borderRadius: '14px', opacity: todo.completed ? 0.55 : 1 }}>
                                         <button onClick={() => toggleTodo(todo.id)} aria-label="Marquer comme fait(e)" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: todo.completed ? 'var(--success-color)' : 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, width: '44px', height: '44px', padding: 0, margin: '-0.5rem 0 -0.5rem -10px' }}>
-                                            {todo.completed ? <CheckCircle2 size={24} strokeWidth={2.5} /> : <Circle size={24} strokeWidth={2.5} />}
+                                            {todo.completed ? <CheckCircle2 size={24} strokeWidth={2} /> : <Circle size={24} strokeWidth={2} />}
                                         </button>
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: '0.92rem', fontWeight: '800', color: 'var(--text-main)', textDecoration: todo.completed ? 'line-through' : 'none' }}>{todo.text}</div>
@@ -234,7 +232,7 @@ export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMe
                                             )}
                                         </div>
                                         {canEdit && (
-                                            <button onClick={() => deleteTodo(todo.id)} aria-label="Supprimer la tâche" className="btn-icon-ref danger" style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'var(--bg-secondary)', flexShrink: 0 }}><Trash2 size={16} strokeWidth={2.5} /></button>
+                                            <button onClick={() => deleteTodo(todo.id)} aria-label="Supprimer la tâche" className="btn-icon-ref danger" style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'var(--bg-secondary)', flexShrink: 0 }}><Trash2 size={16} strokeWidth={2} /></button>
                                         )}
                                     </div>
                                 );

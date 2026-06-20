@@ -17,11 +17,11 @@ const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => (
 ));
 
 const SLOT_CONFIG = {
-    'Matin':  { icon: <Sunrise size={18} />, color: 'oklch(60% 0.18 48)',  colorLight: 'oklch(96% 0.06 48)',  gradient: 'linear-gradient(135deg, oklch(65% 0.2 50), oklch(72% 0.15 65))' },
-    'Midi':   { icon: <Sun size={18} />,     color: 'oklch(58% 0.18 85)',  colorLight: 'oklch(96% 0.06 85)',  gradient: 'linear-gradient(135deg, oklch(65% 0.2 85), oklch(70% 0.14 95))' },
-    'Goûter': { icon: <Apple size={18} />,   color: 'oklch(60% 0.2 25)',   colorLight: 'oklch(96% 0.06 25)',  gradient: 'linear-gradient(135deg, oklch(62% 0.22 20), oklch(68% 0.18 35))' },
-    'Soir':   { icon: <Moon size={18} />,    color: 'oklch(50% 0.2 275)',  colorLight: 'oklch(96% 0.05 275)', gradient: 'linear-gradient(135deg, oklch(52% 0.22 270), oklch(60% 0.18 285))' },
-    'Coucher':{ icon: <Moon size={18} />,    color: 'oklch(40% 0.15 285)', colorLight: 'oklch(96% 0.05 285)', gradient: 'linear-gradient(135deg, oklch(45% 0.18 280), oklch(52% 0.15 295))' },
+    'Matin':  { icon: <Sunrise size={18} />, color: 'var(--primary-color)',  colorLight: 'var(--bg-secondary)',  gradient: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' },
+    'Midi':   { icon: <Sun size={18} />,     color: 'var(--primary-color)',  colorLight: 'var(--bg-secondary)',  gradient: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' },
+    'Goûter': { icon: <Apple size={18} />,   color: 'var(--primary-color)',   colorLight: 'var(--bg-secondary)',  gradient: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' },
+    'Soir':   { icon: <Moon size={18} />,    color: 'var(--primary-color)',  colorLight: 'var(--bg-secondary)', gradient: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' },
+    'Coucher':{ icon: <Moon size={18} />,    color: 'var(--primary-color)', colorLight: 'var(--bg-secondary)', gradient: 'linear-gradient(135deg, var(--primary-color), var(--primary-hover))' },
 };
 
 const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, groups, isScrolled = false, scrollToTop }) => {
@@ -83,7 +83,8 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
         if (!canEdit) return;
         const meds = getMedicationsList(child).filter(m => m.slots.includes(slot)).map(m => m.name);
         const currentDay = getValidated(child);
-        const newSlot = {};
+        // Repartir de l'état existant du créneau pour ne pas écraser les PRN déjà cochés.
+        const newSlot = (typeof currentDay[slot] === 'object' && currentDay[slot]) ? { ...currentDay[slot] } : {};
         meds.forEach(m => newSlot[m] = true);
         updateParticipantHealth(child.id, 'medsValidated', { ...child.medsValidated, [selectedDate]: { ...currentDay, [slot]: newSlot } });
     }, [canEdit, getValidated, selectedDate, updateParticipantHealth]);
@@ -176,14 +177,14 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                 {/* Viewing a past day */}
                 {!isToday && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.25rem', borderRadius: '16px', background: 'oklch(96% 0.06 80)', border: '1.5px solid oklch(80% 0.14 85 / 0.5)', color: 'oklch(45% 0.12 70)', fontWeight: '850', fontSize: '0.85rem' }}>
-                        <History size={16} strokeWidth={2.5} />
+                        <History size={16} strokeWidth={2} />
                         Vous consultez un jour passé.
                     </div>
                 )}
 
                 {/* Slot selector */}
                 <div style={{
-                    background: 'white', borderRadius: '24px', padding: '0.5rem',
+                    background: 'var(--surface-color)', borderRadius: '24px', padding: '0.5rem',
                     border: '1.5px solid var(--glass-border)',
                     boxShadow: '0 8px 32px rgba(0,0,0,0.06)',
                     display: 'flex', gap: '0.5rem',
@@ -213,7 +214,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
             {isMobile && (
                 <div style={{
                     position: 'sticky', top: 0, zIndex: 25,
-                    background: 'white',
+                    background: 'var(--surface-color)',
                     borderRadius: '18px',
                     border: '1.5px solid var(--glass-border)',
                     boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
@@ -253,7 +254,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
             {/* Header */}
             <div className="u-flex u-flex-between" style={{ flexWrap: 'wrap', gap: '1rem', padding: '0 0.5rem' }}>
                 <div>
-                    <h2 style={{ fontSize: '1.2rem', fontWeight: '950', color: activeConfig.color, margin: 0, letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <h2 style={{ fontSize: '1.2rem', fontWeight: '800', color: activeConfig.color, margin: 0, letterSpacing: '-0.03em', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                         {activeConfig.icon} Traitements du {activeSlot}
                     </h2>
                     <p className="u-text-sm u-text-muted u-font-bold" style={{ margin: '4px 0 0' }}>
@@ -264,7 +265,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                     <button onClick={printDay} className="btn btn-primary" style={{ padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: '900', gap: '0.5rem', display: 'flex', alignItems: 'center' }}>
                         <FileDown size={16} /> Exporter ce jour
                     </button>
-                    <button onClick={() => window.print()} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: '800', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'white', display: 'flex', alignItems: 'center' }}>
+                    <button onClick={() => window.print()} className="btn btn-secondary" style={{ padding: '0.5rem 1rem', borderRadius: '12px', fontWeight: '800', gap: '0.5rem', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', display: 'flex', alignItems: 'center' }}>
                         <Printer size={16} /> Fiche vierge
                     </button>
                 </div>
@@ -286,7 +287,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
 
                         return (
                             <div key={child.id} style={{
-                                borderRadius: '24px', overflow: 'hidden', background: 'white',
+                                borderRadius: '24px', overflow: 'hidden', background: 'var(--surface-color)',
                                 border: `2px solid ${isAllDailyDone ? activeConfig.color : 'var(--glass-border)'}`,
                                 boxShadow: isAllDailyDone ? `0 8px 32px ${activeConfig.color}25` : '0 2px 12px rgba(0,0,0,0.04)',
                                 transition: 'all 0.3s', position: 'relative', display: 'flex', flexDirection: 'column'
@@ -301,7 +302,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                     <div className="u-flex u-items-center u-gap-md">
                                         <Avatar participant={child} size={48} />
                                         <div>
-                                            <div style={{ fontWeight: '950', fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '-0.02em', paddingRight: '60px' }}>{child.firstName} {(child.lastName || "").toUpperCase()}</div>
+                                            <div style={{ fontWeight: '800', fontSize: '1.05rem', color: 'var(--text-main)', letterSpacing: '-0.02em', paddingRight: '60px' }}>{child.firstName} {(child.lastName || "").toUpperCase()}</div>
                                             <div className="u-text-xs u-text-muted u-font-bold">{groups.find(g => g.id === child.group)?.name || ''}</div>
                                         </div>
                                     </div>
@@ -327,7 +328,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                                         <div style={{
                                                             width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
                                                             border: `2px solid ${isMedDone ? activeConfig.color : 'var(--glass-border)'}`,
-                                                            background: isMedDone ? activeConfig.color : 'white',
+                                                            background: isMedDone ? activeConfig.color : 'var(--surface-color)',
                                                             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
                                                         }}>
                                                             {isMedDone && <Check size={14} strokeWidth={4} />}
@@ -355,7 +356,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                 {siBesoinList.length > 0 && (
                                     <div style={{ padding: '0.5rem 1.5rem 1.5rem', background: 'oklch(62% 0.22 145 / 0.03)' }}>
                                         <div style={{ fontSize: '0.65rem', fontWeight: '950', color: 'oklch(52% 0.22 145)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0.5rem 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <AlertCircle size={10} strokeWidth={3} /> En cas de besoin (PRN)
+                                            <AlertCircle size={10} strokeWidth={2} /> En cas de besoin (PRN)
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                             {siBesoinList.map((med, idx) => {
@@ -364,14 +365,14 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                                 return (
                                                     <div key={idx} onClick={() => toggleSiBesoin(child, activeSlot, prnKey)} style={{
                                                         display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
-                                                        padding: '0.6rem 0.8rem', background: isMedDone ? 'oklch(62% 0.22 145 / 0.15)' : 'white',
+                                                        padding: '0.6rem 0.8rem', background: isMedDone ? 'oklch(62% 0.22 145 / 0.15)' : 'var(--surface-color)',
                                                         borderRadius: '12px', cursor: canEdit ? 'pointer' : 'default',
                                                         border: `1.5px solid ${isMedDone ? 'oklch(52% 0.22 145)' : 'var(--glass-border)'}`
                                                     }}>
                                                         <div style={{
                                                             width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
                                                             border: `2px solid ${isMedDone ? 'oklch(52% 0.22 145)' : 'var(--glass-border)'}`,
-                                                            background: isMedDone ? 'oklch(52% 0.22 145)' : 'white',
+                                                            background: isMedDone ? 'oklch(52% 0.22 145)' : 'var(--surface-color)',
                                                             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
                                                         }}>
                                                             {isMedDone && <Check size={14} strokeWidth={4} />}

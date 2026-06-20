@@ -7,7 +7,6 @@ import { SECTIONS } from '../components/health/infoVacSchema';
 import { getMedicationsList, getSiBesoinList } from './meds';
 
 const onlyChildren = (participants = []) => (participants || []).filter((p) => p.role === 'child');
-const fullName = (p) => `${p.firstName || ''} ${(p.lastName || '').toUpperCase()}`.trim();
 const groupNameOf = (groups) => (id) => (groups || []).find((g) => g.id === id)?.name || '';
 const fmtDateTime = (ts) => {
     if (!ts) return '';

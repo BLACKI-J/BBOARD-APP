@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { printHtml } from '../utils/printHtml';
+import { todayISO } from '../utils/dates';
 import SectionHeader from './common/SectionHeader';
 
 function PrintContent({ date, destination, startTime, endTime, selectedChildren, selectedAnimatorList, referent, checklistItems, isVanUsed, vanId, kmStart, kmEnd }) {
@@ -95,7 +96,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
     const ui = useUi();
     const printRef = useRef(null);
     const [destination, setDestination] = useState('');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    const [date, setDate] = useState(todayISO());
     const [startTime, setStartTime] = useState('14:00');
     const [endTime, setEndTime] = useState('17:00');
     const [referent, setReferent] = useState('');
@@ -243,7 +244,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                             marginBottom: '1.5rem', display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between',
                             alignItems: isMobile ? 'stretch' : 'center', border: '1px solid var(--glass-border)', boxShadow: 'var(--shadow-lg)', gap: isMobile ? '1.25rem' : '1rem'
                         }}>
-                            <SectionHeader hue="var(--sec-sorties)" icon={MapPin} title="Fiche de Sortie" subtitle="Édition rapide" />
+                            <SectionHeader icon={MapPin} title="Fiche de Sortie" subtitle="Édition rapide" />
                             <div className="es-header-actions" style={{ display: 'flex', gap: '0.5rem', justifyContent: isMobile ? 'space-between' : 'flex-end' }}>
                                 <button
                                     onClick={() => setShowPreview(true)}
@@ -311,7 +312,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                                                             boxShadow: sel ? '0 4px 10px oklch(58% 0.18 var(--brand-hue) / 0.2)' : 'none'
                                                         }}
                                                     >
-                                                        {sel && <CheckSquare size={13} strokeWidth={3} />}
+                                                        {sel && <CheckSquare size={13} strokeWidth={2} />}
                                                         {anim.firstName} {(anim.lastName || '').charAt(0)}.
                                                     </button>
                                                 );
@@ -340,7 +341,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                                                 style={{
                                                     padding: '0.4rem 0.6rem', minHeight: '44px', fontSize: '11px', fontWeight: '800',
                                                     border: '1px solid var(--border-color)', borderRadius: '8px',
-                                                    background: 'white', color: 'var(--text-main)', outline: 'none', flex: isMobile ? 1 : 'none'
+                                                    background: 'var(--surface-color)', color: 'var(--text-main)', outline: 'none', flex: isMobile ? 1 : 'none'
                                                 }}
                                             >
                                                 <option value="all">Groupes</option>
@@ -377,7 +378,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                                                     }}
                                                 >
                                                     <div style={{ color: sel ? 'var(--primary-color)' : 'var(--text-muted)', display: 'flex' }}>
-                                                        {sel ? <CheckSquare size={18} strokeWidth={3} /> : <Square size={18} />}
+                                                        {sel ? <CheckSquare size={18} strokeWidth={2} /> : <Square size={18} />}
                                                     </div>
                                                     <div style={{ flex: 1, minWidth: 0 }}>
                                                         <div style={{ fontWeight: '750', color: 'var(--text-main)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -537,7 +538,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                         >
                             <ArrowLeft size={18} /> Retour
                         </button>
-                        <div style={{ fontWeight: '950', color: 'var(--text-main)', fontSize: '1rem', letterSpacing: '-0.02em' }}>Aperçu Fiche Officielle</div>
+                        <div style={{ fontWeight: '800', color: 'var(--text-main)', fontSize: '1rem', letterSpacing: '-0.02em' }}>Aperçu Fiche Officielle</div>
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
                             <button onClick={handlePrint} className="btn btn-primary" style={{ padding: '0.6rem 1.5rem', fontWeight: '900', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                 <Printer size={16} /> Imprimer

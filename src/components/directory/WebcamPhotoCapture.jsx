@@ -122,19 +122,19 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
     return (
         <div className="modal-overlay animate-fade-in" style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)', zIndex: 1100 }}>
             <div className="modal-content animate-scale-in" style={{ 
-                background: 'white', borderRadius: '32px', padding: '2rem', width: '100%', maxWidth: '480px',
+                background: 'var(--surface-color)', borderRadius: '32px', padding: '2rem', width: '100%', maxWidth: '480px',
                 display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2rem',
                 boxShadow: '0 30px 100px oklch(0% 0 0 / 0.4)', border: '1.5px solid var(--glass-border)'
             }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                         <div style={{ background: 'var(--primary-gradient)', borderRadius: '12px', padding: '8px', color: 'white', display: 'flex' }}>
-                            <Camera size={20} strokeWidth={2.5} />
+                            <Camera size={20} strokeWidth={2} />
                         </div>
-                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Capture Photo</h3>
+                        <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>Capture Photo</h3>
                     </div>
                     <button onClick={() => { stopCamera(); onClose(); }} style={{ background: 'var(--bg-secondary)', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', borderRadius: '12px', padding: '8px', display: 'flex' }}>
-                        <X size={20} strokeWidth={2.5} />
+                        <X size={20} strokeWidth={2} />
                     </button>
                 </div>
 
@@ -151,9 +151,9 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                         </div>
                     </div>
                 ) : !isCameraRequested && !capturedImage ? (
-                    <div style={{ padding: '2.5rem 1.5rem', background: 'oklch(96% 0.05 272)', color: 'var(--primary-color)', borderRadius: '24px', textAlign: 'center', width: '100%', border: '1.5px solid oklch(52% 0.2 272 / 0.15)' }}>
-                        <Camera size={44} strokeWidth={2.5} style={{ margin: '0 auto 1.25rem', color: 'var(--primary-color)' }} />
-                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '950', color: 'var(--text-main)' }}>Utiliser la caméra ?</h4>
+                    <div style={{ padding: '2.5rem 1.5rem', background: 'var(--bg-secondary)', color: 'var(--primary-color)', borderRadius: '24px', textAlign: 'center', width: '100%', border: '1.5px solid var(--border-color)' }}>
+                        <Camera size={44} strokeWidth={2} style={{ margin: '0 auto 1.25rem', color: 'var(--primary-color)' }} />
+                        <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Utiliser la caméra ?</h4>
                         <p style={{ margin: '0 0 1.5rem 0', fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: '600' }}>Nous devons demander l'autorisation à votre navigateur pour prendre la photo directement.</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                             <button onClick={handleRequestCamera} className="btn btn-primary" style={{ width: '100%', padding: '1rem', borderRadius: '14px', fontWeight: '950' }}>Activer la caméra</button>
@@ -191,7 +191,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                         {!capturedImage ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                 <button onClick={capturePhoto} disabled={isLoading} className="btn btn-primary" style={{ width: '100%', padding: '1.15rem', borderRadius: '18px', fontSize: '1.1rem', fontWeight: '950', gap: '0.75rem' }}>
-                                    <Camera size={24} strokeWidth={2.5} /> Prendre la photo
+                                    <Camera size={24} strokeWidth={2} /> Prendre la photo
                                 </button>
                                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem', borderRadius: '14px', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: '800', transition: 'all 0.2s' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                                     Écran noir ? Utiliser l'appareil
@@ -201,10 +201,10 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                         ) : (
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                                 <button onClick={() => setCapturedImage(null)} className="btn btn-secondary" style={{ padding: '1rem', borderRadius: '18px', fontWeight: '950', gap: '0.5rem' }}>
-                                    <RefreshCw size={20} strokeWidth={2.5} /> Recommencer
+                                    <RefreshCw size={20} strokeWidth={2} /> Recommencer
                                 </button>
                                 <button onClick={() => { onPhotoCaptured(capturedImage); stopCamera(); onClose(); }} className="btn btn-primary" style={{ background: 'var(--success-color)', boxShadow: '0 12px 24px oklch(from var(--success-color) l c h / 0.2)', padding: '1rem', borderRadius: '18px', fontWeight: '950', gap: '0.5rem' }}>
-                                    <Check size={20} strokeWidth={2.5} /> Valider
+                                    <Check size={20} strokeWidth={2} /> Valider
                                 </button>
                             </div>
                         )}

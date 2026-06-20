@@ -19,7 +19,7 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
             <div style={{ flex: isMobile ? '1' : 'none', minWidth: isMobile ? '0' : 'auto' }}>
                 {!isMobile && (
                     <div style={{ marginBottom: '1.25rem' }}>
-                        <SectionHeader hue="var(--sec-annuaire)" icon={Users} title="Annuaire" />
+                        <SectionHeader icon={Users} title="Annuaire" />
                     </div>
                 )}
                 <div className="dh-stats no-scrollbar" style={{
@@ -28,9 +28,9 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                     flexWrap: 'nowrap',
                     overflowX: 'auto',
                 }}>
-                    <StatBadge icon={<Users size={isMobile ? 14 : 16} strokeWidth={2.5} />} count={stats.total} label={isMobile ? '' : 'TOTAL'} />
-                    <StatBadge icon={<User size={isMobile ? 14 : 16} strokeWidth={2.5} />} count={stats.children} label={isMobile ? '' : 'ENFANTS'} color="blue" />
-                    <StatBadge icon={<Shield size={isMobile ? 14 : 16} strokeWidth={2.5} />} count={stats.animators + stats.direction} label={isMobile ? '' : 'STAFF'} color="green" />
+                    <StatBadge icon={<Users size={isMobile ? 14 : 16} strokeWidth={2} />} count={stats.total} label={isMobile ? '' : 'TOTAL'} />
+                    <StatBadge icon={<User size={isMobile ? 14 : 16} strokeWidth={2} />} count={stats.children} label={isMobile ? '' : 'ENFANTS'} color="blue" />
+                    <StatBadge icon={<Shield size={isMobile ? 14 : 16} strokeWidth={2} />} count={stats.animators + stats.direction} label={isMobile ? '' : 'STAFF'} color="green" />
                 </div>
             </div>
 
@@ -43,18 +43,18 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
             }}>
                 {selectedCount > 0 ? (
                     <button className="btn btn-danger animate-fade-in" onClick={handleBulkDelete} style={{ gap: '0.625rem', padding: '0.75rem 1.25rem', borderRadius: '16px', fontWeight: '950', boxShadow: '0 12px 24px oklch(60% 0.2 28 / 0.25)' }}>
-                        <Trash2 size={18} strokeWidth={2.5} /> Supprimer ({selectedCount})
+                        <Trash2 size={18} strokeWidth={2} /> Supprimer ({selectedCount})
                     </button>
                 ) : (
                     <>
                         {canEdit && !isMobile && (
                             <button className="btn btn-secondary" onClick={openGroupManager} style={{ padding: '0.75rem 1.25rem', borderRadius: '16px', fontWeight: '900', gap: '0.625rem', background: 'white' }}>
-                                <Users size={18} strokeWidth={2.5} /> <span className="dh-label">Groupes</span>
+                                <Users size={18} strokeWidth={2} /> <span className="dh-label">Groupes</span>
                             </button>
                         )}
                         {canEdit && (
                             <button className="btn btn-primary" onClick={openNewForm} style={{ padding: isMobile ? '0.5rem 0.875rem' : '0.75rem 1.25rem', borderRadius: '14px', fontWeight: '950', gap: '0.5rem', minHeight: '44px' }}>
-                                <Plus size={isMobile ? 18 : 20} strokeWidth={3} /> {!isMobile && <span className="dh-label">Ajouter</span>}
+                                <Plus size={isMobile ? 18 : 20} strokeWidth={2} /> {!isMobile && <span className="dh-label">Ajouter</span>}
                             </button>
                         )}
                     </>
@@ -64,7 +64,7 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                 
                 <div style={{ display: 'flex', gap: '0.5rem' }}>
                     <button className="btn-icon-ref" style={{ background: 'white', width: '44px', height: '44px' }} onClick={() => window.print()} title="Imprimer Liste (PDF)">
-                        <Printer size={18} strokeWidth={2.5} />
+                        <Printer size={18} strokeWidth={2} />
                     </button>
                     <button
                         className="btn-icon-ref"
@@ -77,17 +77,17 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                     {canEdit && !isMobile && (
                         <>
                             <button className="btn-icon-ref" style={{ background: 'white', width: '44px', height: '44px' }} onClick={handleExportCsv} title="Exporter en CSV (Excel)">
-                                <FileSpreadsheet size={18} strokeWidth={2.5} />
+                                <FileSpreadsheet size={18} strokeWidth={2} />
                             </button>
                             <button className="btn-icon-ref" style={{ background: 'white', width: '44px', height: '44px' }} onClick={handleExport} title="Exporter les données (JSON)">
-                                <Download size={18} strokeWidth={2.5} />
+                                <Download size={18} strokeWidth={2} />
                             </button>
                             <label className="btn-icon-ref" style={{ background: 'white', width: '44px', height: '44px', cursor: 'pointer' }} title="Importer depuis CSV">
-                                <FileSpreadsheet size={16} strokeWidth={2.5} style={{ color: 'var(--success-color)' }} />
+                                <FileSpreadsheet size={16} strokeWidth={2} style={{ color: 'var(--success-color)' }} />
                                 <input type="file" accept=".csv,.txt" onChange={handleImportCsv} style={{ display: 'none' }} />
                             </label>
                             <label className="btn-icon-ref" style={{ background: 'white', width: '44px', height: '44px', cursor: 'pointer' }} title="Importer des données (JSON)">
-                                <Upload size={18} strokeWidth={2.5} />
+                                <Upload size={18} strokeWidth={2} />
                                 <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
                             </label>
                         </>

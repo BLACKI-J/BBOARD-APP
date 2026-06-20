@@ -27,7 +27,7 @@ const HealthIndicators = ({ participant = {}, expanded = false }) => {
                     padding: '0.25rem 0.75rem', borderRadius: '10px', border: '1.2px solid oklch(62% 0.2 28 / 0.15)',
                     fontSize: '0.75rem', fontWeight: '900'
                 }}>
-                    <ShieldAlert size={14} strokeWidth={3} />
+                    <ShieldAlert size={14} strokeWidth={2} />
                     <span style={{ textTransform: 'uppercase' }}>Alertes Santé</span>
                 </div>
             )}

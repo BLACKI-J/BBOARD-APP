@@ -13,9 +13,9 @@ import InfoVacSection   from './health/InfoVacSection';
 import RegistreInfi     from './health/RegistreInfi';
 
 const HEALTH_TABS = [
-    { id: 'infovac',    label: 'Fiches Sanitaires', short: 'Fiches',       permKey: 'viewHealthInfovac',  icon: <FileText size={20} />,        color: 'oklch(52% 0.2 272)',  bg: 'oklch(96% 0.05 272)' },
-    { id: 'meds',       label: 'Médicaments',       short: 'Médicaments',  permKey: 'viewHealthMeds',     icon: <Zap size={20} />,             color: 'oklch(55% 0.22 30)',  bg: 'oklch(96% 0.06 30)' },
-    { id: 'registre',   label: 'Registre',          short: 'Registre',     permKey: 'viewHealthRegistre', icon: <ClipboardList size={20} />,   color: 'oklch(52% 0.22 310)', bg: 'oklch(96% 0.05 310)' },
+    { id: 'infovac',    label: 'Fiches Sanitaires', short: 'Fiches',       permKey: 'viewHealthInfovac',  icon: <FileText size={20} />,        color: 'var(--primary-color)',  bg: 'var(--bg-secondary)' },
+    { id: 'meds',       label: 'Médicaments',       short: 'Médicaments',  permKey: 'viewHealthMeds',     icon: <Zap size={20} />,             color: 'var(--primary-color)',  bg: 'var(--bg-secondary)' },
+    { id: 'registre',   label: 'Registre',          short: 'Registre',     permKey: 'viewHealthRegistre', icon: <ClipboardList size={20} />,   color: 'var(--primary-color)', bg: 'var(--bg-secondary)' },
 ];
 
 export default function HealthCenter({ participants = [], patchParticipant, groups = [], canEdit = true, isMobile, transmissions = [], setTransmissions, activeUser, permissions = {} }) {
@@ -109,7 +109,7 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                     gap: '1rem', zIndex: 10
                 }}>
-                    <SectionHeader hue="var(--sec-sante)" icon={Activity} title="Pôle Santé" subtitle="Assistant Sanitaire & Suivi Médical" />
+                    <SectionHeader icon={Activity} title="Pôle Santé" subtitle="Assistant Sanitaire & Suivi Médical" />
                     {/* Desktop tabs */}
                     <div style={{ display: 'flex', gap: '0.35rem', background: 'rgba(0,0,0,0.05)', padding: '4px', borderRadius: '14px' }}>
                         {visibleTabs.map(tab => (
@@ -117,7 +117,7 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
                                 padding: '0.55rem 1.1rem', borderRadius: '10px', border: 'none', cursor: 'pointer',
                                 fontSize: '0.78rem', transition: 'all 0.2s',
                                 display: 'flex', alignItems: 'center', gap: '0.5rem',
-                                background: activeTab === tab.id ? 'white' : 'transparent',
+                                background: activeTab === tab.id ? 'var(--surface-color)' : 'transparent',
                                 boxShadow: activeTab === tab.id ? '0 2px 8px rgba(0,0,0,0.1)' : 'none',
                                 color: activeTab === tab.id ? 'var(--primary-color)' : 'var(--text-muted)',
                                 fontWeight: activeTab === tab.id ? '950' : '800'
@@ -148,7 +148,7 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
                                 border: '1.5px solid', cursor: 'pointer', minHeight: '48px',
                                 transition: 'all 0.2s',
                                 borderColor: isActive ? tab.color : 'var(--glass-border)',
-                                background: isActive ? tab.color : 'white',
+                                background: isActive ? tab.color : 'var(--surface-color)',
                                 color: isActive ? 'white' : 'var(--text-muted)',
                                 fontWeight: '900', fontSize: '0.7rem', lineHeight: 1.1,
                                 boxShadow: isActive ? `0 2px 10px ${tab.color}40` : 'none',
