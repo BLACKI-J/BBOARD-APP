@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sunrise, Sun, Apple, Moon, Plus, Check, Trash2 } from 'lucide-react';
+import { Sunrise, Sun, Apple, Moon, Plus, Check, Trash2, ArrowDownToLine } from 'lucide-react';
 import { getMedicationsList } from '../../utils/meds';
 
 const SLOTS = [
@@ -9,6 +9,14 @@ const SLOTS = [
     { id: 'Soir', label: 'Soir', icon: <Moon size={18} /> },
     { id: 'Coucher', label: 'Coucher', icon: <Moon size={18} /> },
     { id: 'Si besoin', label: 'Si besoin', icon: <Plus size={18} /> },
+];
+
+// Anciens champs « Traitements » de la fiche (1 texte libre par créneau), retirés
+// du schéma. Filet de récupération : si des données y traînent encore, on propose
+// de les convertir vers le format medications[] sans rien perdre.
+const LEGACY_IV_SLOTS = [
+    ['ivMedMatin', 'Matin'], ['ivMedMidi', 'Midi'], ['ivMedGouter', 'Goûter'],
+    ['ivMedSoir', 'Soir'], ['ivMedCoucher', 'Coucher'],
 ];
 
 // Éditeur de traitements (medications[] + créneaux + doses), identique à l'ancien
@@ -35,6 +43,22 @@ const MedicationEditor = ({ child, updateField, canEdit }) => {
     const removeLegacy = (idx) => { const l = [...legacyPrn]; l.splice(idx, 1); updateField('sibesoin', l.join('\n')); };
     const toggleSlot = (id) => setNewMedSlots(cur => cur.includes(id) ? cur.filter(s => s !== id) : [...cur, id]);
 
+    // Anciens « Traitements » (ivMed*) encore renseignés sur cet enfant.
+    const legacyIv = LEGACY_IV_SLOTS.filter(([key]) => (child[key] || '').trim());
+    const migrateLegacyIv = () => {
+        // Regroupe par texte → 1 entrée medications avec ses créneaux ; puis vide les
+        // anciens champs. Tout passe dans UN seul PATCH (updateField accumule les champs).
+        const byName = {};
+        legacyIv.forEach(([key, slot]) => {
+            const name = (child[key] || '').trim();
+            if (!byName[name]) byName[name] = [];
+            byName[name].push(slot);
+        });
+        const newEntries = Object.entries(byName).map(([name, slots]) => ({ name, slots, doses: {} }));
+        updateField('medications', [...rawMeds, ...newEntries]);
+        LEGACY_IV_SLOTS.forEach(([key]) => { if ((child[key] || '').trim()) updateField(key, ''); });
+    };
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px solid var(--border-color)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -46,6 +70,27 @@ const MedicationEditor = ({ child, updateField, canEdit }) => {
                     <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: '700' }}>Renseignez le traitement et les horaires de prise</div>
                 </div>
             </div>
+
+            {/* Filet de récupération : anciens traitements (ivMed*) saisis avant la refonte */}
+            {canEdit && legacyIv.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', padding: '1.25rem', borderRadius: '18px', background: 'oklch(96% 0.06 75)', border: '1.5px solid oklch(82% 0.12 75)' }}>
+                    <div style={{ fontWeight: '900', fontSize: '0.85rem', color: 'oklch(45% 0.12 75)' }}>Anciens traitements détectés</div>
+                    <div style={{ fontSize: '0.8rem', fontWeight: '650', color: 'var(--text-main)', lineHeight: 1.5 }}>
+                        Des traitements ont été saisis dans l'ancien format. Récupérez-les dans le nouveau système (rien n'est perdu) :
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+                        {legacyIv.map(([key, slot]) => (
+                            <span key={key} style={{ display: 'inline-flex', gap: '5px', fontSize: '0.76rem', fontWeight: '800', padding: '4px 10px', borderRadius: '100px', background: 'var(--surface-color)', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}>
+                                <span style={{ color: 'var(--text-muted)' }}>{slot} ·</span> {child[key]}
+                            </span>
+                        ))}
+                    </div>
+                    <button type="button" onClick={migrateLegacyIv}
+                        style={{ alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '0.6rem 1rem', borderRadius: '12px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.82rem', background: 'var(--primary-color)', color: 'white' }}>
+                        <ArrowDownToLine size={15} strokeWidth={2.5} /> Récupérer ces traitements
+                    </button>
+                </div>
+            )}
 
             {canEdit && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', marginTop: '0.5rem' }}>
