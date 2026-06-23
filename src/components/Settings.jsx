@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, FileClock, Settings2, AlertCircle, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, History, Power, Ban, CheckCircle2, CalendarClock } from 'lucide-react';
+import { Download, Upload, Trash2, Lock, Unlock, FileSpreadsheet, KeyRound, ShieldCheck, Users, FileClock, Settings2, AlertCircle, LayoutDashboard, Database, ShieldAlert, Sparkles, ChevronRight, Search, History, Power, Ban, CheckCircle2, CalendarClock, ArrowUpDown } from 'lucide-react';
+import NavOrderEditor from './settings/NavOrderEditor';
 import { useUi } from '../ui/UiProvider';
 import { v4 as uuidv4 } from 'uuid';
 import { apiSend } from '../utils/api';
@@ -680,6 +681,7 @@ export default function Settings({
                         { id: 'create_user', label: 'Créer Utilisateur', icon: <Sparkles size={18} strokeWidth={2} /> },
                         { id: 'roles', label: 'Gestion des Rôles', icon: <Unlock size={18} strokeWidth={2} /> },
                         { id: 'sections', label: 'Modules Visibles', icon: <Settings2 size={18} strokeWidth={2} /> },
+                        { id: 'navorder', label: 'Ordre du menu', icon: <ArrowUpDown size={18} strokeWidth={2} /> },
                         { id: 'security', label: 'Sécurité & PIN', icon: <KeyRound size={18} strokeWidth={2} /> },
                         { id: 'maintenance', label: 'Maintenance & Logs', icon: <Database size={18} strokeWidth={2} /> },
                     ].map(tab => (
@@ -1185,6 +1187,25 @@ export default function Settings({
                                     </label>
                                 ))}
                             </div>
+                        </div>
+                    )}
+
+                    {/* NAV ORDER TAB */}
+                    {activeTab === 'navorder' && (
+                        <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '3rem', borderRadius: isMobile ? '22px' : '32px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                                <div style={{ background: 'var(--primary-light)', padding: '10px', borderRadius: '12px', color: 'var(--primary-color)' }}><ArrowUpDown size={24} strokeWidth={2} /></div>
+                                <h3 style={{ margin: 0, fontSize: '1.5rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif' }}>Ordre du menu latéral</h3>
+                            </div>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '2rem', fontWeight: '850', maxWidth: '600px', lineHeight: '1.6' }}>
+                                Glissez pour réordonner les groupes et les sections à l'intérieur de chaque groupe. {canManageAccess ? "L'ordre s'applique à toute l'équipe." : 'Lecture seule — droits insuffisants pour modifier.'}
+                            </p>
+                            <NavOrderEditor
+                                navOrder={accessControl?.navOrder}
+                                sectionLabels={SECTION_LABELS}
+                                canEdit={canManageAccess}
+                                onChange={(navOrder) => setAccessControl(prev => ({ ...prev, navOrder }))}
+                            />
                         </div>
                     )}
 

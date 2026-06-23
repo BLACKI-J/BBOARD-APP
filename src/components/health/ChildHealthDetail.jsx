@@ -38,9 +38,9 @@ const HealthTextField = ({ value, placeholder, onCommit }) => {
 const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {SECTIONS.map(sec => (
-            <div key={sec.id} style={{ background: 'var(--surface-color)', borderRadius: '18px', border: '1.5px solid var(--glass-border)', overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', color: 'var(--text-main)', fontSize: '0.75rem', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: '1px solid var(--glass-border)' }}>
-                    {sec.icon} {sec.label}
+            <div key={sec.id} style={{ background: 'var(--surface-color)', borderRadius: '18px', border: `1.5px solid color-mix(in oklch, ${sec.color} 22%, transparent)`, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: `color-mix(in oklch, ${sec.color} 8%, white)`, color: `color-mix(in oklch, ${sec.color} 75%, black)`, fontSize: '0.75rem', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1px solid color-mix(in oklch, ${sec.color} 18%, transparent)` }}>
+                    <span style={{ display: 'inline-flex', color: sec.color }}>{sec.icon}</span> {sec.label}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.625rem', padding: '0.875rem 1rem' }}>
                     {sec.fields.map(f => {

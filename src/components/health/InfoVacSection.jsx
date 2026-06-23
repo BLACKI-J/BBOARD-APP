@@ -42,18 +42,18 @@ const ChildCard = ({ child, groups, onOpen }) => {
             {sections.length > 0 ? (
                 <div style={{ padding: '0 0.875rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {sections.map(sec => (
-                        <div key={sec.id} style={{ position: 'relative', background: 'linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.05) 60%), var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '16px', padding: '0.625rem 0.75rem', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)' }}>
+                        <div key={sec.id} style={{ position: 'relative', background: `linear-gradient(180deg, rgba(255,255,255,0.5), rgba(255,255,255,0.05) 60%), color-mix(in oklch, ${sec.color} 8%, white)`, border: `1px solid color-mix(in oklch, ${sec.color} 22%, transparent)`, borderRadius: '16px', padding: '0.625rem 0.75rem', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.85)' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '7px' }}>
-                                <span style={{ width: '24px', height: '24px', borderRadius: '9px', background: 'var(--primary-color)', color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 6px var(--shadow-color)' }}>
+                                <span style={{ width: '24px', height: '24px', borderRadius: '9px', background: `linear-gradient(155deg, color-mix(in oklch, ${sec.color} 78%, white), ${sec.color})`, color: 'white', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 6px color-mix(in oklch, ${sec.color} 45%, transparent)` }}>
                                     {React.cloneElement(sec.icon, { size: 14 })}
                                 </span>
-                                <span style={{ fontSize: '0.62rem', fontWeight: '950', letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-main)' }}>
+                                <span style={{ fontSize: '0.62rem', fontWeight: '950', letterSpacing: '0.06em', textTransform: 'uppercase', color: `color-mix(in oklch, ${sec.color} 75%, black)` }}>
                                     {sec.label}
                                 </span>
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.375rem' }}>
                                 {sec.rows.map((row, i) => (
-                                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.72))', color: 'var(--text-main)', border: '1px solid var(--border-color)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(20,20,20,0.05)' }}>
+                                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', fontSize: '0.72rem', fontWeight: '800', padding: '3px 10px', borderRadius: '100px', background: 'linear-gradient(180deg, rgba(255,255,255,0.95), rgba(255,255,255,0.72))', color: `color-mix(in oklch, ${sec.color} 72%, black)`, border: `1px solid color-mix(in oklch, ${sec.color} 24%, transparent)`, boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 1px 2px rgba(20,20,20,0.05)' }}>
                                         {(row.value === 'OUI' || row.value === 'Oui') ? row.label : `${row.label}: ${row.value}`}
                                     </span>
                                 ))}

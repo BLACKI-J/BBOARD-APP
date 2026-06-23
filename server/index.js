@@ -79,7 +79,9 @@ const defaultAccessControl = {
     },
     userPermissions: {},
     disabledUsers: {},
-    incidentAiDefaultMode: 'detaille'
+    incidentAiDefaultMode: 'detaille',
+    // Ordre personnalisé de la sidebar (réglage admin global). Vide = ordre par défaut côté client.
+    navOrder: { groups: [], items: {} }
 };
 
 
@@ -215,7 +217,19 @@ function mergeAccessControl(raw) {
             animator: { ...defaultAccessControl.rolePermissions.animator, ...(source.rolePermissions?.animator || {}) }
         },
         userPermissions: { ...defaultAccessControl.userPermissions, ...(source.userPermissions || {}) },
-        disabledUsers: { ...defaultAccessControl.disabledUsers, ...(source.disabledUsers || {}) }
+        disabledUsers: { ...defaultAccessControl.disabledUsers, ...(source.disabledUsers || {}) },
+        // Ordre sidebar : on normalise les types (tableaux de strings). Le client
+        // filtre ensuite les ids inconnus et complète l'ordre — pas de garbage stocké.
+        navOrder: (() => {
+            const src = source.navOrder && typeof source.navOrder === 'object' ? source.navOrder : {};
+            const groups = Array.isArray(src.groups) ? src.groups.filter((x) => typeof x === 'string') : [];
+            const itemsSrc = src.items && typeof src.items === 'object' ? src.items : {};
+            const items = {};
+            for (const [gid, arr] of Object.entries(itemsSrc)) {
+                if (Array.isArray(arr)) items[gid] = arr.filter((x) => typeof x === 'string');
+            }
+            return { groups, items };
+        })()
     };
     // Anti-lockout appliqué à CHAQUE merge (boot, lecture, écriture, restauration) :
     // la Direction garde toujours ses permissions d'administration, n'est jamais

@@ -6,14 +6,14 @@ export const SECTIONS = [
     {
         // Champs partagés avec l'Annuaire (mêmes clés `allergies` / `diet`) :
         // une seule source de vérité, éditable depuis la fiche ET l'annuaire.
-        id: 'alimentaire', label: 'Allergies & régime', icon: <UtensilsCrossed size={15} />, color: 'var(--primary-color)',
+        id: 'alimentaire', label: 'Allergies & régime', icon: <UtensilsCrossed size={15} />, color: 'oklch(58% 0.14 25)',
         fields: [
             { key: 'allergies', label: 'Allergies connues',    type: 'text', placeholder: 'Ex : arachides, lactose…' },
             { key: 'diet',      label: 'Régime alimentaire',   type: 'text', placeholder: 'Ex : sans porc, végétarien…' },
         ],
     },
     {
-        id: 'activites', label: 'Activités', icon: <Dribbble size={15} />, color: 'var(--primary-color)',
+        id: 'activites', label: 'Activités', icon: <Dribbble size={15} />, color: 'oklch(60% 0.13 240)',
         fields: [
             { key: 'ivBaignade',      label: 'Baignade',            type: 'select', options: ['OUI','NON','Avec surveillance'] },
             { key: 'ivNage',          label: 'Sait nager',          type: 'select', options: ['OUI','NON','Notions'] },
@@ -23,7 +23,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'hygiene', label: 'Hygiène', icon: <Bath size={15} />, color: 'var(--primary-color)',
+        id: 'hygiene', label: 'Hygiène', icon: <Bath size={15} />, color: 'oklch(62% 0.12 195)',
         fields: [
             { key: 'ivDouche',      label: 'Douche',       type: 'select', options: ['Autonome','Suivi partiel','Avec aide','Surveillance adulte'] },
             { key: 'ivEssuyer',     label: "S'essuyer",    type: 'select', options: ['Autonome','Avec aide','RAS'] },
@@ -33,7 +33,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'sommeil', label: 'Sommeil', icon: <Moon size={15} />, color: 'var(--primary-color)',
+        id: 'sommeil', label: 'Sommeil', icon: <Moon size={15} />, color: 'oklch(56% 0.14 285)',
         fields: [
             { key: 'ivSommeilHeures', label: 'Heures',        type: 'text', placeholder: 'Ex: 20h30 → 7h' },
             { key: 'ivSommeilRituel', label: 'Rituel',        type: 'text', placeholder: 'Ex: Doudou, lecture…' },
@@ -41,7 +41,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'repas', label: 'Repas', icon: <UtensilsCrossed size={15} />, color: 'var(--primary-color)',
+        id: 'repas', label: 'Repas', icon: <UtensilsCrossed size={15} />, color: 'oklch(64% 0.13 70)',
         fields: [
             { key: 'ivRegime',     label: 'Régime',          type: 'text',   placeholder: 'Standard, végétarien…' },
             { key: 'ivAllergie',   label: 'Aliment interdit',type: 'text',   placeholder: 'Ex: Arachides…' },
@@ -51,7 +51,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'sante', label: 'Santé', icon: <Activity size={15} />, color: 'var(--primary-color)',
+        id: 'sante', label: 'Santé', icon: <Activity size={15} />, color: 'oklch(58% 0.13 145)',
         fields: [
             { key: 'ivEnuresie',     label: 'Énurésie',     type: 'select', options: ['NON','OUI'] },
             { key: 'ivEncopresie',   label: 'Encoprésie',   type: 'select', options: ['NON','OUI'] },
