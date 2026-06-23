@@ -67,6 +67,11 @@ export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMe
         };
     }, [selectedDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // Resync draft when notes arrive late (load/socket) — skipped mid-edit (noteSaved=false)
+    useEffect(() => {
+        if (noteSaved) setNoteDraft(notes[selectedDate] || '');
+    }, [notes, selectedDate, noteSaved]);
+
     const commitNote = (content, date) => {
         const noteId = `note_${date}`;
         setMeetingRecaps(prev => {

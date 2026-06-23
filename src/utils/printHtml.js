@@ -15,10 +15,10 @@ export function printHtml(html) {
     doc.close();
 
     const trigger = () => {
-        win.focus();
-        win.print();
         // Remove after the dialog closes (afterprint) or as a fallback timeout.
         win.onafterprint = () => iframe.remove();
+        win.focus();
+        win.print();
         setTimeout(() => { if (document.body.contains(iframe)) iframe.remove(); }, 60000);
     };
 

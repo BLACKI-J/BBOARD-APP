@@ -74,6 +74,7 @@ export default function PullToRefresh({ onRefresh, disabled = false, className, 
             onTouchStart={onTouchStart}
             onTouchMove={onTouchMove}
             onTouchEnd={onTouchEnd}
+            onTouchCancel={() => { startY.current = null; setPull(0); }}
         >
             {visible && (
                 <div style={{

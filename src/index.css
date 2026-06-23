@@ -93,6 +93,12 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Empêche le pull-to-refresh natif du navigateur d'entrer en concurrence avec
+   le PullToRefresh interne (et le rebond d'overscroll parasite). */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 body {
   font-family: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   color: var(--text-main);
@@ -456,7 +462,12 @@ a.glass-card:active { transform: translateY(-1px); }
 /* ─── GLASS INPUT ─── */
 .glass-input {
   width: 100%;
-  padding: 0.85rem 1.25rem;
+  /* padding vertical modéré + min-height : avec box-sizing border-box et la police
+     forcée à 16px sur mobile/tablette, un `height` fixe trop court rognait le texte
+     (select « Choisir » coupé). min-height garantit la place du texte partout. */
+  padding: 0.6rem 1rem;
+  min-height: 44px;
+  line-height: 1.3;
   background: rgba(255, 255, 255, 0.8);
   border: 1.5px solid oklch(88% 0.02 55 / 0.4);
   border-radius: 16px;
@@ -969,6 +980,53 @@ select.glass-input {
   50%      { transform: scale(1.12) rotate(-6deg); }
 }
 .hero-icon { animation: heroPulse 3s ease-in-out infinite; transform-origin: center; }
+
+/* ── Transition d'onglet : le contenu principal entre en fondu + montée ──
+   Rejouée à chaque changement de section (remount via key={activeTab}). */
+@keyframes tabEnter {
+  from { opacity: 0; transform: translateY(12px); filter: blur(2px); }
+  to   { opacity: 1; transform: translateY(0); filter: blur(0); }
+}
+.tab-enter { animation: tabEnter 0.35s var(--ease-out-expo) both; }
+
+/* ── Cascade : les enfants directs d'un conteneur apparaissent en escalier ──
+   Pose .anim-cascade sur une grille/liste de cartes. Au-delà de 10 → délai 0. */
+@keyframes cascadeItem {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-cascade > * { animation: cascadeItem 0.4s var(--ease-out-expo) both; }
+.anim-cascade > *:nth-child(1)  { animation-delay: 0ms; }
+.anim-cascade > *:nth-child(2)  { animation-delay: 40ms; }
+.anim-cascade > *:nth-child(3)  { animation-delay: 80ms; }
+.anim-cascade > *:nth-child(4)  { animation-delay: 120ms; }
+.anim-cascade > *:nth-child(5)  { animation-delay: 160ms; }
+.anim-cascade > *:nth-child(6)  { animation-delay: 200ms; }
+.anim-cascade > *:nth-child(7)  { animation-delay: 240ms; }
+.anim-cascade > *:nth-child(8)  { animation-delay: 280ms; }
+.anim-cascade > *:nth-child(9)  { animation-delay: 320ms; }
+.anim-cascade > *:nth-child(10) { animation-delay: 360ms; }
+
+/* ── Badge « pop » : petit ressort à l'apparition d'un compteur ── */
+@keyframes badgePop {
+  0%   { opacity: 0; transform: scale(0.5); }
+  70%  { transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.anim-badge-pop { animation: badgePop 0.32s var(--ease-out-expo) both; }
+
+/* ── Skeleton : bloc gris à reflet glissant (chargement perçu plus rapide) ── */
+@keyframes shimmer { 100% { background-position: -200% 0; } }
+.skeleton {
+  background: linear-gradient(90deg,
+    var(--bg-secondary) 0%,
+    color-mix(in oklch, var(--bg-secondary) 60%, white) 50%,
+    var(--bg-secondary) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+  border-radius: 12px;
+}
+.skeleton-text { height: 0.85rem; border-radius: 6px; }
 
 /* Scrollbar */
 ::-webkit-scrollbar {

@@ -34,9 +34,10 @@ const SECTIONS_CONFIG = [
     { id: 'health', label: 'Pôle Santé', viewKey: 'viewHealth', editKey: 'editHealth', subSections: [
         { viewKey: 'viewHealthInfovac', editKey: 'editHealthInfovac', label: 'Fiches & Suivi' },
         { viewKey: 'viewHealthMeds', editKey: 'editHealthMeds', label: 'Médicaments' },
-        { viewKey: 'viewHealthTransmissions', editKey: 'editHealthTransmissions', label: 'Registre · Transmissions' },
+        { viewKey: 'viewHealthTransmissions', editKey: 'editHealthTransmissions', label: 'Consignes / relève (Tableau de bord)' },
         { viewKey: 'viewHealthRegistreMeds', editKey: 'editHealthRegistreMeds', label: 'Registre · Administration & traitements' },
-        { viewKey: 'viewHealthPassages', editKey: 'editHealthPassages', label: 'Registre · Suivi passages' }
+        { viewKey: 'viewHealthPassages', editKey: 'editHealthPassages', label: 'Registre · Suivi passages' },
+        { viewKey: 'viewHealthNuit', editKey: 'editHealthNuit', label: 'Journal de nuit' }
     ] },
     { id: 'settings', label: 'Paramètres', viewKey: 'viewSettings', extraKeys: [
         { key: 'manageUsers', label: 'Gérer l\'équipe (utilisateurs & PIN)' },
@@ -217,7 +218,7 @@ export default function Settings({
         ui.toast('Rôle de l\'utilisateur mis à jour.', { type: 'success' });
     };
 
-    const handleCreateRole = () => {
+    const handleCreateRole = async () => {
         if (!canManageAccess) { ui.toast('Droits insuffisants.', { type: 'error' }); return; }
         const name = newRoleName.trim();
         if (!name) return;
@@ -236,11 +237,12 @@ export default function Settings({
             [key]: emptyPermissions()
         };
 
-        setAccessControl({
+        const ok = await setAccessControl({
             ...accessControl,
             roles: updatedRoles,
             rolePermissions: updatedPermissions
         });
+        if (ok === false) return;
         setNewRoleName('');
         setSelectedConfigRole(key);
         ui.toast(`Rôle "${name}" créé avec succès.`, { type: 'success' });
@@ -275,11 +277,12 @@ export default function Settings({
             setSelectedConfigRole('animator');
         }
 
-        setAccessControl({
+        const okAc = await setAccessControl({
             ...accessControl,
             roles: updatedRoles,
             rolePermissions: updatedPermissions
         });
+        if (okAc === false) return;
         ui.toast('Rôle supprimé.', { type: 'success' });
     };
 
@@ -421,9 +424,10 @@ export default function Settings({
             validate: (v) => (String(v || '').trim().toUpperCase() === 'RESET' ? null : 'Tapez RESET en majuscules pour confirmer.'),
         });
         if (value === null) return;
-        setParticipants([]);
-        setGroups([]);
-        setActivities([]);
+        const okP = await setParticipants([]);
+        const okG = await setGroups([]);
+        const okA = await setActivities([]);
+        if (okP === false || okG === false || okA === false) { ui.toast("Réinitialisation partielle : certaines données n'ont pas pu être effacées côté serveur.", { type: 'error' }); return; }
         // Ne vider que les clés de l'app (pas localStorage.clear() qui touche tout l'origine)
         Object.keys(localStorage).filter(k => k.startsWith('colo-')).forEach(k => localStorage.removeItem(k));
         setLastBackup(''); // la clé colo-last-backup vient d'être effacée

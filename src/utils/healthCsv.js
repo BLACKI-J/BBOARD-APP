@@ -39,8 +39,13 @@ export function medicationsToCsv(participants = []) {
     const rows = [];
     children.forEach((c) => {
         const meds = getMedicationsList(c);
-        const prn = getSiBesoinList(c);
-        meds.forEach((m) => rows.push([c.firstName, c.lastName, m.name, (m.slots || []).join(' / '), '']));
+        const prn = Array.from(new Set(getSiBesoinList(c)));
+        const prnSet = new Set(prn);
+        meds.forEach((m) => {
+            const slots = m.slots || [];
+            if (!slots.length && prnSet.has(m.name)) return;
+            rows.push([c.firstName, c.lastName, m.name, slots.join(' / '), '']);
+        });
         prn.forEach((name) => rows.push([c.firstName, c.lastName, name, '', 'OUI']));
     });
     return toCsv(headers, rows);

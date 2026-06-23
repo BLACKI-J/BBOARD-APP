@@ -246,7 +246,7 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
                         <button onClick={() => onTakePhoto(item.id)} className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px' }} title="Prendre une photo"><Camera size={17} strokeWidth={2} /></button>
                         <label className="btn btn-secondary btn-icon-ref" style={{ padding: '0.5rem 0.65rem', borderRadius: '12px', cursor: 'pointer' }} title="Téléverser une image">
                             <Upload size={17} strokeWidth={2} />
-                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => onUpload(item.id, e.target.files?.[0])} />
+                            <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; e.target.value=''; if (f) onUpload(item.id, f); }} />
                         </label>
                         <button onClick={() => onDelete(item.id)} className="btn-icon-ref danger" style={{ width: '38px', height: '38px', borderRadius: '12px' }} title="Supprimer"><Trash2 size={17} strokeWidth={2} /></button>
                     </>
@@ -945,7 +945,7 @@ const ControlHub = ({
                 }}>
                     <Upload size={24} style={{ opacity: 0.3, marginBottom: '8px' }} />
                     <span style={{ fontSize: '11px', fontWeight: '950', color: 'var(--text-muted)' }}>Télécharger les photos</span>
-                    <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={(e) => handleBatchFiles(e.target.files)} />
+                    <input type="file" multiple accept="image/*" style={{ display: 'none' }} onChange={(e) => { const files = Array.from(e.target.files || []); e.target.value=''; handleBatchFiles(files); }} />
                 </label>
                 {batchEntries.length > 0 && (
                     <div style={{ marginTop: '1rem' }}>
@@ -965,7 +965,7 @@ const ControlHub = ({
                     <div style={{ background: 'rgba(255,255,255,0.6)', padding: '1.5rem', borderRadius: '24px', border: '1.5px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
                             <button onClick={onScanSearch} className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', minHeight: '44px' }}><Camera size={16} strokeWidth={2} /></button>
-                            <label className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', cursor: 'pointer' }}><Upload size={16} strokeWidth={2} /><input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) { const r = new FileReader(); r.onload = (ev) => runAiSearch(ev.target.result); r.readAsDataURL(f); } }} /></label>
+                            <label className="btn btn-secondary" style={{ padding: '0.75rem', borderRadius: '12px', cursor: 'pointer' }}><Upload size={16} strokeWidth={2} /><input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; e.target.value=''; if (f) { const r = new FileReader(); r.onload = (ev) => runAiSearch(ev.target.result); r.readAsDataURL(f); } }} /></label>
                         </div>
                         {isSearchingAi && <div style={{ textAlign: 'center' }}><div className="spinner-small" style={{ width: '18px', height: '18px', margin: '0 auto' }} /></div>}
                         {aiResults.length > 0 && (

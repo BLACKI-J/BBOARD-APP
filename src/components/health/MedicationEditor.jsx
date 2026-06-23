@@ -34,12 +34,21 @@ const MedicationEditor = ({ child, updateField, canEdit }) => {
     const displayMeds = getMedicationsList(child); // strippe 'Si besoin' pour les chips
     const legacyPrn = (child.sibesoin || '').split(/,|\n/).map(s => s.trim()).filter(Boolean);
 
+    // Liste dérivée du legacy (dailyMeds) tant que medications[] est vide : le 1er écrit
+    // doit figer la liste dans medications[] ET vider la source legacy, sinon getMedicationsList
+    // la re-dérive et un élément supprimé réapparaît. updateField accumule en UN seul PATCH.
+    const isLegacyDerived = !(Array.isArray(child.medications) && child.medications.length > 0) && (child.dailyMeds || '').trim() !== '';
+    const commitMeds = (next) => {
+        updateField('medications', next);
+        if (isLegacyDerived) { updateField('dailyMeds', ''); updateField('medSlots', []); }
+    };
+
     const addMed = () => {
         if (!newMed.trim()) return;
-        updateField('medications', [...rawMeds, { name: newMed.trim(), slots: newMedSlots, doses: newMedDoses }]);
+        commitMeds([...rawMeds, { name: newMed.trim(), slots: newMedSlots, doses: newMedDoses }]);
         setNewMed(''); setNewMedSlots([]); setNewMedDoses({});
     };
-    const removeMed = (idx) => { const c = [...rawMeds]; c.splice(idx, 1); updateField('medications', c); };
+    const removeMed = (idx) => { const c = [...rawMeds]; c.splice(idx, 1); commitMeds(c); };
     const removeLegacy = (idx) => { const l = [...legacyPrn]; l.splice(idx, 1); updateField('sibesoin', l.join('\n')); };
     const toggleSlot = (id) => setNewMedSlots(cur => cur.includes(id) ? cur.filter(s => s !== id) : [...cur, id]);
 

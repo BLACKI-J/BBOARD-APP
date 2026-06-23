@@ -183,8 +183,11 @@ export default function Directory({ participants = [], setParticipants, groups =
             const lastName = esc((p.lastName || '').toUpperCase());
             const initials = `${p.firstName?.[0] || ''}${p.lastName?.[0] || ''}`.toUpperCase() || '?';
             const group = groupMap[p.group];
-            const photoEl = p.photo
-                ? `<img src="${p.photo}" class="photo" alt="${firstName}" />`
+            // N'émettre l'<img> que pour une source data:image/ ou http(s) légitime, échappée
+            // (bloque les schémas exotiques type javascript: + l'injection d'attribut).
+            const safePhoto = /^(data:image\/|https?:)/i.test(p.photo || '') ? esc(p.photo) : '';
+            const photoEl = safePhoto
+                ? `<img src="${safePhoto}" class="photo" alt="${firstName}" />`
                 : `<div class="initials">${esc(initials)}</div>`;
             const badgeEl = group
                 ? `<div class="card-badge" style="color:${esc(group.color)}">${SHERIFF_STAR(esc(group.color))}${esc(group.name)}</div>`
@@ -397,7 +400,25 @@ export default function Directory({ participants = [], setParticipants, groups =
                 const lines = text.split(/\r?\n/).filter(l => l.trim());
                 if (lines.length < 2) { ui.alert({ title: 'Fichier vide', message: 'Le CSV doit contenir au moins un en-tête et une ligne.' }); return; }
 
-                const headers = lines[0].split(sep).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
+                // Découpe une ligne CSV en respectant les guillemets (un champ peut contenir
+                // le séparateur entre "" et "" échappe un guillemet). Le split naïf cassait
+                // ces champs (ex. adresse "12, rue X" → 2 cellules décalées).
+                const parseCsvRow = (row) => {
+                    const out = []; let cur = ''; let inQ = false;
+                    for (let i = 0; i < row.length; i++) {
+                        const c = row[i];
+                        if (inQ) {
+                            if (c === '"') { if (row[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+                            else cur += c;
+                        } else if (c === '"') inQ = true;
+                        else if (c === sep) { out.push(cur); cur = ''; }
+                        else cur += c;
+                    }
+                    out.push(cur);
+                    return out;
+                };
+
+                const headers = parseCsvRow(lines[0]).map(h => h.replace(/^"|"$/g, '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''));
                 const col = (aliases) => aliases.reduce((found, a) => found !== -1 ? found : headers.indexOf(a), -1);
 
                 const iPrenom   = col(['prenom', 'firstname', 'first_name', 'first name', 'nom de l enfant', 'nom enfant']);
@@ -423,7 +444,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 };
 
                 const newParticipants = lines.slice(1).map(line => {
-                    const cells = line.split(sep);
+                    const cells = parseCsvRow(line);
                     const groupRaw = parseCell(cells, iGroupe);
                     const matchedGroup = safeGroups.find(g => g.name.toLowerCase() === groupRaw.toLowerCase());
                     return {
@@ -592,8 +613,18 @@ export default function Directory({ participants = [], setParticipants, groups =
         if (!canEdit) return;
         // setParticipants (mutateCollection) renvoie true/false et ne jette pas :
         // ne fermer le formulaire qu'en cas de succès, sinon afficher l'erreur.
+        // En édition : ne superposer QUE les champs réellement édités par le formulaire
+        // sur l'objet FRAIS du store. Sinon le re-POST de toute la collection renverrait
+        // un snapshot périmé de formData et écraserait les champs santé (allergies/diet/
+        // healthDocProvided/swimTest/medications) modifiés ailleurs (fiche santé, autre poste).
+        const OWNED_FIELDS = ['firstName', 'lastName', 'birthDate', 'role', 'group', 'training', 'phone', 'email', 'address', 'emergencyContact', 'pin', 'constraints', 'pocketMoney', 'photo'];
         const next = editingId
-            ? safeParticipants.map(p => p.id === editingId ? { ...formData, id: editingId } : p)
+            ? safeParticipants.map(p => {
+                if (p.id !== editingId) return p;
+                const merged = { ...p, id: editingId };
+                OWNED_FIELDS.forEach(k => { if (k in formData) merged[k] = formData[k]; });
+                return merged;
+            })
             : [...safeParticipants, { ...formData, id: uuidv4() }];
         const ok = await setParticipants(next);
         if (ok !== false) resetForm();
@@ -621,16 +652,25 @@ export default function Directory({ participants = [], setParticipants, groups =
 
     const sortedParticipants = useMemo(() => {
         let sortableItems = [...filteredParticipants];
+        const dir = sortConfig.direction === 'ascending' ? 1 : -1;
         sortableItems.sort((a, b) => {
+            // Dates (age/naissance) : comparaison ISO brute (tri chronologique correct).
+            if (sortConfig.key === 'age' || sortConfig.key === 'birthDate') {
+                const aV = a.birthDate || ''; const bV = b.birthDate || '';
+                return aV < bV ? -dir : aV > bV ? dir : 0;
+            }
+            // Groupe : trier par NOM de groupe, pas par UUID.
             let aValue = a[sortConfig.key] || '';
             let bValue = b[sortConfig.key] || '';
-            if (sortConfig.key === 'age') { aValue = a.birthDate || ''; bValue = b.birthDate || ''; }
-            if (aValue < bValue) return sortConfig.direction === 'ascending' ? -1 : 1;
-            if (aValue > bValue) return sortConfig.direction === 'ascending' ? 1 : -1;
-            return 0;
+            if (sortConfig.key === 'group') {
+                aValue = (safeGroups.find(g => g.id === a.group)?.name || '').toLowerCase();
+                bValue = (safeGroups.find(g => g.id === b.group)?.name || '').toLowerCase();
+            }
+            // Reste : comparaison sensible à la locale (accents/casse) — cohérent avec le reste de l'app.
+            return String(aValue).localeCompare(String(bValue), 'fr', { sensitivity: 'base', numeric: true }) * dir;
         });
         return sortableItems;
-    }, [filteredParticipants, sortConfig]);
+    }, [filteredParticipants, sortConfig, safeGroups]);
 
     const stats = useMemo(() => ({
         total: safeParticipants.length,
@@ -712,7 +752,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 ) : (
                     <>
                         {viewMode === 'grid' ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem', paddingBottom: '4rem' }}>
+                            <div className="anim-cascade" style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(320px, 1fr))', gap: isMobile ? '0.75rem' : '1.25rem', paddingBottom: '4rem' }}>
                                 {sortedParticipants.map((p, idx) => (
                                     <ParticipantCard
                                         key={p.id}

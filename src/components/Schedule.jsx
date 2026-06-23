@@ -30,13 +30,18 @@ const startOfWeek = (date) => {
 };
 const addDays = (date, n) => { const d = new Date(date); d.setDate(d.getDate() + n); return d; };
 
-// Une activité « concerne » un groupe si au moins un de ses participants y est rattaché.
+// Une activité « concerne » un groupe si elle le cible explicitement (activity.groups)
+// OU si au moins un de ses participants y est rattaché. Une activité SANS ciblage
+// (ni groupe ni participant) est GÉNÉRALE → visible quel que soit le filtre (sinon
+// toutes les activités disparaissaient dès qu'on choisit un groupe).
 const activityMatchesGroup = (activity, groupId, participants) => {
     if (!groupId || groupId === 'all') return true;
-    const ids = activity.participants;
-    if (!Array.isArray(ids) || ids.length === 0) return false;
+    const grpIds = Array.isArray(activity.groups) ? activity.groups : [];
+    const partIds = Array.isArray(activity.participants) ? activity.participants : [];
+    if (grpIds.length === 0 && partIds.length === 0) return true; // activité générale
+    if (grpIds.includes(groupId)) return true;
     const inGroup = new Set(participants.filter(p => p.group === groupId).map(p => p.id));
-    return ids.some(id => inGroup.has(id));
+    return partIds.some(id => inGroup.has(id));
 };
 
 // Chevauchement horaire entre deux activités qui PARTAGENT au moins un participant.
@@ -46,10 +51,14 @@ const timesOverlap = (a, b) => {
     if (!as || !ae || !bs || !be) return false;
     return as < be && bs < ae;
 };
+// Deux activités « se disputent » du public si elles partagent un participant OU un groupe ciblé.
 const shareParticipant = (a, b) => {
-    const A = Array.isArray(a.participants) ? a.participants : [];
-    const B = new Set(Array.isArray(b.participants) ? b.participants : []);
-    return A.some(id => B.has(id));
+    const ap = Array.isArray(a.participants) ? a.participants : [];
+    const bp = new Set(Array.isArray(b.participants) ? b.participants : []);
+    if (ap.some(id => bp.has(id))) return true;
+    const ag = Array.isArray(a.groups) ? a.groups : [];
+    const bg = new Set(Array.isArray(b.groups) ? b.groups : []);
+    return ag.some(id => bg.has(id));
 };
 
 const COMMON_ACTIVITIES = [
@@ -107,7 +116,7 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
     const combined = `${activity.title} ${activity.description || ''}`.toLowerCase();
     const isWaterActivity = WATER_KEYWORDS.some(kw => combined.includes(kw));
     const nonTestedCount = isWaterActivity
-        ? participants.filter(p => p.role === 'child' && !p.swimTest).length
+        ? participants.filter(p => p.role === 'child' && p.ivNage !== 'OUI').length
         : 0;
 
     return (
@@ -438,7 +447,15 @@ export default function Schedule({ activities, setActivities, participants, grou
             message: `Copier les ${src.length} activité(s) vers quelle date ?`,
             placeholder: 'AAAA-MM-JJ', defaultValue: formatDate(addDays(currentDate, 1)),
             confirmText: 'Dupliquer',
-            validate: (v) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '').trim()) ? null : 'Format attendu : AAAA-MM-JJ.',
+            validate: (v) => {
+                const s = String(v || '').trim();
+                if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return 'Format attendu : AAAA-MM-JJ.';
+                // Rejette aussi les dates calendaires inexistantes (ex. 2026-02-31) :
+                // le round-trip parseISO→formatDate ne correspond plus si la date déborde.
+                const d = parseISO(s);
+                if (isNaN(d.getTime()) || formatDate(d) !== s) return "Cette date n'existe pas.";
+                return null;
+            },
         });
         if (target === null) return;
         const ds = target.trim();
@@ -449,7 +466,7 @@ export default function Schedule({ activities, setActivities, participants, grou
 
     const showNonTested = () => {
         const names = participants
-            .filter(p => p.role === 'child' && !p.swimTest)
+            .filter(p => p.role === 'child' && p.ivNage !== 'OUI')
             .map(p => `${p.firstName} ${p.lastName || ''}`.trim());
         ui.alert({
             title: `Baignade — ${names.length} enfant(s) non testé(s)`,
@@ -459,17 +476,68 @@ export default function Schedule({ activities, setActivities, participants, grou
 
     const escapeHtml = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const printSchedule = () => {
-        const rows = (items) => items.length
-            ? items.map(a => `<tr><td>${escapeHtml(a.startTime || a.time || '')}${a.endTime ? '–' + escapeHtml(a.endTime) : ''}</td><td>${escapeHtml(a.title)}</td><td>${escapeHtml(a.description || '')}</td></tr>`).join('')
-            : '<tr><td colspan="3" style="color:#999">Journée libre</td></tr>';
-        const table = (items) => `<table><thead><tr><th>Heure</th><th>Activité</th><th>Lieu</th></tr></thead><tbody>${rows(items)}</tbody></table>`;
-        const body = scheduleView === 'week'
-            ? weekDays.map(d => `<h2>${escapeHtml(d.date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' }))}</h2>${table(d.items)}`).join('')
-            : `<h2>${escapeHtml(currentDateLabel)}</h2>${table(dayActivities)}`;
-        const groupName = groupFilter !== 'all' ? ' — ' + escapeHtml(groups.find(g => g.id === groupFilter)?.name || '') : '';
-        printHtml(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Planning</title>`
-            + `<style>body{font-family:system-ui,Segoe UI,sans-serif;padding:24px;color:#222}h1{font-size:20px;margin:0 0 4px}h2{font-size:15px;margin:18px 0 6px;text-transform:capitalize}table{width:100%;border-collapse:collapse;margin-bottom:8px}th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px;text-align:left}th{background:#f3f3f3}</style>`
-            + `</head><body><h1>Planning${groupName}</h1>${body}</body></html>`);
+        const isWeek = scheduleView === 'week';
+        const fmtT = (a) => `${a.startTime || a.time || ''}${a.endTime ? '–' + a.endTime : ''}`;
+        const sortIt = (arr) => [...(arr || [])].sort((x, y) => (x.startTime || x.time || '').localeCompare(y.startTime || y.time || ''));
+        // Couleur validée avant insertion dans l'attribut style (anti-injection CSS/HTML).
+        const safeColor = (c) => (/^(#[0-9a-fA-F]{3,8}|oklch\([^"<>;]*\))$/.test(c || '') ? c : '#888');
+        // Carte activité : accent couleur à gauche (couleur de l'activité), heure + titre + lieu.
+        const chip = (a) => `<div class="ev" style="border-left-color:${safeColor(a.color)}">`
+            + `<div class="ev-h"><span class="tm">${escapeHtml(fmtT(a))}</span><span class="ti">${escapeHtml(a.title || '')}</span></div>`
+            + `${a.description ? `<div class="ev-d">${escapeHtml(a.description)}</div>` : ''}</div>`;
+        const evs = (items) => items.length ? sortIt(items).map(chip).join('') : '<div class="libre">Journée libre</div>';
+
+        const body = isWeek
+            ? `<div class="week">${weekDays.map(d => {
+                const wd = d.date.toLocaleDateString('fr-FR', { weekday: 'long' });
+                const dm = d.date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+                return `<div class="col"><div class="ch"><span class="wd">${escapeHtml(wd)}</span><span class="dm">${escapeHtml(dm)}</span></div><div class="evs">${evs(d.items)}</div></div>`;
+            }).join('')}</div>`
+            : `<div class="day"><div class="evs day-evs">${evs(dayActivities)}</div></div>`;
+
+        const group = groupFilter !== 'all' ? (groups.find(g => g.id === groupFilter)?.name || '') : '';
+        const rangeLabel = isWeek
+            ? (weekDays.length ? `${weekDays[0].date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })} – ${weekDays[weekDays.length - 1].date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}` : '')
+            : currentDateLabel;
+
+        printHtml(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Planning</title>
+            <style>
+                * { box-sizing: border-box; }
+                body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; padding: 20px; }
+                .hd { display: flex; justify-content: space-between; align-items: flex-end; background: #20242e; color: #fff; padding: 14px 18px; border-radius: 10px; margin-bottom: 16px; }
+                .hd h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+                .hd .meta { text-align: right; font-size: 12px; line-height: 1.5; opacity: 0.92; }
+                .hd .meta b { font-size: 13px; text-transform: capitalize; }
+                .grp { display: inline-block; margin-top: 2px; padding: 1px 8px; background: rgba(255,255,255,0.18); border-radius: 100px; font-size: 11px; font-weight: 700; }
+
+                .week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 7px; }
+                .col { border: 1px solid #dcdcdc; border-radius: 8px; overflow: hidden; min-height: 120px; }
+                .ch { background: #f2f3f5; border-bottom: 1px solid #dcdcdc; padding: 6px 8px; text-align: center; }
+                .ch .wd { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
+                .ch .dm { display: block; font-size: 10px; color: #777; text-transform: capitalize; }
+                .evs { padding: 6px; display: flex; flex-direction: column; gap: 6px; }
+                .day-evs { max-width: 620px; }
+
+                .ev { border: 1px solid #e3e3e3; border-left: 4px solid #888; border-radius: 7px; padding: 6px 8px; background: #fff; page-break-inside: avoid; }
+                .ev-h { display: flex; gap: 6px; align-items: baseline; }
+                .ev .tm { font-size: 10px; font-weight: 800; color: #555; white-space: nowrap; }
+                .ev .ti { font-size: 12px; font-weight: 700; line-height: 1.25; }
+                .ev-d { font-size: 10px; color: #777; margin-top: 2px; }
+                .libre { font-size: 10px; color: #b0b0b0; font-style: italic; text-align: center; padding: 10px 0; }
+
+                @media print {
+                    @page { size: A4 ${isWeek ? 'landscape' : 'portrait'}; margin: 10mm; }
+                    body { padding: 0; }
+                    .hd, .ch, .ev { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+                    .col { break-inside: avoid; }
+                }
+            </style></head><body>
+            <div class="hd">
+                <h1>Planning${group ? ` — ${escapeHtml(group)}` : ''}</h1>
+                <div class="meta"><b>${escapeHtml(rangeLabel)}</b>${group ? `<br><span class="grp">${escapeHtml(group)}</span>` : ''}</div>
+            </div>
+            ${body}
+            </body></html>`);
     };
 
     const handleTitleChange = (e) => {
@@ -542,7 +610,7 @@ export default function Schedule({ activities, setActivities, participants, grou
         setFormData({
             date: formatDate(currentDate),
             startTime: '09:00', endTime: '10:00',
-            title: '', description: '', participants: [],
+            title: '', description: '', participants: [], groups: [],
             color: DEFAULT_COLOR.value,
         });
         setEditingId(null);
@@ -873,6 +941,33 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     />
                                 </div>
                             </div>
+
+                            {groups.length > 0 && (
+                                <div>
+                                    <label className="form-label">Groupes concernés <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>(aucun = toute la colo)</span></label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', padding: '10px', background: 'var(--bg-secondary)', borderRadius: '18px' }}>
+                                        {groups.map(g => {
+                                            const sel = Array.isArray(formData.groups) && formData.groups.includes(g.id);
+                                            return (
+                                                <button key={g.id} type="button"
+                                                    onClick={() => setFormData(prev => {
+                                                        const cur = Array.isArray(prev.groups) ? prev.groups : [];
+                                                        return { ...prev, groups: cur.includes(g.id) ? cur.filter(x => x !== g.id) : [...cur, g.id] };
+                                                    })}
+                                                    style={{
+                                                        display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '100px', cursor: 'pointer', fontWeight: '800', fontSize: '0.82rem',
+                                                        border: `1.5px solid ${sel ? (g.color || 'var(--primary-color)') : 'var(--glass-border)'}`,
+                                                        background: sel ? `color-mix(in oklch, ${g.color || 'var(--primary-color)'} 16%, white)` : 'var(--surface-color)',
+                                                        color: sel ? `color-mix(in oklch, ${g.color || 'var(--primary-color)'} 55%, black)` : 'var(--text-muted)',
+                                                    }}>
+                                                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: g.color || 'var(--primary-color)', flexShrink: 0 }} />
+                                                    {g.name}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             <div style={{ marginTop: '1rem', display: 'flex', gap: '1rem' }}>
                                 <button type="button" onClick={() => setIsFormOpen(false)} className="btn btn-secondary" style={{ flex: 1, padding: '1rem' }}>Annuler</button>

@@ -75,10 +75,11 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
     const selectParticipant = (section, index, p) => {
         setForm(prev => {
             const copy = [...prev[section]];
-            copy[index] = { 
-                ...copy[index], 
-                firstName: p.firstName, 
-                lastName: p.lastName, 
+            copy[index] = {
+                ...copy[index],
+                firstName: p.firstName,
+                lastName: p.lastName,
+                name: `${p.firstName} ${p.lastName}`,
                 role: p.role === 'child' ? 'Vacancier' : (p.role === 'direction' ? 'Directeur.trice' : (p.role === 'animator' ? 'Anim' : p.role))
             };
             return { ...prev, [section]: copy };
@@ -388,11 +389,12 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                         <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '14px', border: '1px solid var(--glass-border)', boxShadow: '0 2px 8px rgba(0,0,0,0.02)' }}>
                                                             <input className="glass-input" 
                                                                 style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.85rem', border: 'none', background: 'transparent' }} 
-                                                                placeholder="Prénom Nom" 
-                                                                value={`${row.firstName} ${row.lastName}`.trim()} 
+                                                                placeholder="Prénom Nom"
+                                                                value={row.name ?? `${row.firstName} ${row.lastName}`.trim()}
                                                                 onChange={e => {
                                                                     const val = e.target.value;
-                                                                    const parts = val.split(' ');
+                                                                    updatePerson('reporters', i, 'name', val);
+                                                                    const parts = val.trim().split(/\s+/);
                                                                     updatePerson('reporters', i, 'firstName', parts[0] || '');
                                                                     updatePerson('reporters', i, 'lastName', parts.slice(1).join(' ') || '');
                                                                     handleSearch('reporters', i, val);
@@ -431,11 +433,12 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                         <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '14px', border: '1px solid oklch(58% 0.2 var(--brand-hue) / 0.1)', boxShadow: '0 2px 8px oklch(58% 0.2 var(--brand-hue) / 0.05)' }}>
                                                             <input className="glass-input" 
                                                                 style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.85rem', border: 'none', background: 'transparent' }} 
-                                                                placeholder="Prénom Nom" 
-                                                                value={`${row.firstName} ${row.lastName}`.trim()} 
+                                                                placeholder="Prénom Nom"
+                                                                value={row.name ?? `${row.firstName} ${row.lastName}`.trim()}
                                                                 onChange={e => {
                                                                     const val = e.target.value;
-                                                                    const parts = val.split(' ');
+                                                                    updatePerson('concerned', i, 'name', val);
+                                                                    const parts = val.trim().split(/\s+/);
                                                                     updatePerson('concerned', i, 'firstName', parts[0] || '');
                                                                     updatePerson('concerned', i, 'lastName', parts.slice(1).join(' ') || '');
                                                                     handleSearch('concerned', i, val);

@@ -1,8 +1,11 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
-import { Utensils, AlertCircle, Wheat, Clock, Sparkles, ChefHat, Coffee, Sun, Moon } from 'lucide-react';
+import { Utensils, AlertCircle, Wheat, Clock, ChefHat, Coffee, Sun, Moon, Printer } from 'lucide-react';
 import SectionHeader from './common/SectionHeader';
+import { printHtml } from '../utils/printHtml';
 
 const DEFAULT_DAY = { matin: '', midi: '', gouter: '', soir: '' };
+const escapeHtml = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const nl2br = (s) => escapeHtml(s).replace(/\n/g, '<br>');
 
 // Champ menu : draft local + sauvegarde différée. Sans ça, chaque frappe émettait
 // un POST de toute la collection menus (et le refetch socket écrasait la frappe).
@@ -52,6 +55,46 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
         }));
     };
 
+    const printMenus = () => {
+        const dateLabel = (currentDate || new Date()).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const mealCards = MEALS.map(m => `
+            <div class="meal">
+                <div class="mh"><span class="mt">${escapeHtml(m.label)}</span><span class="mtime">${escapeHtml(m.time)}</span></div>
+                <div class="mb">${dayMenus[m.id] ? nl2br(dayMenus[m.id]) : '<span class="empty">—</span>'}</div>
+            </div>`).join('');
+        const allergyRows = childrenWithAllergies.map(c => {
+            const grp = groups.find(g => g.id === c.group)?.name || '';
+            return `<tr><td class="nm">${escapeHtml(c.firstName)} ${escapeHtml((c.lastName || '').toUpperCase())}${grp ? ` <span class="grp">${escapeHtml(grp)}</span>` : ''}</td><td>${escapeHtml(c.allergies)}</td></tr>`;
+        }).join('');
+        printHtml(`<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Menu ${escapeHtml(currentDayName)}</title>
+            <style>
+                * { box-sizing: border-box; }
+                body { font-family: Arial, Helvetica, sans-serif; color: #1a1a1a; padding: 20px; }
+                .hd { display: flex; justify-content: space-between; align-items: flex-end; background: #20242e; color: #fff; padding: 14px 18px; border-radius: 10px; margin-bottom: 18px; }
+                .hd h1 { font-size: 20px; margin: 0; }
+                .hd .meta { text-align: right; font-size: 12px; text-transform: capitalize; opacity: 0.92; }
+                .meals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+                .meal { border: 1px solid #dcdcdc; border-radius: 10px; overflow: hidden; page-break-inside: avoid; }
+                .mh { display: flex; justify-content: space-between; align-items: baseline; background: #f2f3f5; border-bottom: 1px solid #dcdcdc; padding: 8px 12px; }
+                .mh .mt { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.03em; }
+                .mh .mtime { font-size: 11px; color: #777; font-weight: 700; }
+                .mb { padding: 12px; font-size: 13px; line-height: 1.6; min-height: 70px; font-weight: 600; }
+                .mb .empty { color: #b0b0b0; }
+                .sec { font-size: 13px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; margin: 22px 0 8px; display: flex; align-items: center; gap: 8px; }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #cfcfcf; padding: 7px 10px; font-size: 12px; text-align: left; vertical-align: top; }
+                th { background: #2b2b2b; color: #fff; text-transform: uppercase; font-size: 10px; letter-spacing: 0.06em; }
+                td.nm { font-weight: 800; white-space: nowrap; }
+                .grp { font-weight: 700; color: #777; font-size: 10px; }
+                .alrt td { background: #fdedec; }
+                @media print { @page { size: A4 portrait; margin: 12mm; } body { padding: 0; } .hd, .mh, th, .alrt td { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+            </style></head><body>
+            <div class="hd"><h1>Menu du ${escapeHtml(currentDayName)}</h1><div class="meta">${escapeHtml(dateLabel)}</div></div>
+            <div class="meals">${mealCards}</div>
+            ${allergyRows ? `<div class="sec">⚠ Allergies &amp; régimes</div><table><thead><tr><th>Enfant</th><th>Allergie / régime</th></tr></thead><tbody>${allergyRows.replace(/<tr>/g, '<tr class="alrt">')}</tbody></table>` : ''}
+            </body></html>`);
+    };
+
     return (
         <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
             <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 340px', gap: isMobile ? '1.5rem' : '2.5rem', overflow: isMobile ? 'visible' : 'hidden', padding: isMobile ? '0.75rem 0' : '1.5rem 0' }}>
@@ -60,9 +103,14 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: isMobile ? 'visible' : 'hidden' }}>
                     <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '1.5rem 2rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                         <SectionHeader icon={Utensils} title={`Menu du ${currentDayName}`} subtitle="Synchronisé entre tous les appareils" />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)' }}>
-                            <Clock size={16} strokeWidth={2} style={{ color: 'var(--primary-color)' }} />
-                            <span style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <button onClick={printMenus} title="Imprimer le menu du jour" style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', height: '40px', padding: '0 1rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', color: 'var(--text-main)', cursor: 'pointer', fontWeight: '850', fontSize: '0.85rem' }}>
+                                <Printer size={16} strokeWidth={2} /> Imprimer
+                            </button>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'var(--bg-secondary)', padding: '0.5rem 1rem', borderRadius: '12px', border: '1.5px solid var(--glass-border)' }}>
+                                <Clock size={16} strokeWidth={2} style={{ color: 'var(--primary-color)' }} />
+                                <span style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
                         </div>
                     </div>
 
@@ -140,12 +188,6 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                 </div>
                                 );
                             })}
-                        </div>
-                        <div style={{ marginTop: '2rem', padding: '1.25rem', background: 'var(--primary-gradient)', borderRadius: '20px', display: 'flex', gap: '1rem', color: 'white' }}>
-                            <Sparkles size={20} strokeWidth={2} style={{ flexShrink: 0, marginTop: '2px' }} />
-                            <p style={{ margin: 0, fontSize: '0.8rem', lineHeight: '1.5', fontWeight: '900', opacity: 0.9 }}>
-                                Ces informations proviennent directement des fiches sanitaires de l'Annuaire.
-                            </p>
                         </div>
                     </div>
                 </div>

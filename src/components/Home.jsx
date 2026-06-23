@@ -49,7 +49,7 @@ const activityBucket = (a) => {
 export default function Home({
     activities = [], participants = [], menus = {},
     healthAlerts = [], transmissions = [], setTransmissions, activeUser,
-    onNavigate, isMobile,
+    onNavigate, isMobile, permissions = {},
 }) {
     const now = new Date();
     const today = todayISO();
@@ -63,8 +63,10 @@ export default function Home({
     const period = currentPeriod();
     const medSlot = currentMedSlot();
 
-    // Staff (Direction / AS / anim) can post a message or alert directly here
-    const canPost = !!activeUser && activeUser.role !== 'child';
+    // Staff (Direction / AS / anim) peut déposer une consigne / relève ici.
+    // Gated par editHealthTransmissions (les consignes ont migré du Registre vers ici).
+    const canViewTransmissions = permissions?.viewHealthTransmissions !== false;
+    const canPost = !!activeUser && activeUser.role !== 'child' && permissions?.editHealthTransmissions !== false && canViewTransmissions;
     const [msgOpen, setMsgOpen] = useState(false);
     const [msgText, setMsgText] = useState('');
     const [msgPriority, setMsgPriority] = useState('info');
@@ -119,6 +121,7 @@ export default function Home({
 
     // ── Transmissions due today (target date reached, not done) + auto health alerts ──
     const dueTransmissions = useMemo(() => {
+        if (!canViewTransmissions) return [];
         return (transmissions || [])
             .filter(t => !t.done && (t.targetDate || '') <= today)
             .sort((a, b) => {
@@ -198,9 +201,11 @@ export default function Home({
                                             {PRIORITY[t.priority]?.label || 'Info'}{t.author ? ` · ${t.author}` : ''}
                                         </div>
                                     </div>
-                                    <button onClick={() => dismiss(t.id)} title="Vu" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', minHeight: '40px', padding: '0.5rem 0.75rem', borderRadius: '10px', border: `1.5px solid ${p.color}40`, background: 'white', color: p.color, fontWeight: '900', fontSize: '0.7rem', cursor: 'pointer' }}>
-                                        <Check size={12} strokeWidth={3} /> Vu
-                                    </button>
+                                    {canPost && (
+                                        <button onClick={() => dismiss(t.id)} title="Vu" style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: '4px', minHeight: '40px', padding: '0.5rem 0.75rem', borderRadius: '10px', border: `1.5px solid ${p.color}40`, background: 'white', color: p.color, fontWeight: '900', fontSize: '0.7rem', cursor: 'pointer' }}>
+                                            <Check size={12} strokeWidth={3} /> Vu
+                                        </button>
+                                    )}
                                 </div>
                             );
                         })}
@@ -316,7 +321,7 @@ export default function Home({
 
             {/* ── Bento grid ── */}
             {blocks.length > 0 ? (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1.25rem', alignItems: 'start' }}>
+                <div className="anim-cascade" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1.25rem', alignItems: 'start' }}>
                     {blocks}
                 </div>
             ) : (

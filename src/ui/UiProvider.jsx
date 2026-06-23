@@ -68,10 +68,13 @@ export function UiProvider({ children }) {
 
     const confirm = useCallback((options) => {
         return new Promise((resolve) => {
-            setDialog({
-                type: 'confirm', title: options?.title || 'Confirmation', message: options?.message || 'Êtes-vous sûr de vouloir continuer ?',
-                confirmText: options?.confirmText || 'Confirmer', cancelText: options?.cancelText || 'Annuler',
-                danger: !!options?.danger, resolve
+            setDialog((prev) => {
+                if (prev) prev.resolve(prev.type === 'prompt' ? null : prev.type === 'alert' ? true : false);
+                return {
+                    type: 'confirm', title: options?.title || 'Confirmation', message: options?.message || 'Êtes-vous sûr de vouloir continuer ?',
+                    confirmText: options?.confirmText || 'Confirmer', cancelText: options?.cancelText || 'Annuler',
+                    danger: !!options?.danger, resolve
+                };
             });
         });
     }, []);
@@ -79,19 +82,25 @@ export function UiProvider({ children }) {
     const prompt = useCallback((options) => {
         return new Promise((resolve) => {
             setPromptValue(options?.defaultValue || ''); setPromptError('');
-            setDialog({
-                type: 'prompt', title: options?.title || 'Saisie', message: options?.message || '',
-                placeholder: options?.placeholder || 'Entrez votre texte...', confirmText: options?.confirmText || 'Valider',
-                cancelText: options?.cancelText || 'Annuler', validate: options?.validate, resolve
+            setDialog((prev) => {
+                if (prev) prev.resolve(prev.type === 'prompt' ? null : prev.type === 'alert' ? true : false);
+                return {
+                    type: 'prompt', title: options?.title || 'Saisie', message: options?.message || '',
+                    placeholder: options?.placeholder || 'Entrez votre texte...', confirmText: options?.confirmText || 'Valider',
+                    cancelText: options?.cancelText || 'Annuler', validate: options?.validate, resolve
+                };
             });
         });
     }, []);
 
     const alert = useCallback((options) => {
         return new Promise((resolve) => {
-            setDialog({
-                type: 'alert', title: options?.title || 'Information', message: options?.message || '',
-                confirmText: options?.confirmText || 'Compris', resolve
+            setDialog((prev) => {
+                if (prev) prev.resolve(prev.type === 'prompt' ? null : prev.type === 'alert' ? true : false);
+                return {
+                    type: 'alert', title: options?.title || 'Information', message: options?.message || '',
+                    confirmText: options?.confirmText || 'Compris', resolve
+                };
             });
         });
     }, []);

@@ -65,6 +65,7 @@ const defaultAccessControl = {
             viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
             viewHealth: true, editHealth: true,
+            viewHealthNuit: true, editHealthNuit: true,
             searchInventoryAI: true, viewSettings: true, manageUsers: true, manageAccess: true, viewLogs: true
         },
         animator: {
@@ -73,6 +74,7 @@ const defaultAccessControl = {
             viewRecap: true, editRecap: true, viewDirectory: true, editDirectory: true,
             viewAttendance: true, editAttendance: true, viewInventory: true, editInventory: true,
             viewHealth: true, editHealth: true,
+            viewHealthNuit: true, editHealthNuit: true,
             searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
         },
         child: {}
@@ -595,13 +597,17 @@ let db;
 // Serialize all collection writes — SQLite has one connection, so concurrent
 // BEGIN IMMEDIATE (e.g. fast typing → rapid POSTs) would collide and 500.
 let _txChain = Promise.resolve();
-async function replaceCollection({ table, rows, insertOne }) {
+async function replaceCollection({ table, rows, insertOne, prepare }) {
     const task = _txChain.then(async () => {
         await db.exec('BEGIN IMMEDIATE TRANSACTION');
         try {
+            // `prepare` s'exécute APRÈS BEGIN (snapshot cohérent à l'intérieur de la
+            // transaction sérialisée) → évite un TOCTOU sur les champs préservés
+            // (ex. pin_hash/role lus hors-transaction puis ré-écrits périmés).
+            const ctx = prepare ? await prepare() : undefined;
             await db.run(`DELETE FROM ${table}`);
             for (const row of rows) {
-                await insertOne(row);
+                await insertOne(row, ctx);
             }
             await db.exec('COMMIT');
         } catch (err) {
@@ -984,15 +990,38 @@ app.post('/api/participants', requireAnyPermission('editDirectory', 'editAttenda
             }
         }
 
+        // Anti-escalade de PRIVILÈGE — s'applique MÊME avec manageUsers : sans manageAccess,
+        // interdiction de créer/promouvoir vers un rôle porteur de manageAccess/manageUsers
+        // (sinon un compte manageUsers pourrait s'auto-octroyer la Direction via l'API).
+        if (!req.actor?.permissions?.manageAccess) {
+            const rolePerms = accessControl.rolePermissions || {};
+            const roleIsPrivileged = (roleId) => {
+                const p = rolePerms[roleId] || {};
+                return !!(p.manageAccess || p.manageUsers);
+            };
+            const privEscalation = participants.some((p) => {
+                if (!p || !p.id) return false;
+                const prior = existingById.get(p.id);
+                if (prior && (p.role || '') === prior.role) return false; // rôle inchangé
+                const role = validRoles.has(p.role) ? p.role : 'child';
+                return roleIsPrivileged(role); // création/promotion vers un rôle privilégié
+            });
+            if (privEscalation) {
+                return res.status(403).json({ error: 'Permission manageAccess requise pour attribuer un rôle privilégié (gestion des accès / utilisateurs).' });
+            }
+        }
+
         const stmt = await db.prepare('INSERT INTO participants (id, firstName, lastName, role, groupId, allergies, constraints, pin_hash, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)');
         try {
             await replaceCollection({
                 table: 'participants',
                 rows: participants,
-                insertOne: async (p) => {
+                // Snapshot pin_hash/role relu DANS la transaction (cohérence anti-TOCTOU).
+                prepare: async () => new Map((await db.all('SELECT id, pin_hash, role FROM participants')).map((row) => [row.id, row])),
+                insertOne: async (p, freshById) => {
                     if (!p || !p.id) return;
                     const cleanParticipant = sanitizeParticipant(p);
-                    const prior = existingById.get(p.id);
+                    const prior = freshById.get(p.id);
                     // Rôle inchangé → préservé tel quel (même orphelin : pas de démotion
                     // silencieuse en « child » à chaque sauvegarde). Rôle NOUVEAU inconnu
                     // → ramené à 'child' (jamais de rôle arbitraire).
@@ -1069,6 +1098,19 @@ app.post('/api/users/:id/pin', requireAnyPermission('manageUsers'), async (req, 
         const newPin = String(req.body?.newPin || '');
         if (!isValidPin(newPin)) {
             return res.status(400).json({ error: 'PIN must contain exactly 4 digits' });
+        }
+        // Anti-escalade : un manageUsers SANS manageAccess ne peut pas réinitialiser le PIN
+        // d'un membre privilégié (manageAccess/manageUsers) — sinon il prendrait son compte.
+        // Exception : chacun peut toujours changer SON propre PIN.
+        const target = await db.get('SELECT role FROM participants WHERE id = ?', req.params.id);
+        if (!target) return res.status(404).json({ error: 'Staff member not found' });
+        const isSelf = req.actor?.id === req.params.id;
+        if (!isSelf && !req.actor?.permissions?.manageAccess) {
+            const ac = await getAccessControl();
+            const targetPerms = { ...(ac.rolePermissions?.[target.role] || {}), ...(ac.userPermissions?.[req.params.id] || {}) };
+            if (targetPerms.manageAccess || targetPerms.manageUsers) {
+                return res.status(403).json({ error: "Permission manageAccess requise pour réinitialiser le PIN d'un membre privilégié." });
+            }
         }
         const result = await db.run(
             "UPDATE participants SET pin_hash = ? WHERE id = ? AND role != 'child'",
@@ -1160,12 +1202,13 @@ const STATE_READ_PERMISSIONS = {
     // ses propres permissions. Le restreindre casserait les rôles non-admin.
     accessControl: null,
     menus: ['viewSchedule', 'viewSettings'],
-    transmissions: ['viewHealth', 'viewSchedule', 'viewSettings', 'manageAccess']
+    transmissions: ['viewHealth', 'viewSchedule', 'viewSettings', 'manageAccess'],
+    nightLogs: ['viewHealthNuit', 'viewHealth', 'manageAccess']
 };
 
 app.get('/api/state/:key', async (req, res) => {
     try {
-        if (!(req.params.key in STATE_READ_PERMISSIONS)) return res.status(404).json({ error: 'State key not found' });
+        if (!Object.hasOwn(STATE_READ_PERMISSIONS, req.params.key)) return res.status(404).json({ error: 'State key not found' });
         const allowed = STATE_READ_PERMISSIONS[req.params.key];
         if (allowed && !allowed.some((p) => req.actor?.permissions?.[p])) {
             return res.status(403).json({ error: 'Permission denied' });
@@ -1182,11 +1225,18 @@ app.post('/api/state/:key', async (req, res) => {
         const permissionByKey = {
             menus: 'editSchedule',
             accessControl: 'manageAccess',
-            transmissions: 'editHealth'
+            transmissions: 'editHealth',
+            nightLogs: 'editHealthNuit'
         };
-        const permission = permissionByKey[req.params.key];
-        if (!permission) return res.status(404).json({ error: 'State key not found' });
-        if (!req.actor?.permissions?.[permission]) return res.status(403).json({ error: 'Permission denied' });
+        if (!Object.hasOwn(permissionByKey, req.params.key)) return res.status(404).json({ error: 'State key not found' });
+        // Gate d'écriture. Cas spécial nightLogs : aligné sur la convention CLIENT
+        // (editHealth ET editHealthNuit non explicitement false) — sinon un rôle custom
+        // sans la clé granulaire est 403 alors que l'UI lui montre l'accès activé.
+        const perms = req.actor?.permissions || {};
+        const writeOk = req.params.key === 'nightLogs'
+            ? (!!perms.editHealth && perms.editHealthNuit !== false)
+            : !!perms[permissionByKey[req.params.key]];
+        if (!writeOk) return res.status(403).json({ error: 'Permission denied' });
         let value = req.body;
         if (req.params.key === 'accessControl') {
             // Normalise (mergeAccessControl porte aussi l'anti-lockout Direction)

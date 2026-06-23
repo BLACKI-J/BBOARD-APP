@@ -90,6 +90,7 @@ const defaultAccessControl = {
             viewHealthTransmissions: true, editHealthTransmissions: true,
             viewHealthRegistreMeds: true, editHealthRegistreMeds: true,
             viewHealthPassages: true, editHealthPassages: true,
+            viewHealthNuit: true, editHealthNuit: true,
             searchInventoryAI: true, viewSettings: true, manageUsers: true, manageAccess: true, viewLogs: true
         },
         animator: {
@@ -103,6 +104,7 @@ const defaultAccessControl = {
             viewHealthTransmissions: true, editHealthTransmissions: true,
             viewHealthRegistreMeds: true, editHealthRegistreMeds: true,
             viewHealthPassages: true, editHealthPassages: true,
+            viewHealthNuit: true, editHealthNuit: true,
             searchInventoryAI: true, viewSettings: false, manageUsers: false, manageAccess: false, viewLogs: false
         },
         child: {}
@@ -220,6 +222,7 @@ export default function App() {
     const [moreOpen, setMoreOpen] = useState(false);
     const [staffUsers, setStaffUsers] = useState([]);
     const [transmissions, setTransmissions] = useState([]);
+    const [nightLogs, setNightLogs] = useState([]);
     const [sessionUser, setSessionUser] = useState(null);
     const [authChecked, setAuthChecked] = useState(false);
 
@@ -276,8 +279,8 @@ export default function App() {
     }, [navItems, accessControl]);
 
     useEffect(() => {
-        if (activeTab === 'settings' && !permissions.viewSettings) { setActiveTab(navItems[0]?.id || 'schedule'); return; }
-        if (activeTab !== 'settings' && !canAccessSection(activeTab)) { setActiveTab(navItems[0]?.id || 'schedule'); }
+        if (activeTab === 'settings' && !permissions.viewSettings) { setActiveTab(navItems[0]?.id || 'home'); return; }
+        if (activeTab !== 'settings' && !canAccessSection(activeTab)) { setActiveTab(navItems[0]?.id || 'home'); }
     }, [activeTab, permissions.viewSettings, canAccessSection, navItems]);
 
     useEffect(() => { localStorage.setItem('colo-active-tab', activeTab); }, [activeTab]);
@@ -304,6 +307,7 @@ export default function App() {
         setExitSheets([]);
         setMeetingRecaps([]);
         setTransmissions([]);
+        setNightLogs([]);
         setInventoryItems([]);
         isDataLoaded.current = false;
     }, []);
@@ -415,11 +419,13 @@ export default function App() {
         if (!isAuthenticated) return undefined;
 
         const socket = io({
-            reconnectionAttempts: 10,
+            reconnectionAttempts: Infinity,
             reconnectionDelay: 2000,
+            reconnectionDelayMax: 5000,
         });
         let retryTimer;
         let intentionalClose = false; // déconnexion volontaire (logout/démontage) → pas une panne
+        let hasConnectedOnce = false; // premier 'connect' déjà couvert par le refreshData() initial
 
         const fetchJson = async (url, fallback) => {
             const response = await fetch(url);
@@ -447,7 +453,8 @@ export default function App() {
                     fetchJson(`${API_URL}/inventory/items`, []),
                     fetchJson(`${API_URL}/auth/profiles`, []),
                     fetchJson(`${API_URL}/state/menus`, {}),
-                    fetchJson(`${API_URL}/state/transmissions`, [])
+                    fetchJson(`${API_URL}/state/transmissions`, []),
+                    fetchJson(`${API_URL}/state/nightLogs`, [])
                 ]);
 
                 const newGroups = data[0]; const newParticipants = data[1];
@@ -460,6 +467,7 @@ export default function App() {
                 setStaffUsers(data[8] || []);
                 setMenus(data[9] || {});
                 setTransmissions(Array.isArray(data[10]) ? data[10] : []);
+                setNightLogs(Array.isArray(data[11]) ? data[11] : []);
 
                 isDataLoaded.current = true;
                 setConnectionStatus('connected');
@@ -491,8 +499,10 @@ export default function App() {
 
         socket.on('connect', () => {
             setConnectionStatus('connected');
-            // Toujours resynchroniser à la (re)connexion : un 'data_updated' manqué pendant
-            // une coupure réseau ne serait jamais rattrapé sinon (UI périmée).
+            // Première connexion : le refreshData() initial l'a déjà couverte → pas de double sync.
+            // Reconnexions : resynchroniser (un 'data_updated' manqué pendant une coupure
+            // réseau ne serait jamais rattrapé sinon → UI périmée).
+            if (!hasConnectedOnce) { hasConnectedOnce = true; return; }
             refreshData();
         });
 
@@ -528,6 +538,7 @@ export default function App() {
                         if (key === 'accessControl') setAccessControl(mergeAccessControl(await fetchJson(`${API_URL}/state/accessControl`, {})));
                         else if (key === 'menus') setMenus(await fetchJson(`${API_URL}/state/menus`, {}) || {});
                         else if (key === 'transmissions') { const t = await fetchJson(`${API_URL}/state/transmissions`, []); setTransmissions(Array.isArray(t) ? t : []); }
+                        else if (key === 'nightLogs') { const n = await fetchJson(`${API_URL}/state/nightLogs`, []); setNightLogs(Array.isArray(n) ? n : []); }
                         else refreshData();
                         break;
                     }
@@ -640,12 +651,26 @@ export default function App() {
     const setSyncedTransmissions = useCallback((v) => {
         mutateCollection(`${API_URL}/state/transmissions`, setTransmissions, v, transmissions);
     }, [mutateCollection, transmissions]);
+    const setSyncedNightLogs = useCallback((v) => {
+        mutateCollection(`${API_URL}/state/nightLogs`, setNightLogs, v, nightLogs);
+    }, [mutateCollection, nightLogs]);
 
+    // Squelette de chargement (shimmer) plutôt qu'un spinner : perçu plus rapide,
+    // approxime la mise en page d'un module (en-tête + barre d'outils + grille de cartes).
     const loadingShell = (
-        <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div className="card-glass" style={{ padding: 'var(--space-lg)', background: 'white', borderRadius: '24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 'var(--space-md)', border: '1.5px solid var(--glass-border)' }}>
-                <div className="spinner-large" />
-                <div style={{ fontWeight: '950', color: 'var(--text-main)', fontSize: '1rem', letterSpacing: '-0.02em' }}>Assemblage du module...</div>
+        <div className="tab-enter" style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem' }}>
+                <div className="skeleton" style={{ width: '46px', height: '46px', borderRadius: '14px', flexShrink: 0 }} />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <div className="skeleton skeleton-text" style={{ width: '40%' }} />
+                    <div className="skeleton skeleton-text" style={{ width: '22%', height: '0.7rem' }} />
+                </div>
+            </div>
+            <div className="skeleton" style={{ height: '44px', borderRadius: '14px' }} />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '0.875rem' }}>
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="skeleton" style={{ height: '150px', borderRadius: '18px' }} />
+                ))}
             </div>
         </div>
     );
@@ -708,14 +733,14 @@ export default function App() {
                                         const tone = BADGE_TONE[item.id] || 'alert';
                                         return (
                                         <button key={item.id} onClick={() => guardedNavigate(item.id)} onMouseEnter={() => prefetchTab(item.id)}
-                                            style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.46rem 0.6rem 0.46rem 1.6rem', border: `1px solid ${isActive ? 'var(--border-color)' : 'transparent'}`, background: isActive ? 'var(--surface-color)' : 'transparent', color: isActive ? 'var(--text-main)' : 'oklch(48% 0.006 250)', borderRadius: '11px', fontWeight: isActive ? '800' : '650', cursor: 'pointer', transition: 'background 0.18s var(--ease-out-expo), color 0.18s', textAlign: 'left', fontSize: '0.88rem', letterSpacing: '-0.01em', width: '100%', boxShadow: isActive ? '0 1px 2px oklch(20% 0 0 / 0.05), 0 6px 16px oklch(20% 0 0 / 0.09)' : 'none' }}
-                                            onMouseOver={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.6)'; }}
-                                            onMouseOut={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
+                                            style={{ position: 'relative', zIndex: 1, display: 'flex', alignItems: 'center', gap: '0.65rem', padding: '0.46rem 0.6rem 0.46rem 1.6rem', border: `1px solid ${isActive ? 'var(--border-color)' : 'transparent'}`, background: isActive ? 'var(--surface-color)' : 'transparent', color: isActive ? 'var(--text-main)' : 'oklch(48% 0.006 250)', borderRadius: '11px', fontWeight: isActive ? '800' : '650', cursor: 'pointer', transition: 'background 0.18s var(--ease-out-expo), color 0.18s, transform 0.18s var(--ease-out-expo)', textAlign: 'left', fontSize: '0.88rem', letterSpacing: '-0.01em', width: '100%', boxShadow: isActive ? '0 1px 2px oklch(20% 0 0 / 0.05), 0 6px 16px oklch(20% 0 0 / 0.09)' : 'none' }}
+                                            onMouseOver={(e) => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.6)'; e.currentTarget.style.transform = 'translateX(3px)'; } }}
+                                            onMouseOut={(e) => { if (!isActive) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.transform = 'translateX(0)'; } }}>
                                             <span style={{ flexShrink: 0, display: 'inline-flex', color: isActive ? 'var(--text-main)' : 'oklch(52% 0.006 250)' }}>
                                                 {React.cloneElement(item.icon, { size: 18, strokeWidth: isActive ? 2.3 : 2 })}
                                             </span>
                                             <span style={{ flex: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
-                                            {badge > 0 && <span style={{ minWidth: '22px', height: '20px', padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: tone === 'info' ? 'color-mix(in oklch, var(--warning-color) 24%, white)' : 'color-mix(in oklch, var(--danger-color) 16%, white)', color: tone === 'info' ? 'color-mix(in oklch, var(--warning-color) 55%, black)' : 'color-mix(in oklch, var(--danger-color) 60%, black)', fontSize: '11px', fontWeight: '800', borderRadius: '8px', flexShrink: 0 }}>{badge > 99 ? '99+' : badge}</span>}
+                                            {badge > 0 && <span className="anim-badge-pop" style={{ minWidth: '22px', height: '20px', padding: '0 6px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: tone === 'info' ? 'color-mix(in oklch, var(--warning-color) 24%, white)' : 'color-mix(in oklch, var(--danger-color) 16%, white)', color: tone === 'info' ? 'color-mix(in oklch, var(--warning-color) 55%, black)' : 'color-mix(in oklch, var(--danger-color) 60%, black)', fontSize: '11px', fontWeight: '800', borderRadius: '8px', flexShrink: 0 }}>{badge > 99 ? '99+' : badge}</span>}
                                         </button>
                                         );
                                     })}
@@ -866,8 +891,8 @@ export default function App() {
                 >
                     <Suspense fallback={loadingShell}>
                         <ErrorBoundary key={activeTab}>
-                            <div className="animate-fade-in" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                                {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} onNavigate={guardedNavigate} isMobile={isMobile} />
+                            <div className="tab-enter" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                                {activeTab === 'home' ? <Home activities={activities} participants={participants} groups={groups} menus={menus} healthAlerts={healthAlerts} transmissions={transmissions} setTransmissions={setSyncedTransmissions} permissions={permissions} activeUser={activeUser} onNavigate={guardedNavigate} isMobile={isMobile} />
                                 : activeTab === 'schedule' ? <Schedule activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)} participants={participants} groups={groups} canEdit={permissions.editSchedule} permissions={permissions} menus={menus} setMenus={setSyncedMenus} />
                                 : activeTab === 'exitsheet' ? <ExitSheet participants={participants} groups={groups} canEdit={permissions.editExitSheet} exitSheets={exitSheets} setExitSheets={(v) => mutateCollection(`${API_URL}/exit-sheets`, setExitSheets, v, useAppStore.getState().exitSheets)} onRefresh={onRefresh} isMobile={isMobile} />
                                 : activeTab === 'recap' ? <MeetingRecap participants={participants} canEdit={permissions.editRecap} meetingRecaps={meetingRecaps} setMeetingRecaps={(v) => mutateCollection(`${API_URL}/meeting-recaps`, setMeetingRecaps, v, useAppStore.getState().meetingRecaps)} onRefresh={onRefresh} isMobile={isMobile} />
@@ -875,7 +900,7 @@ export default function App() {
                                 : activeTab === 'directory' ? <Directory participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)} canEdit={permissions.editDirectory} isMobile={isMobile} roles={accessControl.roles} />
                                 : activeTab === 'attendance' ? <Attendance participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} canEdit={permissions.editAttendance} isMobile={isMobile} />
                                 : activeTab === 'inventory' ? <Inventory participants={participants} canEdit={permissions.editInventory} canSearchAI={permissions.searchInventoryAI} actorHeaders={actorHeaders} inventoryItems={inventoryItems} onRefresh={onRefresh} isMobile={isMobile} />
-                                : activeTab === 'health' ? <HealthCenter participants={participants} patchParticipant={patchParticipant} groups={groups} canEdit={permissions.editHealth} permissions={permissions} actorHeaders={actorHeaders} onRefresh={onRefresh} transmissions={transmissions} setTransmissions={setSyncedTransmissions} activeUser={activeUser} isMobile={isMobile} />
+                                : activeTab === 'health' ? <HealthCenter participants={participants} patchParticipant={patchParticipant} groups={groups} canEdit={permissions.editHealth} permissions={permissions} nightLogs={nightLogs} setNightLogs={setSyncedNightLogs} activeUser={activeUser} isMobile={isMobile} />
                                 : activeTab === 'settings' ? <Settings
                                     participants={participants} setParticipants={(v) => mutateCollection(`${API_URL}/participants`, setParticipants, v, useAppStore.getState().participants)} groups={groups} setGroups={(v) => mutateCollection(`${API_URL}/groups`, setGroups, v, useAppStore.getState().groups)}
                                     activities={activities} setActivities={(v) => mutateCollection(`${API_URL}/activities`, setActivities, v, useAppStore.getState().activities)}

@@ -1,16 +1,20 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { Camera, X, RefreshCw, Check, AlertCircle } from 'lucide-react';
 import { canUseWebcam } from '../../utils/camera';
+import { compressImage, fileToDataUrl } from '../../utils/image';
 
 export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose }) {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
+    const isOpenRef = useRef(isOpen);
     const [stream, setStream] = useState(null);
     const [error, setError] = useState(null);
     const [capturedImage, setCapturedImage] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isCameraRequested, setIsCameraRequested] = useState(false);
+
+    React.useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
     const stopCamera = useCallback(() => {
         if (streamRef.current) {
@@ -37,8 +41,10 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                 mediaStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 1280 } }
                 });
+                if (!isOpenRef.current) { mediaStream.getTracks().forEach(t => t.stop()); return; }
             } catch {
                 mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                if (!isOpenRef.current) { mediaStream.getTracks().forEach(t => t.stop()); return; }
             }
             streamRef.current = mediaStream;
             setStream(mediaStream);
@@ -108,15 +114,17 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
         }
     };
 
-    const handleFileUpload = (e) => {
+    const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            setCapturedImage(event.target.result);
+        try {
+            const dataUrl = await fileToDataUrl(file);
+            const compressed = await compressImage(dataUrl, 768, 0.75);
+            setCapturedImage(compressed);
             setError(null);
-        };
-        reader.readAsDataURL(file);
+        } catch {
+            setError("Impossible de charger cette image. Réessayez avec un autre fichier.");
+        }
     };
 
     return (

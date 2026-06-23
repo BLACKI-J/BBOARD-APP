@@ -5,7 +5,7 @@ const HealthIndicators = ({ participant = {}, expanded = false }) => {
     const hasAllergies = participant?.allergies && participant.allergies.trim() !== '';
     const hasConstraints = participant?.constraints && participant.constraints.trim() !== '';
     const hasDiet = participant?.diet && participant.diet.trim() !== '';
-    const isSwimmer = !!participant?.swimTest;
+    const isSwimmer = participant?.ivNage === 'OUI';
 
     if (!hasAllergies && !hasConstraints && !hasDiet && !isSwimmer) return expanded ? (
         <span style={{color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '800', opacity: 0.6, letterSpacing: '0.02em'}}>

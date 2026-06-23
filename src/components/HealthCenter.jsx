@@ -1,24 +1,25 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
-    Activity, Zap, FileText, ClipboardList
+    Activity, Zap, FileText, ClipboardList, Moon
 } from 'lucide-react';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
 import useAppStore from '../store/useAppStore';
 import SectionHeader from './common/SectionHeader';
 
 // ─── Sub-component imports ────────────────────────────────────────────────
-import TransmissionComposer from './health/TransmissionComposer';
 import MedsDashboard    from './health/MedsDashboard';
 import InfoVacSection   from './health/InfoVacSection';
 import RegistreInfi     from './health/RegistreInfi';
+import NightLog         from './health/NightLog';
 
 const HEALTH_TABS = [
-    { id: 'infovac',    label: 'Fiches Sanitaires', short: 'Fiches',       permKey: 'viewHealthInfovac',  icon: <FileText size={20} />,        color: 'var(--primary-color)',  bg: 'var(--bg-secondary)' },
-    { id: 'meds',       label: 'Médicaments',       short: 'Médicaments',  permKey: 'viewHealthMeds',     icon: <Zap size={20} />,             color: 'var(--primary-color)',  bg: 'var(--bg-secondary)' },
-    { id: 'registre',   label: 'Registre',          short: 'Registre',     permKey: 'viewHealthRegistre', icon: <ClipboardList size={20} />,   color: 'var(--primary-color)', bg: 'var(--bg-secondary)' },
+    { id: 'infovac',    label: 'Fiches Sanitaires', short: 'Fiches',       icon: <FileText size={20} />,        color: 'var(--primary-color)' },
+    { id: 'meds',       label: 'Médicaments',       short: 'Médicaments',  icon: <Zap size={20} />,             color: 'var(--primary-color)' },
+    { id: 'registre',   label: 'Registre',          short: 'Registre',     icon: <ClipboardList size={20} />,   color: 'var(--primary-color)' },
+    { id: 'nuit',       label: 'Nuit',              short: 'Nuit',         icon: <Moon size={20} />,            color: 'var(--primary-color)' },
 ];
 
-export default function HealthCenter({ participants = [], patchParticipant, groups = [], canEdit = true, isMobile, transmissions = [], setTransmissions, activeUser, permissions = {} }) {
+export default function HealthCenter({ participants = [], patchParticipant, groups = [], canEdit = true, isMobile, nightLogs = [], setNightLogs, activeUser, permissions = {} }) {
     // Setter brut du store (maj locale instantanée, SANS appel réseau) — distinct
     // de patchParticipant qui, lui, persiste un seul enfant côté serveur.
     const setParticipantsLocal = useAppStore(s => s.setParticipants);
@@ -31,17 +32,14 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
     const tabVisible = {
         infovac: can('viewHealthInfovac'),
         meds: can('viewHealthMeds'),
-        registre: can('viewHealthTransmissions') || can('viewHealthRegistreMeds') || can('viewHealthPassages'),
+        registre: can('viewHealthRegistreMeds') || can('viewHealthPassages'),
+        nuit: can('viewHealthNuit'),
     };
     const visibleTabs = HEALTH_TABS.filter(t => tabVisible[t.id]);
     const visibleIds = visibleTabs.map(t => t.id).join(',');
 
     const [activeTab, setActiveTab] = useState(() => {
-        const firstVisible = HEALTH_TABS.find(t => (
-            t.id === 'infovac' ? permissions?.['viewHealthInfovac'] !== false
-            : t.id === 'meds' ? permissions?.['viewHealthMeds'] !== false
-            : permissions?.['viewHealthTransmissions'] !== false || permissions?.['viewHealthRegistreMeds'] !== false || permissions?.['viewHealthPassages'] !== false
-        ));
+        const firstVisible = HEALTH_TABS.find(t => tabVisible[t.id]);
         return firstVisible ? firstVisible.id : 'infovac';
     });
 
@@ -175,24 +173,20 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
                         canEdit={canEdit && can('editHealthMeds')} isMobile={isMobile} groups={groups}
                         isScrolled={isScrolled} scrollToTop={scrollToTop}
                     />
+                ) : activeTab === 'nuit' ? (
+                    <NightLog
+                        nightLogs={nightLogs} setNightLogs={setNightLogs}
+                        children={children} activeUser={activeUser}
+                        canEdit={canEdit && can('editHealthNuit')} isMobile={isMobile}
+                    />
                 ) : activeTab === 'registre' ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                        {can('viewHealthTransmissions') && (
-                            <TransmissionComposer
-                                children={children} transmissions={transmissions} setTransmissions={setTransmissions}
-                                activeUser={activeUser} canEdit={canEdit && can('editHealthTransmissions')} isMobile={isMobile}
-                            />
-                        )}
-                        {(can('viewHealthRegistreMeds') || can('viewHealthPassages')) && (
-                            <RegistreInfi
-                                children={children} groups={groups}
-                                staff={(participants || []).filter(p => p.role !== 'child')}
-                                updateParticipantHealth={updateParticipantHealth} isMobile={isMobile}
-                                showMeds={can('viewHealthRegistreMeds')} canEditMeds={canEdit && can('editHealthRegistreMeds')}
-                                showPassages={can('viewHealthPassages')} canEditPassages={canEdit && can('editHealthPassages')}
-                            />
-                        )}
-                    </div>
+                    <RegistreInfi
+                        children={children} groups={groups}
+                        staff={(participants || []).filter(p => p.role !== 'child')}
+                        updateParticipantHealth={updateParticipantHealth} isMobile={isMobile}
+                        showMeds={can('viewHealthRegistreMeds')} canEditMeds={canEdit && can('editHealthRegistreMeds')}
+                        showPassages={can('viewHealthPassages')} canEditPassages={canEdit && can('editHealthPassages')}
+                    />
                 ) : (
                     <InfoVacSection
                         children={children} groups={groups}

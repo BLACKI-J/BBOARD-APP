@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useUi } from '../ui/UiProvider';
 import { printHtml } from '../utils/printHtml';
-import { todayISO } from '../utils/dates';
+import { todayISO, parseISO } from '../utils/dates';
 import SectionHeader from './common/SectionHeader';
 
 function PrintContent({ date, destination, startTime, endTime, selectedChildren, selectedAnimatorList, referent, checklistItems, isVanUsed, vanId, kmStart, kmEnd }) {
@@ -18,7 +18,7 @@ function PrintContent({ date, destination, startTime, endTime, selectedChildren,
                     <p style={{ margin: '5px 0 0', fontSize: '12pt' }}>Document de suivi officiel</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontWeight: 'bold', fontSize: '14pt' }}>Date: {date ? new Date(date).toLocaleDateString('fr-FR') : '________________'}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '14pt' }}>Date: {date ? parseISO(date).toLocaleDateString('fr-FR') : '________________'}</div>
                     <div style={{ marginTop: '5px' }}>Lieu: {destination || '_________________________'}</div>
                 </div>
             </div>
@@ -106,6 +106,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
     const [selectedAnimators, setSelectedAnimators] = useState([]);
     const [filterGroup, setFilterGroup] = useState('all');
     const [saveStatus, setSaveStatus] = useState(null); // null | 'saving' | 'saved' | 'error'
+    const [currentSheetId, setCurrentSheetId] = useState(null);
 
     // Van Tracking State
     const [isVanUsed, setIsVanUsed] = useState(false);
@@ -155,7 +156,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
             return;
         }
         if (!silent) setSaveStatus('saving');
-        const sheetId = crypto?.randomUUID?.() ?? `sheet_${Date.now()}`;
+        const sheetId = currentSheetId || (crypto?.randomUUID?.() ?? `sheet_${Date.now()}`);
         const sheetData = {
             id: sheetId, destination, date, startTime, endTime, referent, fileName, selectedIds, selectedAnimators,
             isVanUsed, vanId, kmStart, kmEnd,
@@ -164,7 +165,8 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
 
         // Updater fonctionnel : résolu contre l'état FRAIS du store (mutateCollection),
         // pas la prop du render — les maj concurrentes (autre appareil) ne sont plus écrasées.
-        setExitSheets(prev => [...prev, sheetData]);
+        setExitSheets(prev => prev.some(s => s.id === sheetId) ? prev.map(s => s.id === sheetId ? sheetData : s) : [...prev, sheetData]);
+        setCurrentSheetId(sheetId);
 
         if (!silent) {
             setSaveStatus('saved');
@@ -203,13 +205,13 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
         setStartTime(sheet.startTime || '');
         setEndTime(sheet.endTime || '');
         setReferent(sheet.referent || '');
-        setFileName(sheet.fileName || '');
         setSelectedIds(sheet.selectedIds || []);
         setSelectedAnimators(sheet.selectedAnimators || []);
         setIsVanUsed(!!sheet.isVanUsed);
         setVanId(sheet.vanId || '');
         setKmStart(sheet.kmStart || '');
         setKmEnd(sheet.kmEnd || '');
+        setCurrentSheetId(sheet.id || null);
         setShowPreview(true);
     };
 
@@ -502,7 +504,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                                                         {sheet.destination || 'Sortie'}
                                                     </div>
                                                     <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '600' }}>
-                                                        {sheet.date ? new Date(sheet.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '?'} · {sheet.startTime}
+                                                        {sheet.date ? parseISO(sheet.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }) : '?'} · {sheet.startTime}
                                                     </div>
                                                 </div>
                                                 <button
