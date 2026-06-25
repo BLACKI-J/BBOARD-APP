@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import { UiProvider } from './ui/UiProvider.jsx';
+import { initGlassTilt } from './utils/glassTilt.js';
 // Polices auto-hébergées (bundlées par Vite) → plus de dépendance au CDN Google Fonts,
 // donc fonctionne sur réseaux filtrés / DNS bloquant google (ERR_NAME_NOT_RESOLVED).
 import '@fontsource/bricolage-grotesque/400.css';
@@ -53,3 +54,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         </UiProvider>
     </React.StrictMode>,
 );
+
+// Tilt 3D + reflet au curseur (bureau only) sur les cartes verre vedettes.
+// Écouteurs délégués sur document → marche aussi pour les cartes montées + tard.
+initGlassTilt();

@@ -220,6 +220,7 @@ export default function App() {
     const [lastSyncAt, setLastSyncAt] = useState(null);
     const [isSyncing, setIsSyncing] = useState(false);
     const [moreOpen, setMoreOpen] = useState(false);
+    const [navHidden, setNavHidden] = useState(false); // capsule du bas masquée au scroll vers le bas
     const [staffUsers, setStaffUsers] = useState([]);
     const [transmissions, setTransmissions] = useState([]);
     const [nightLogs, setNightLogs] = useState([]);
@@ -284,6 +285,27 @@ export default function App() {
     }, [activeTab, permissions.viewSettings, canAccessSection, navItems]);
 
     useEffect(() => { localStorage.setItem('colo-active-tab', activeTab); }, [activeTab]);
+    // Capsule du bas : se masque au scroll vers le bas (révèle le contenu, pas de
+    // bande réservée), réapparaît au scroll vers le haut. Écoute en CAPTURE →
+    // fonctionne pour n'importe quel conteneur scrollable (App ou scroll interne d'une page).
+    useEffect(() => {
+        if (!isMobile) return;
+        const lastY = new WeakMap();
+        const onScroll = (e) => {
+            const el = e.target;
+            if (!el || el.nodeType !== 1 || typeof el.scrollTop !== 'number') return;
+            const y = el.scrollTop;
+            const prev = lastY.get(el) ?? 0;
+            if (y < 48) setNavHidden(false);
+            else if (y > prev + 6) setNavHidden(true);
+            else if (y < prev - 6) setNavHidden(false);
+            lastY.set(el, y);
+        };
+        document.addEventListener('scroll', onScroll, true);
+        return () => document.removeEventListener('scroll', onScroll, true);
+    }, [isMobile]);
+    // Toujours visible quand on change d'onglet.
+    useEffect(() => { setNavHidden(false); }, [activeTab]);
     useEffect(() => { localStorage.setItem('colo-attendance-enabled', String(isAttendanceEnabled)); }, [isAttendanceEnabled]);
 
     const applyAuthenticatedSession = useCallback((payload) => {
@@ -792,13 +814,20 @@ export default function App() {
 
                 {/* Topbar Header — liquid glass */}
                 <header style={{
-                    height: isMobile ? '56px' : '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    height: isMobile ? (navHidden ? '0px' : '56px') : '90px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: isMobile ? '0 0.875rem' : '0 2.5rem',
-                    background: 'var(--lg-gloss), var(--lg-bg)',
-                    backdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))',
-                    WebkitBackdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))',
-                    borderBottom: '1px solid var(--lg-border)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
-                    zIndex: 100, transition: 'all 0.3s var(--ease-out-expo)',
+                    margin: isMobile ? (navHidden ? '0 0.9rem' : 'calc(0.5rem + env(safe-area-inset-top)) 0.9rem 0') : 0,
+                    background: isMobile ? 'rgba(255, 255, 255, 0.88)' : 'var(--lg-gloss), var(--lg-bg)',
+                    backdropFilter: isMobile ? 'blur(18px)' : 'blur(var(--lg-blur)) saturate(var(--lg-saturate))',
+                    WebkitBackdropFilter: isMobile ? 'blur(18px)' : 'blur(var(--lg-blur)) saturate(var(--lg-saturate))',
+                    border: isMobile ? 'none' : '0',
+                    borderBottom: isMobile ? 'none' : '1px solid var(--lg-border)',
+                    borderRadius: isMobile ? '26px' : '0',
+                    boxShadow: isMobile ? '0 12px 30px oklch(20% 0 0 / 0.16)' : 'inset 0 1px 0 rgba(255,255,255,0.9)',
+                    opacity: navHidden ? 0 : 1,
+                    transform: navHidden ? 'translateY(-12px)' : 'none',
+                    overflow: 'hidden',
+                    zIndex: 100, transition: 'height 0.38s var(--ease-out-expo), margin 0.38s var(--ease-out-expo), opacity 0.28s ease, transform 0.38s var(--ease-out-expo)',
                     flexShrink: 0
                 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '0.625rem' : '1.5rem', minWidth: 0, flex: 1 }}>
@@ -887,7 +916,7 @@ export default function App() {
                     onRefresh={onRefresh}
                     disabled={!isMobile}
                     className="no-scrollbar"
-                    style={{ flex: 1, padding: isMobile ? `var(--space-sm) var(--space-sm) calc(84px + env(safe-area-inset-bottom))` : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }}
+                    style={{ flex: 1, minHeight: 0, padding: isMobile ? 'var(--space-sm)' : 'var(--space-md) 1rem', position: 'relative', overflowY: 'auto' }}
                 >
                     <Suspense fallback={loadingShell}>
                         <ErrorBoundary key={activeTab}>
@@ -912,10 +941,9 @@ export default function App() {
                         </ErrorBoundary>
                     </Suspense>
                 </PullToRefresh>
-            </main>
 
-            {/* ── Bottom Nav Bar (mobile only) ── */}
-            {isMobile && (() => {
+                {/* ── Bottom Nav Bar (mobile only) — enfant flex de la colonne (pas fixe → pas de bande blanche) ── */}
+                {isMobile && (() => {
                 const PRIMARY_TABS = ['home', 'health', 'schedule', 'attendance', 'directory'];
                 const primaryItems = navItems.filter(i => PRIMARY_TABS.includes(i.id));
                 const moreItems = navItems.filter(i => !PRIMARY_TABS.includes(i.id));
@@ -927,7 +955,7 @@ export default function App() {
 
                         {/* More drawer */}
                         {moreOpen && (
-                            <div className="animate-scale-in liquid-glass-strong" style={{ position: 'fixed', bottom: '68px', left: '1rem', right: '1rem', zIndex: 200, borderRadius: '24px', padding: '0.75rem', boxShadow: 'var(--lg-edge), 0 -4px 40px rgba(60,32,8,0.18)' }}>
+                            <div className="animate-scale-in liquid-glass-strong" style={{ position: 'fixed', bottom: 'calc(86px + env(safe-area-inset-bottom))', left: '0.9rem', right: '0.9rem', zIndex: 200, borderRadius: '24px', padding: '0.75rem', boxShadow: 'var(--lg-edge), 0 -4px 40px rgba(60,32,8,0.18)' }}>
                                 {[...moreItems, ...(permissions.viewSettings ? [{ id: 'settings', label: 'Paramètres', icon: <SettingsIcon size={20} strokeWidth={2.5} /> }] : [])].map(item => (
                                     <button key={item.id} onClick={() => { guardedNavigate(item.id); setMoreOpen(false); }}
                                         style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '1rem', padding: '0.875rem 1rem', borderRadius: '14px', border: 'none', cursor: 'pointer', textAlign: 'left', fontWeight: '850', fontSize: '0.92rem', background: activeTab === item.id ? 'var(--primary-light)' : 'transparent', color: activeTab === item.id ? 'var(--primary-color)' : 'var(--text-main)' }}>
@@ -940,32 +968,32 @@ export default function App() {
                         )}
 
                         {/* Bottom bar — liquid glass */}
-                        <nav style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200, height: 'calc(64px + env(safe-area-inset-bottom))', background: 'var(--lg-gloss), var(--lg-bg-strong)', backdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))', WebkitBackdropFilter: 'blur(var(--lg-blur)) saturate(var(--lg-saturate))', borderTop: '1px solid var(--lg-border)', display: 'flex', alignItems: 'stretch', paddingBottom: 'env(safe-area-inset-bottom)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9), 0 -4px 24px oklch(40% 0.06 45 / 0.1)' }}>
+                        <nav style={{ position: 'fixed', bottom: 'calc(0.7rem + env(safe-area-inset-bottom))', left: '0.9rem', right: '0.9rem', zIndex: 200, height: '64px', background: 'rgba(255, 255, 255, 0.88)', backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', border: 'none', borderRadius: '26px', display: 'flex', alignItems: 'stretch', padding: '0 0.4rem', boxShadow: '0 14px 34px oklch(20% 0 0 / 0.18)', transformOrigin: 'bottom center', transform: navHidden ? 'translateY(140%) scale(0.94)' : 'translateY(0) scale(1)', opacity: navHidden ? 0 : 1, transition: 'transform 0.45s var(--ease-out-expo), opacity 0.28s ease' }}>
                             {primaryItems.map(item => {
                                 const isActive = activeTab === item.id;
                                 const badge = navBadges[item.id] || 0;
                                 return (
-                                    <button key={item.id} onClick={() => guardedNavigate(item.id)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', border: 'none', background: 'transparent', cursor: 'pointer', color: isActive ? 'var(--primary-color)' : 'var(--text-muted)', position: 'relative', minHeight: '44px' }}>
-                                        <span style={{ position: 'relative', display: 'flex' }}>
-                                            {item.icon}
-                                            {badge > 0 && <span style={{ position: 'absolute', top: '-5px', right: '-7px', minWidth: '16px', height: '16px', padding: '0 4px', background: 'var(--danger-color)', color: 'white', fontSize: '9px', fontWeight: '950', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid white' }}>{badge > 9 ? '9+' : badge}</span>}
+                                    <button key={item.id} onClick={() => guardedNavigate(item.id)} className="nav-ig-btn" aria-label={item.label} style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', cursor: 'pointer', minHeight: '44px' }}>
+                                        <span className={`nav-ig-icon${isActive ? ' is-active' : ''}`} style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: '46px', height: '46px', borderRadius: '16px', background: isActive ? 'var(--text-main)' : 'transparent', color: isActive ? '#fff' : 'var(--text-softer)', boxShadow: isActive ? '0 6px 16px oklch(20% 0 0 / 0.22)' : 'none', transition: 'background 0.25s var(--ease-out-expo), color 0.25s var(--ease-out-expo), transform 0.18s var(--ease-out-expo)' }}>
+                                            {React.cloneElement(item.icon, { size: 25, strokeWidth: isActive ? 2.4 : 2.2 })}
+                                            {badge > 0 && <span style={{ position: 'absolute', top: '0px', right: '0px', minWidth: '17px', height: '17px', padding: '0 4px', background: 'var(--danger-color)', color: 'white', fontSize: '9px', fontWeight: '950', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '2px solid var(--lg-bg-strong)' }}>{badge > 9 ? '9+' : badge}</span>}
                                         </span>
-                                        <span style={{ fontSize: '9px', fontWeight: isActive ? '950' : '800', letterSpacing: '0.01em', lineHeight: 1 }}>{item.label.length > 8 ? item.label.slice(0, 7) + '.' : item.label}</span>
-                                        {isActive && <span style={{ position: 'absolute', bottom: '0', left: '50%', transform: 'translateX(-50%)', width: '20px', height: '3px', background: 'var(--primary-color)', borderRadius: '999px 999px 0 0' }} />}
                                     </button>
                                 );
                             })}
                             {/* More button */}
                             {(moreItems.length > 0 || permissions.viewSettings) && (
-                                <button onClick={() => setMoreOpen(o => !o)} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px', border: 'none', background: 'transparent', cursor: 'pointer', color: isMoreActive || moreOpen ? 'var(--primary-color)' : 'var(--text-muted)', minHeight: '44px' }}>
-                                    <Menu size={22} strokeWidth={2.5} />
-                                    <span style={{ fontSize: '9px', fontWeight: isMoreActive || moreOpen ? '950' : '800', letterSpacing: '0.01em', lineHeight: 1 }}>Plus</span>
+                                <button onClick={() => setMoreOpen(o => !o)} className="nav-ig-btn" aria-label="Plus" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', background: 'transparent', cursor: 'pointer', minHeight: '44px' }}>
+                                    <span className={`nav-ig-icon${(isMoreActive || moreOpen) ? ' is-active' : ''}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: '46px', height: '46px', borderRadius: '16px', background: (isMoreActive || moreOpen) ? 'var(--text-main)' : 'transparent', color: (isMoreActive || moreOpen) ? '#fff' : 'var(--text-softer)', boxShadow: (isMoreActive || moreOpen) ? '0 6px 16px oklch(20% 0 0 / 0.22)' : 'none', transition: 'background 0.25s var(--ease-out-expo), color 0.25s var(--ease-out-expo), transform 0.18s var(--ease-out-expo)' }}>
+                                        <Menu size={25} strokeWidth={(isMoreActive || moreOpen) ? 2.4 : 2.2} />
+                                    </span>
                                 </button>
                             )}
                         </nav>
                     </>
                 );
-            })()}
+                })()}
+            </main>
 
             <style>{`
                 .btn-icon-ref {
@@ -990,6 +1018,12 @@ export default function App() {
                     animation: spin 1s linear infinite;
                 }
                 @keyframes spin { to { transform: rotate(360deg); } }
+
+                /* Nav mobile « IG pur » : tuile active sombre + pop au tap */
+                .nav-ig-btn:active .nav-ig-icon { transform: scale(0.88); }
+                .nav-ig-icon.is-active { animation: navIgPop 0.34s var(--ease-out-expo); }
+                @keyframes navIgPop { 0% { transform: scale(0.78); } 55% { transform: scale(1.14); } 100% { transform: scale(1); } }
+                body.ui-reduce-motion .nav-ig-icon.is-active { animation: none; }
             `}</style>
         </div>
     );

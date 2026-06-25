@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, Phone, Mail, Edit2, ShieldAlert, CheckCircle2, Coins, MapPin, GraduationCap, History } from 'lucide-react';
+import { X, Phone, Mail, Edit2, ShieldAlert, CheckCircle2, Coins, MapPin, GraduationCap, History, StickyNote } from 'lucide-react';
 import Avatar from '../common/Avatar';
 import { RoleBadge, GroupBadge } from '../common/Badges';
 import { getAge } from '../../utils/participantUtils';
@@ -73,8 +73,8 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                     {/* Details List */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                         
-                        {/* Medical / Alerte Section */}
-                        {(viewingParticipant.allergies || viewingParticipant.diet || viewingParticipant.constraints) ? (
+                        {/* Sécurité médicale = allergies + régime uniquement (les remarques ont leur propre bloc neutre) */}
+                        {(viewingParticipant.allergies || viewingParticipant.diet) ? (
                             <div style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: '1.5px solid oklch(62% 0.2 28 / 0.15)', borderRadius: '24px', padding: '1.5rem', color: 'var(--danger-color)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '0.85rem', marginBottom: '1rem' }}>
                                     <ShieldAlert size={20} strokeWidth={2} /> SÉCURITÉ MÉDICALE
@@ -92,18 +92,22 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                                             <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem' }}>{viewingParticipant.diet}</div>
                                         </div>
                                     )}
-                                    {viewingParticipant.constraints && (
-                                        <div>
-                                            <div style={{ fontSize: '10px', fontWeight: '950', opacity: 0.6, marginBottom: '2px' }}>REMARQUES</div>
-                                            <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem' }}>{viewingParticipant.constraints}</div>
-                                        </div>
-                                    )}
                                 </div>
                             </div>
                         ) : (
                             <div style={{ background: 'var(--bg-secondary)', borderRadius: '24px', padding: '1.25rem', display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-muted)' }}>
                                 <CheckCircle2 size={20} style={{ color: 'var(--success-color)' }} />
                                 <span style={{ fontWeight: '850', fontSize: '0.85rem' }}>AUCUN PROBLÈME MÉDICAL SIGNALÉ</span>
+                            </div>
+                        )}
+
+                        {/* Remarques = note neutre, jamais une alerte médicale */}
+                        {viewingParticipant.constraints && (
+                            <div style={{ background: 'var(--bg-secondary)', border: '1.5px solid var(--glass-border)', borderRadius: '24px', padding: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '0.85rem', marginBottom: '0.75rem', color: 'var(--text-muted)' }}>
+                                    <StickyNote size={20} strokeWidth={2} /> REMARQUES
+                                </div>
+                                <div style={{ color: 'var(--text-main)', fontWeight: '750', fontSize: '0.95rem', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{viewingParticipant.constraints}</div>
                             </div>
                         )}
 

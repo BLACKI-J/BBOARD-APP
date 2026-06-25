@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
     ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, MapPin,
     Users, X, Trash2, Edit2, Star, Circle, Utensils,
-    Coffee, Sun, Zap, Moon, Check, Copy, LayoutGrid, Printer, AlertTriangle
+    Coffee, Sun, Zap, Moon, Check, Copy, LayoutGrid, Printer, AlertTriangle, MoreHorizontal
 } from 'lucide-react';
 import useIsMobile from '../utils/useIsMobile';
 import { v4 as uuidv4 } from 'uuid';
@@ -310,8 +310,10 @@ export default function Schedule({ activities, setActivities, participants, grou
     const canEditMenus = canEdit && can('editScheduleMenus');
 
     const [viewMode, setViewMode] = useState(canViewActivities ? 'activities' : (canViewMenus ? 'menus' : 'activities'));
+    const [schedMenuOpen, setSchedMenuOpen] = useState(false);
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isFormOpen, setIsFormOpen] = useState(false);
+    const [repeatDays, setRepeatDays] = useState([]); // jours (ds) où créer l'activité d'un coup
     const [editingId, setEditingId] = useState(null);
     const [formData, setFormData] = useState({
         date: formatDate(new Date()),
@@ -421,7 +423,10 @@ export default function Schedule({ activities, setActivities, participants, grou
         if (editingId) {
             setActivities(prev => prev.map(a => a.id === editingId ? { ...baseActivity, id: editingId } : a));
         } else {
-            setActivities(prev => [...prev, { ...baseActivity, id: uuidv4() }]);
+            const targetDays = repeatDays.length ? Array.from(new Set(repeatDays)) : [formData.date];
+            const created = targetDays.map(ds => ({ ...baseActivity, date: ds, id: uuidv4() }));
+            setActivities(prev => [...prev, ...created]);
+            if (created.length > 1) ui.toast(`Activité ajoutée sur ${created.length} jours.`, { type: 'success' });
         }
         setIsFormOpen(false);
     };
@@ -606,6 +611,21 @@ export default function Schedule({ activities, setActivities, participants, grou
         return cells;
     };
 
+    // Semaine du formulaire (pour répéter une activité sur plusieurs jours).
+    const repeatWeek = useMemo(() => {
+        const base = formData.date ? parseISO(formData.date) : currentDate;
+        const s = startOfWeek(base);
+        return Array.from({ length: 7 }, (_, i) => {
+            const dd = addDays(s, i);
+            return { ds: formatDate(dd), letter: dd.toLocaleDateString('fr-FR', { weekday: 'narrow' }).toUpperCase(), num: dd.getDate() };
+        });
+    }, [formData.date, currentDate]);
+    const toggleRepeatDay = (ds) => setRepeatDays(prev => prev.includes(ds) ? prev.filter(x => x !== ds) : [...prev, ds]);
+    const selectWholeWeek = () => {
+        const all = repeatWeek.map(d => d.ds);
+        setRepeatDays(prev => prev.length === all.length ? [formData.date] : all);
+    };
+
     const openNewForm = () => {
         setFormData({
             date: formatDate(currentDate),
@@ -613,6 +633,7 @@ export default function Schedule({ activities, setActivities, participants, grou
             title: '', description: '', participants: [], groups: [],
             color: DEFAULT_COLOR.value,
         });
+        setRepeatDays([formatDate(currentDate)]);
         setEditingId(null);
         setIsFormOpen(true);
     };
@@ -624,7 +645,7 @@ export default function Schedule({ activities, setActivities, participants, grou
 
             {/* View Toggle Bar */}
             <div style={{
-                padding: isMobile && schedScrolled ? '0' : '1.25rem 2.5rem',
+                padding: isMobile && schedScrolled ? '0' : (isMobile ? '0.85rem 1rem' : '1.25rem 2.5rem'),
                 maxHeight: isMobile && schedScrolled ? '0' : '120px',
                 overflow: 'hidden',
                 opacity: isMobile && schedScrolled ? 0 : 1,
@@ -638,12 +659,12 @@ export default function Schedule({ activities, setActivities, participants, grou
                 zIndex: 20,
                 pointerEvents: isMobile && schedScrolled ? 'none' : 'auto'
             }}>
-                <div style={{ display: 'flex', background: 'oklch(0% 0 0 / 0.05)', padding: '5px', borderRadius: '16px', backdropFilter: 'blur(10px)' }}>
+                <div style={{ display: 'flex', flex: isMobile ? 1 : 'none', background: 'oklch(0% 0 0 / 0.05)', padding: '5px', borderRadius: '16px', backdropFilter: 'blur(10px)' }}>
                      {canViewActivities && (
                      <button
                         onClick={() => setViewMode('activities')}
                         style={{
-                            padding: '0.625rem 1.25rem', borderRadius: '12px', gap: '0.5rem', display: 'flex', alignItems: 'center',
+                            padding: '0.625rem 1.25rem', borderRadius: '12px', gap: '0.5rem', display: 'flex', alignItems: 'center', flex: isMobile ? 1 : 'none', justifyContent: 'center',
                             background: viewMode === 'activities' ? 'white' : 'transparent',
                             color: viewMode === 'activities' ? 'var(--primary-color)' : 'var(--text-muted)',
                             fontWeight: '950', fontSize: '0.85rem', transition: 'all 0.3s',
@@ -656,7 +677,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                     <button
                         onClick={() => setViewMode('menus')}
                         style={{
-                            padding: '0.625rem 1.25rem', borderRadius: '12px', gap: '0.5rem', display: 'flex', alignItems: 'center',
+                            padding: '0.625rem 1.25rem', borderRadius: '12px', gap: '0.5rem', display: 'flex', alignItems: 'center', flex: isMobile ? 1 : 'none', justifyContent: 'center',
                             background: viewMode === 'menus' ? 'white' : 'transparent',
                             color: viewMode === 'menus' ? 'var(--cta-color)' : 'var(--text-muted)',
                             fontWeight: '950', fontSize: '0.85rem', transition: 'all 0.3s',
@@ -667,16 +688,18 @@ export default function Schedule({ activities, setActivities, participants, grou
                     )}
                 </div>
 
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: isMobile ? 'center' : 'flex-end', flexWrap: 'wrap' }}>
-                    <button aria-label="Aller à aujourd'hui" onClick={goToToday} className="btn-icon" style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
+                {!isMobile && (
+                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                    <button aria-label="Aller à aujourd'hui" onClick={goToToday} className="btn-icon" style={{ width: '44px', height: '44px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
                         <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--primary-color)' }} />
                     </button>
                     <div style={{ display: 'flex', alignItems: 'center', background: 'var(--surface-color)', borderRadius: '14px', border: '1.5px solid var(--glass-border)', overflow: 'hidden' }}>
-                        <button aria-label="Jour précédent" onClick={() => navigateDay(-1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronLeft size={isMobile ? 16 : 18} /></button>
-                        <div style={{ width: '1px', height: isMobile ? '16px' : '20px', background: 'var(--glass-border)' }} />
-                        <button aria-label="Jour suivant" onClick={() => navigateDay(1)} style={{ padding: isMobile ? '0.55rem' : '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronRight size={isMobile ? 16 : 18} /></button>
+                        <button aria-label="Jour précédent" onClick={() => navigateDay(-1)} style={{ padding: '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronLeft size={18} /></button>
+                        <div style={{ width: '1px', height: '20px', background: 'var(--glass-border)' }} />
+                        <button aria-label="Jour suivant" onClick={() => navigateDay(1)} style={{ padding: '0.75rem', background: 'transparent', border: 'none', cursor: 'pointer', display: 'flex' }}><ChevronRight size={18} /></button>
                     </div>
                 </div>
+                )}
             </div>
 
             {/* Compact sticky bar — mobile scrolled */}
@@ -698,7 +721,7 @@ export default function Schedule({ activities, setActivities, participants, grou
             )}
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                <div ref={schedScrollRef} onScroll={schedOnScroll} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: isMobile ? '1.25rem' : '2.5rem', background: 'rgba(0,0,0,0.015)', overflowY: 'auto' }} className="no-scrollbar">
+                <div ref={schedScrollRef} onScroll={schedOnScroll} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: isMobile ? '1.25rem' : '2.5rem', background: 'transparent', overflowY: 'auto' }} className="no-scrollbar">
                     
                     {(!canViewActivities && !canViewMenus) ? (
                         <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)', fontWeight: 800 }}>
@@ -708,49 +731,112 @@ export default function Schedule({ activities, setActivities, participants, grou
                         <div style={{ maxWidth: scheduleView === 'week' ? '1500px' : '1000px', width: '100%', margin: '0 auto' }}>
                             {/* Date Header Card */}
                             <div className="card-glass" style={{
-                                padding: isMobile ? '1rem' : '1.5rem 2rem', marginBottom: isMobile ? '1.5rem' : '3rem', borderLeft: '8px solid var(--primary-color)',
-                                display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'center',
-                                gap: isMobile ? '1.25rem' : '1rem'
+                                padding: isMobile ? '0.85rem' : '1.5rem 2rem', marginBottom: isMobile ? '1.25rem' : '3rem', borderLeft: isMobile ? 'none' : '8px solid var(--primary-color)',
+                                display: 'flex', flexDirection: 'column', gap: isMobile ? '0.7rem' : 0
                             }}>
-                                <div>
-                                    <h2 style={{ margin: 0, fontSize: isMobile ? '1.3rem' : '1.75rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
-                                        {scheduleView === 'week'
-                                            ? `Semaine du ${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${addDays(weekStart, 6).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
-                                            : currentDateLabel}
-                                    </h2>
-                                    {scheduleView === 'day' && dayActivities.length > 0 && (
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                                            <div style={{ height: '6px', width: isMobile ? '100px' : '180px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
-                                                <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary-color)', borderRadius: '10px', transition: 'width 1s' }} />
-                                            </div>
-                                            <span style={{ fontSize: '10px', fontWeight: '950', color: 'var(--primary-color)' }}>{doneCount} / {dayActivities.length} FAITS</span>
+                                {isMobile ? (
+                                    <>
+                                        {/* Stepper : ‹ date › centré */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <button aria-label="Précédent" onClick={() => navigateDay(-1)} className="btn-icon" style={{ width: '40px', height: '40px', flexShrink: 0, background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><ChevronLeft size={18} /></button>
+                                            <h2 onClick={goToToday} title="Revenir à aujourd'hui" style={{ margin: 0, flex: 1, textAlign: 'center', fontSize: '1.05rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.03em', color: 'var(--text-main)', textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}>
+                                                {scheduleView === 'week'
+                                                    ? `Sem. ${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} – ${addDays(weekStart, 6).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
+                                                    : currentDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })}
+                                            </h2>
+                                            <button aria-label="Suivant" onClick={() => navigateDay(1)} className="btn-icon" style={{ width: '40px', height: '40px', flexShrink: 0, background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><ChevronRight size={18} /></button>
                                         </div>
-                                    )}
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '12px', padding: '3px' }}>
-                                        {[['day', 'Jour', <CalendarIcon size={13} strokeWidth={2} key="d" />], ['week', 'Semaine', <LayoutGrid size={13} strokeWidth={2} key="w" />]].map(([v, label, icon]) => (
-                                            <button key={v} onClick={() => setScheduleView(v)} style={{ padding: '0.4rem 0.7rem', borderRadius: '9px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', background: scheduleView === v ? 'white' : 'transparent', color: scheduleView === v ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: scheduleView === v ? 'var(--shadow-sm)' : 'none' }}>
-                                                {icon} {label}
-                                            </button>
-                                        ))}
+                                        {scheduleView === 'day' && dayActivities.length > 0 && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                                                <span style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>{doneCount}/{dayActivities.length} faits</span>
+                                                <div style={{ height: '5px', flex: 1, background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary-color)', borderRadius: '10px', transition: 'width 1s' }} />
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Vue + menu ⋯ + ajout */}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '12px', padding: '3px', flex: 1 }}>
+                                                {[['day', 'Jour', <CalendarIcon size={13} strokeWidth={2} key="d" />], ['week', 'Semaine', <LayoutGrid size={13} strokeWidth={2} key="w" />]].map(([v, label, icon]) => (
+                                                    <button key={v} onClick={() => setScheduleView(v)} style={{ flex: 1, padding: '0.45rem 0.5rem', borderRadius: '9px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', whiteSpace: 'nowrap', background: scheduleView === v ? 'white' : 'transparent', color: scheduleView === v ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: scheduleView === v ? 'var(--shadow-sm)' : 'none' }}>
+                                                        {icon} {label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div style={{ position: 'relative', flexShrink: 0 }}>
+                                                <button aria-label="Plus d'options" onClick={() => setSchedMenuOpen(o => !o)} className="btn-icon" style={{ width: '40px', height: '40px', background: schedMenuOpen ? 'var(--primary-light)' : 'var(--surface-color)', border: '1.5px solid var(--glass-border)', color: schedMenuOpen ? 'var(--primary-color)' : 'var(--text-main)' }}><MoreHorizontal size={18} strokeWidth={2} /></button>
+                                                {schedMenuOpen && (
+                                                    <>
+                                                        <div onClick={() => setSchedMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
+                                                        <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: '46px', right: 0, zIndex: 41, width: '230px', padding: '0.5rem', borderRadius: '18px', boxShadow: '0 20px 50px oklch(20% 0 0 / 0.18)' }}>
+                                                            {groups.length > 0 && (
+                                                                <div style={{ padding: '0.35rem 0.4rem 0.5rem' }}>
+                                                                    <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>Filtrer par groupe</div>
+                                                                    <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} className="glass-input" style={{ width: '100%', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', fontWeight: '800', fontSize: '0.82rem' }}>
+                                                                        <option value="all">Tous les groupes</option>
+                                                                        {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                                                    </select>
+                                                                </div>
+                                                            )}
+                                                            <button onClick={() => { goToToday(); setSchedMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontWeight: '850', fontSize: '0.85rem', color: 'var(--text-main)', borderRadius: '10px' }}><span style={{ width: '9px', height: '9px', borderRadius: '50%', background: 'var(--primary-color)', flexShrink: 0 }} /> Aujourd'hui</button>
+                                                            <button onClick={() => { printSchedule(); setSchedMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontWeight: '850', fontSize: '0.85rem', color: 'var(--text-main)', borderRadius: '10px' }}><Printer size={15} strokeWidth={2} /> Imprimer</button>
+                                                            {canEditActivities && scheduleView === 'day' && (
+                                                                <button onClick={() => { handleDuplicateDay(); setSchedMenuOpen(false); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.65rem 0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', fontWeight: '850', fontSize: '0.85rem', color: 'var(--text-main)', borderRadius: '10px' }}><Copy size={15} strokeWidth={2} /> Dupliquer la journée</button>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                            {canEditActivities && (
+                                                <button onClick={openNewForm} className="btn btn-primary" style={{ flexShrink: 0, height: '40px', padding: '0 0.9rem', fontWeight: '950', gap: '0.4rem', borderRadius: '14px', fontSize: '0.82rem', display: 'flex', alignItems: 'center' }}>
+                                                    <Plus size={16} strokeWidth={2} /> Activité
+                                                </button>
+                                            )}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', width: '100%' }}>
+                                        <div>
+                                            <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
+                                                {scheduleView === 'week'
+                                                    ? `Semaine du ${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${addDays(weekStart, 6).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
+                                                    : currentDateLabel}
+                                            </h2>
+                                            {scheduleView === 'day' && dayActivities.length > 0 && (
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+                                                    <div style={{ height: '6px', width: '180px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
+                                                        <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary-color)', borderRadius: '10px', transition: 'width 1s' }} />
+                                                    </div>
+                                                    <span style={{ fontSize: '10px', fontWeight: '950', color: 'var(--primary-color)' }}>{doneCount} / {dayActivities.length} FAITS</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                            <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '12px', padding: '3px' }}>
+                                                {[['day', 'Jour', <CalendarIcon size={13} strokeWidth={2} key="d" />], ['week', 'Semaine', <LayoutGrid size={13} strokeWidth={2} key="w" />]].map(([v, label, icon]) => (
+                                                    <button key={v} onClick={() => setScheduleView(v)} style={{ padding: '0.4rem 0.7rem', borderRadius: '9px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '5px', whiteSpace: 'nowrap', background: scheduleView === v ? 'white' : 'transparent', color: scheduleView === v ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: scheduleView === v ? 'var(--shadow-sm)' : 'none' }}>
+                                                        {icon} {label}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            {groups.length > 0 && (
+                                                <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} title="Filtrer par groupe" style={{ height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', fontWeight: '800', fontSize: '0.8rem', padding: '0 0.6rem', cursor: 'pointer', maxWidth: '160px' }}>
+                                                    <option value="all">Tous les groupes</option>
+                                                    {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                                                </select>
+                                            )}
+                                            <button onClick={printSchedule} className="btn-icon" title="Imprimer le planning" style={{ width: '38px', height: '38px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><Printer size={16} strokeWidth={2} /></button>
+                                            {canEditActivities && scheduleView === 'day' && (
+                                                <button onClick={handleDuplicateDay} className="btn-icon" title="Dupliquer la journée vers une autre date" style={{ width: '38px', height: '38px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><Copy size={16} strokeWidth={2} /></button>
+                                            )}
+                                            {canEditActivities && (
+                                                <button onClick={openNewForm} className="btn btn-primary" style={{ padding: '0.7rem 1.2rem', fontWeight: '950', gap: '0.5rem', borderRadius: '14px', fontSize: '0.88rem' }}>
+                                                    <Plus size={18} strokeWidth={2} /> Nouvelle Activité
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
-                                    {groups.length > 0 && (
-                                        <select value={groupFilter} onChange={e => setGroupFilter(e.target.value)} title="Filtrer par groupe" style={{ height: '38px', borderRadius: '12px', border: '1.5px solid var(--glass-border)', background: 'var(--surface-color)', fontWeight: '800', fontSize: '0.8rem', padding: '0 0.6rem', cursor: 'pointer', maxWidth: '160px' }}>
-                                            <option value="all">Tous les groupes</option>
-                                            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                                        </select>
-                                    )}
-                                    <button onClick={printSchedule} className="btn-icon" title="Imprimer le planning" style={{ width: '38px', height: '38px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><Printer size={16} strokeWidth={2} /></button>
-                                    {canEditActivities && scheduleView === 'day' && (
-                                        <button onClick={handleDuplicateDay} className="btn-icon" title="Dupliquer la journée vers une autre date" style={{ width: '38px', height: '38px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><Copy size={16} strokeWidth={2} /></button>
-                                    )}
-                                    {canEditActivities && (
-                                        <button onClick={openNewForm} className="btn btn-primary" style={{ padding: isMobile ? '0.6rem 0.9rem' : '0.7rem 1.2rem', fontWeight: '950', gap: '0.5rem', borderRadius: '14px', fontSize: isMobile ? '0.8rem' : '0.88rem' }}>
-                                            <Plus size={isMobile ? 16 : 18} strokeWidth={2} /> {isMobile ? 'Activité' : 'Nouvelle Activité'}
-                                        </button>
-                                    )}
-                                </div>
+                                )}
                             </div>
 
                             {/* Vue semaine : 7 colonnes, glisser une activité d'un jour à l'autre = replanifier */}
@@ -895,7 +981,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                                 <div>
                                     <label className="form-label">Date</label>
                                     <input type="date" required value={formData.date}
-                                        onChange={e => setFormData({ ...formData, date: e.target.value })}
+                                        onChange={e => { setFormData({ ...formData, date: e.target.value }); setRepeatDays([e.target.value]); }}
                                         style={{ width: '100%', padding: '0.85rem', borderRadius: '16px', border: '1.5px solid var(--glass-border)', fontWeight: '700', background: 'var(--surface-color)' }}
                                     />
                                 </div>
@@ -914,6 +1000,28 @@ export default function Schedule({ activities, setActivities, participants, grou
                                     />
                                 </div>
                             </div>
+
+                            {!editingId && (
+                                <div>
+                                    <label className="form-label">Répéter sur <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>(crée l'activité sur chaque jour coché)</span></label>
+                                    <div style={{ display: 'flex', gap: '5px', alignItems: 'stretch', flexWrap: 'wrap' }}>
+                                        {repeatWeek.map(d => {
+                                            const sel = repeatDays.includes(d.ds);
+                                            return (
+                                                <button key={d.ds} type="button" onClick={() => toggleRepeatDay(d.ds)}
+                                                    style={{ flex: '1 1 0', minWidth: '36px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1px', padding: '0.4rem 0', borderRadius: '12px', cursor: 'pointer', border: `1.5px solid ${sel ? 'var(--primary-color)' : 'var(--glass-border)'}`, background: sel ? 'var(--primary-color)' : 'var(--surface-color)', color: sel ? 'white' : 'var(--text-muted)', fontWeight: '900', transition: 'all 0.15s' }}>
+                                                    <span style={{ fontSize: '0.78rem', lineHeight: 1 }}>{d.letter}</span>
+                                                    <span style={{ fontSize: '0.6rem', opacity: 0.8, lineHeight: 1 }}>{d.num}</span>
+                                                </button>
+                                            );
+                                        })}
+                                        <button type="button" onClick={selectWholeWeek}
+                                            style={{ flexShrink: 0, padding: '0.5rem 0.85rem', borderRadius: '12px', cursor: 'pointer', border: '1.5px solid var(--glass-border)', background: 'var(--bg-secondary)', color: 'var(--text-main)', fontWeight: '850', fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                            Toute la semaine
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <div>
                                 <label className="form-label">Couleur & Catégorie</label>

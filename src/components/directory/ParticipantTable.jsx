@@ -12,7 +12,7 @@ const SwipeRow = ({ p, isSelected, toggleSelection, handleViewDetails, handleEdi
     const moved = useRef(false);
     const groupName = groups.find(g => g.id === p.group)?.name;
     const age = getAge(p.birthDate);
-    const hasAlert = (p.allergies && p.allergies.trim()) || (p.constraints && p.constraints.trim());
+    const hasAlert = p.allergies && p.allergies.trim(); // remarques (constraints) = info, pas alerte médicale
     const ACTION_W = canEdit ? 112 : 0; // width of revealed actions
 
     const onTouchStart = (e) => { startX.current = e.touches[0].clientX; moved.current = false; };

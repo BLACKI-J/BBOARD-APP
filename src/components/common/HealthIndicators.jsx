@@ -3,11 +3,10 @@ import { ShieldAlert } from 'lucide-react';
 
 const HealthIndicators = ({ participant = {}, expanded = false }) => {
     const hasAllergies = participant?.allergies && participant.allergies.trim() !== '';
-    const hasConstraints = participant?.constraints && participant.constraints.trim() !== '';
     const hasDiet = participant?.diet && participant.diet.trim() !== '';
     const isSwimmer = participant?.ivNage === 'OUI';
 
-    if (!hasAllergies && !hasConstraints && !hasDiet && !isSwimmer) return expanded ? (
+    if (!hasAllergies && !hasDiet && !isSwimmer) return expanded ? (
         <span style={{color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: '800', opacity: 0.6, letterSpacing: '0.02em'}}>
             AUCUNE ALERTE SANTÉ
         </span>
@@ -20,7 +19,7 @@ const HealthIndicators = ({ participant = {}, expanded = false }) => {
             gap:'0.5rem',
             width: expanded ? '100%' : 'auto'
         }}>
-            {(hasAllergies || hasConstraints) && (
+            {hasAllergies && (
                 <div style={{
                     display:'flex', alignItems: 'center', gap: '0.5rem',
                     color: 'var(--danger-color)', background: 'oklch(62% 0.2 28 / 0.08)',
