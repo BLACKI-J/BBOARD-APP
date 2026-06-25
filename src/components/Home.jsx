@@ -4,6 +4,7 @@ import {
     Pill, Plus, Check, ChevronRight, MessageSquareText, Sun, Sunrise, Moon, Apple, ShieldAlert
 } from 'lucide-react';
 import { getMedicationsList } from '../utils/meds';
+import { isActivityPast } from '../utils/dates';
 
 const DAYS = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
 const DAY_MAP = [6, 0, 1, 2, 3, 4, 5]; // JS getDay() (Sun=0) → Monday-first index
@@ -11,15 +12,15 @@ const pad = (n) => String(n).padStart(2, '0');
 const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 
 const MEAL_META = {
-    matin:  { label: 'Petit-déj', icon: <Sunrise size={15} />, color: 'oklch(60% 0.16 50)' },
-    midi:   { label: 'Déjeuner',  icon: <Sun size={15} />,     color: 'oklch(58% 0.14 85)' },
-    gouter: { label: 'Goûter',    icon: <Apple size={15} />,   color: 'oklch(60% 0.18 25)' },
-    soir:   { label: 'Dîner',     icon: <Moon size={15} />,    color: 'oklch(52% 0.14 275)' },
+    matin:  { label: 'Petit-déj', icon: <Sunrise size={15} />, color: 'var(--warning-color)' },
+    midi:   { label: 'Déjeuner',  icon: <Sun size={15} />,     color: 'var(--warning-color)' },
+    gouter: { label: 'Goûter',    icon: <Apple size={15} />,   color: 'var(--danger-color)' },
+    soir:   { label: 'Dîner',     icon: <Moon size={15} />,    color: 'var(--accent-color)' },
 };
 
 const PRIORITY = {
-    urgent:    { label: 'Urgent',    color: 'var(--danger-color)',  bg: 'oklch(96% 0.05 28)' },
-    important: { label: 'Important', color: 'oklch(58% 0.15 75)',   bg: 'oklch(96% 0.07 80)' },
+    urgent:    { label: 'Urgent',    color: 'var(--danger-color)',  bg: 'color-mix(in oklch, var(--danger-color) 12%, white)' },
+    important: { label: 'Important', color: 'var(--warning-color)',   bg: 'color-mix(in oklch, var(--warning-color) 12%, white)' },
     info:      { label: 'Info',      color: 'var(--primary-color)', bg: 'var(--primary-light)' },
 };
 
@@ -146,7 +147,7 @@ export default function Home({
     if (canPost || dueTransmissions.length > 0 || healthAlerts.length > 0) {
         const PRIO_OPTS = [
             { id: 'info', label: 'Info', color: 'var(--primary-color)' },
-            { id: 'important', label: 'Important', color: 'oklch(58% 0.15 75)' },
+            { id: 'important', label: 'Important', color: 'var(--warning-color)' },
             { id: 'urgent', label: 'Urgent', color: 'var(--danger-color)' },
         ];
         blocks.push(
@@ -210,8 +211,8 @@ export default function Home({
                             );
                         })}
                         {healthAlerts.map(a => (
-                            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.875rem', borderRadius: '12px', background: a.type === 'birthday' ? 'oklch(97% 0.05 82)' : 'oklch(97% 0.04 28)', border: '1px solid var(--glass-border)' }}>
-                                {a.type === 'birthday' ? <Cake size={16} style={{ color: 'oklch(60% 0.15 82)', flexShrink: 0 }} /> : <FileText size={16} style={{ color: 'var(--danger-color)', flexShrink: 0 }} strokeWidth={2.5} />}
+                            <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.7rem 0.875rem', borderRadius: '12px', background: a.type === 'birthday' ? 'color-mix(in oklch, var(--warning-color) 12%, white)' : 'color-mix(in oklch, var(--danger-color) 12%, white)', border: '1px solid var(--glass-border)' }}>
+                                {a.type === 'birthday' ? <Cake size={16} style={{ color: 'var(--warning-color)', flexShrink: 0 }} /> : <FileText size={16} style={{ color: 'var(--danger-color)', flexShrink: 0 }} strokeWidth={2.5} />}
                                 <span style={{ fontSize: '0.86rem', fontWeight: '800', color: 'var(--text-main)' }}>{a.message}</span>
                             </div>
                         ))}
@@ -223,17 +224,17 @@ export default function Home({
 
     if (medsNow.length > 0) {
         blocks.push(
-            <section key="meds" className="premium-card" style={{ padding: isMobile ? '1.25rem' : '1.5rem', borderTop: '4px solid oklch(55% 0.18 232)' }}>
+            <section key="meds" className="premium-card" style={{ padding: isMobile ? '1.25rem' : '1.5rem', borderTop: '4px solid var(--accent-color)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                     <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: '800', margin: 0 }}>
-                        <Pill size={18} style={{ color: 'oklch(55% 0.18 232)' }} /> À donner ({medSlot})
+                        <Pill size={18} style={{ color: 'var(--accent-color)' }} /> À donner ({medSlot})
                     </h3>
                     {onNavigate && <button onClick={() => onNavigate('health')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', padding: '0.5rem 0.75rem', minHeight: '40px', margin: '-0.5rem -0.75rem' }}>Santé <ChevronRight size={13} /></button>}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {medsNow.map((m, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.875rem', borderRadius: '12px', background: 'oklch(96% 0.05 232)', border: '1px solid oklch(55% 0.18 232 / 0.2)' }}>
-                            <Pill size={14} style={{ color: 'oklch(55% 0.18 232)', flexShrink: 0 }} />
+                        <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.6rem 0.875rem', borderRadius: '12px', background: 'color-mix(in oklch, var(--accent-color) 12%, white)', border: '1px solid color-mix(in oklch, var(--accent-color) 20%, transparent)' }}>
+                            <Pill size={14} style={{ color: 'var(--accent-color)', flexShrink: 0 }} />
                             <span style={{ fontSize: '0.85rem', fontWeight: '800', color: 'var(--text-main)' }}><span style={{ fontWeight: '950' }}>{m.name}</span> · {m.med}</span>
                         </div>
                     ))}
@@ -256,13 +257,12 @@ export default function Home({
             ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {periodActivities.list.map(a => (
-                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.7rem 0.875rem', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--glass-border)', opacity: a.done ? 0.55 : 1 }}>
+                        <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '0.7rem 0.875rem', borderRadius: '12px', background: 'var(--bg-main)', border: '1px solid var(--glass-border)', opacity: isActivityPast(a) ? 0.55 : 1 }}>
                             <div style={{ width: '4px', height: '34px', borderRadius: '4px', background: a.color || 'var(--primary-color)', flexShrink: 0 }} />
                             <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontWeight: '850', fontSize: '0.9rem', color: 'var(--text-main)', textDecoration: a.done ? 'line-through' : 'none', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
+                                <div style={{ fontWeight: '850', fontSize: '0.9rem', color: 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.title}</div>
                                 {a.startTime && <div style={{ fontSize: '0.7rem', fontWeight: '800', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}><Clock size={10} /> {a.startTime}{a.endTime ? ` – ${a.endTime}` : ''}</div>}
                             </div>
-                            {a.done && <Check size={16} style={{ color: 'var(--success-color)', flexShrink: 0 }} strokeWidth={3} />}
                         </div>
                     ))}
                 </div>
@@ -275,7 +275,7 @@ export default function Home({
         <section key="meals" className="premium-card" style={{ padding: isMobile ? '1.25rem' : '1.5rem' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                 <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', fontWeight: '800', margin: 0 }}>
-                    <Utensils size={18} style={{ color: 'oklch(60% 0.18 25)' }} /> Repas du jour
+                    <Utensils size={18} style={{ color: 'var(--danger-color)' }} /> Repas du jour
                 </h3>
                 {onNavigate && <button onClick={() => onNavigate('schedule')} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', gap: '3px', fontWeight: '900', fontSize: '0.75rem', padding: '0.5rem 0.75rem', minHeight: '40px', margin: '-0.5rem -0.75rem' }}>Modifier <ChevronRight size={13} /></button>}
             </div>

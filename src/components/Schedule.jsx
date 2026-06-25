@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
     ChevronLeft, ChevronRight, Plus, Calendar as CalendarIcon, MapPin,
-    Users, X, Trash2, Edit2, Star, Circle, Utensils,
-    Coffee, Sun, Zap, Moon, Check, Copy, LayoutGrid, Printer, AlertTriangle, MoreHorizontal
+    Users, X, Trash2, Edit2, Star, Utensils,
+    Coffee, Sun, Zap, Moon, Copy, LayoutGrid, Printer, AlertTriangle, MoreHorizontal
 } from 'lucide-react';
 import useIsMobile from '../utils/useIsMobile';
 import { v4 as uuidv4 } from 'uuid';
@@ -10,7 +10,7 @@ import Menus from './Menus';
 import { printHtml } from '../utils/printHtml';
 import { useUi } from '../ui/UiProvider';
 import { useScrollCollapse } from '../utils/useScrollCollapse';
-import { parseISO } from '../utils/dates';
+import { parseISO, isActivityPast } from '../utils/dates';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -107,11 +107,11 @@ const getDuration = (start, end) => {
 
 const WATER_KEYWORDS = ['baignade', 'piscine', 'natation', 'aquatique', 'mer', 'lac', 'rivière', 'plage', 'snorkeling'];
 
-const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDuplicate, onShowNonTested, hasConflict, isMobile, canEdit, participants = [] }) => {
+const ActivityCard = ({ activity, index, onEdit, onDelete, onDuplicate, onShowNonTested, hasConflict, isMobile, canEdit, participants = [], now }) => {
     const color = activity.color || DEFAULT_COLOR.value;
     const timeSlot = getTimeSlotLabel(activity.startTime);
     const duration = getDuration(activity.startTime, activity.endTime);
-    const isDone = activity.done;
+    const isDone = isActivityPast(activity, now);
 
     const combined = `${activity.title} ${activity.description || ''}`.toLowerCase();
     const isWaterActivity = WATER_KEYWORDS.some(kw => combined.includes(kw));
@@ -217,7 +217,6 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
                         color: isDone ? 'var(--text-muted)' : 'var(--text-main)',
                         lineHeight: '1.2',
                         letterSpacing: '-0.04em',
-                        textDecoration: isDone ? 'line-through' : 'none',
                     }}>
                         {activity.title}
                     </h3>
@@ -245,18 +244,18 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
                             </span>
                         )}
                         {hasConflict && (
-                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '950', color: 'var(--danger-color)', background: 'oklch(96% 0.05 28)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.12 28)' }}>
+                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '5px', fontWeight: '950', color: 'var(--danger-color)', background: 'color-mix(in oklch, var(--danger-color) 12%, white)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid var(--danger-color)' }}>
                                 <AlertTriangle size={12} strokeWidth={2} /> Chevauchement
                             </span>
                         )}
                         {isWaterActivity && nonTestedCount > 0 && (
                             <button type="button" onClick={() => onShowNonTested?.()} title="Voir les enfants non testés"
-                                style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'oklch(55% 0.2 45)', background: 'oklch(97% 0.06 45)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.12 45)', cursor: 'pointer' }}>
+                                style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'var(--danger-color)', background: 'color-mix(in oklch, var(--danger-color) 12%, white)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid var(--danger-color)', cursor: 'pointer' }}>
                                 {nonTestedCount} non-testé{nonTestedCount > 1 ? 's' : ''}
                             </button>
                         )}
                         {isWaterActivity && nonTestedCount === 0 && participants.filter(p => p.role === 'child').length > 0 && (
-                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'oklch(45% 0.18 145)', background: 'oklch(97% 0.04 145)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid oklch(80% 0.10 145)' }}>
+                            <span style={{ fontSize: '0.7rem', display: 'flex', alignItems: 'center', gap: '6px', fontWeight: '950', color: 'var(--success-color)', background: 'color-mix(in oklch, var(--success-color) 12%, white)', padding: '3px 10px', borderRadius: '20px', border: '1.5px solid var(--success-color)' }}>
                                 Tous testés
                             </span>
                         )}
@@ -265,29 +264,14 @@ const ActivityCard = ({ activity, index, onEdit, onDelete, onToggleDone, onDupli
 
                 {/* Inline Actions */}
                 {canEdit && (
-                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, marginTop: isMobile ? '0.5rem' : 0, justifyContent: isMobile ? 'flex-end' : 'flex-start' }}>
-                        <button
-                            onClick={() => onToggleDone(activity.id)}
-                            aria-label={isDone ? 'Marquer comme non faite' : 'Marquer comme faite'}
-                            style={{
-                                width: '44px', height: '44px', borderRadius: '12px',
-                                border: '2px solid',
-                                borderColor: isDone ? 'var(--success-color)' : 'var(--glass-border)',
-                                background: isDone ? 'var(--success-color)' : 'var(--surface-color)',
-                                color: isDone ? 'white' : 'var(--glass-border)',
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                cursor: 'pointer', transition: 'all 0.3s var(--ease-out-expo)'
-                            }}
-                        >
-                            {isDone ? <Check size={20} strokeWidth={2} /> : <Circle size={20} strokeWidth={2} />}
-                        </button>
-                        <button aria-label="Modifier l'activité" onClick={() => onEdit(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0, alignItems: 'center', marginTop: isMobile ? '0.5rem' : 0, justifyContent: isMobile ? 'flex-end' : 'flex-start' }}>
+                        <button aria-label="Modifier l'activité" onClick={() => onEdit(activity)} className="btn-icon" style={{ width: isMobile ? '40px' : '42px', height: isMobile ? '40px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
                             <Edit2 size={16} strokeWidth={2} />
                         </button>
-                        <button aria-label="Dupliquer l'activité" onClick={() => onDuplicate(activity)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
+                        <button aria-label="Dupliquer l'activité" onClick={() => onDuplicate(activity)} className="btn-icon" style={{ width: isMobile ? '40px' : '42px', height: isMobile ? '40px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}>
                             <Copy size={15} strokeWidth={2} />
                         </button>
-                        <button aria-label="Supprimer l'activité" onClick={() => onDelete(activity.id)} className="btn-icon" style={{ width: isMobile ? '38px' : '42px', height: isMobile ? '38px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', color: 'var(--danger-color)' }}>
+                        <button aria-label="Supprimer l'activité" onClick={() => onDelete(activity.id)} className="btn-icon" style={{ width: isMobile ? '40px' : '42px', height: isMobile ? '40px' : '42px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', color: 'var(--danger-color)' }}>
                             <Trash2 size={16} strokeWidth={2} />
                         </button>
                     </div>
@@ -315,6 +299,9 @@ export default function Schedule({ activities, setActivities, participants, grou
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [repeatDays, setRepeatDays] = useState([]); // jours (ds) où créer l'activité d'un coup
     const [editingId, setEditingId] = useState(null);
+    // Horloge légère (tick 60 s) → grise les activités dont l'heure est passée.
+    const [nowMs, setNowMs] = useState(() => Date.now());
+    useEffect(() => { const id = setInterval(() => setNowMs(Date.now()), 60000); return () => clearInterval(id); }, []);
     const [formData, setFormData] = useState({
         date: formatDate(new Date()),
         startTime: '09:00', endTime: '10:00',
@@ -378,8 +365,6 @@ export default function Schedule({ activities, setActivities, participants, grou
         };
     }), [activities, weekStart, groupFilter, participants]);
 
-    const doneCount = dayActivities.filter(a => a.done).length;
-    const progress = dayActivities.length > 0 ? (doneCount / dayActivities.length) * 100 : 0;
 
     const handleEdit = (activity) => {
         if (!canEditActivities) {
@@ -405,11 +390,6 @@ export default function Schedule({ activities, setActivities, participants, grou
             danger: true
         });
         if (ok) setActivities(prev => prev.filter(a => a.id !== id));
-    };
-
-    const handleToggleDone = (id) => {
-        if (!canEditActivities) return;
-        setActivities(prev => prev.map(a => a.id === id ? { ...a, done: !a.done } : a));
     };
 
     const handleSubmit = (e) => {
@@ -438,8 +418,8 @@ export default function Schedule({ activities, setActivities, participants, grou
 
     const handleDuplicate = (activity) => {
         if (!canEditActivities) return;
-        const { id, ...rest } = activity;
-        setActivities(prev => [...prev, { ...rest, id: uuidv4(), title: `${activity.title} (copie)`, done: false }]);
+        const { id, done, ...rest } = activity;
+        setActivities(prev => [...prev, { ...rest, id: uuidv4(), title: `${activity.title} (copie)` }]);
         ui.toast('Activité dupliquée — glissez-la sur un autre jour si besoin.', { type: 'success' });
     };
 
@@ -464,7 +444,7 @@ export default function Schedule({ activities, setActivities, participants, grou
         });
         if (target === null) return;
         const ds = target.trim();
-        const copies = src.map(a => { const { id, ...rest } = a; return { ...rest, id: uuidv4(), date: ds, done: false }; });
+        const copies = src.map(a => { const { id, done, ...rest } = a; return { ...rest, id: uuidv4(), date: ds }; });
         setActivities(prev => [...prev, ...copies]);
         ui.toast(`${copies.length} activité(s) copiée(s) vers le ${ds}.`, { type: 'success' });
     };
@@ -595,7 +575,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                     style={{
                         aspectRatio: '1', cursor: 'pointer', borderRadius: '12px',
                         display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative',
-                        background: isSel ? 'var(--primary-color)' : isToday ? 'oklch(58% 0.2 var(--brand-hue) / 0.1)' : 'transparent',
+                        background: isSel ? 'var(--primary-color)' : isToday ? 'color-mix(in oklch, var(--primary-color) 9%, transparent)' : 'transparent',
                         color: isSel ? 'white' : isToday ? 'var(--primary-color)' : 'var(--text-main)',
                         fontWeight: (isSel || isToday) ? '950' : '650',
                         fontSize: '0.8rem', transition: 'all 0.2s',
@@ -603,7 +583,7 @@ export default function Schedule({ activities, setActivities, participants, grou
                     }}>
                     {d}
                     {count > 0 && !isSel && (
-                        <div style={{ position: 'absolute', bottom: '4px', width: '4px', height: '4px', borderRadius: '50%', background: 'oklch(58% 0.18 var(--brand-hue))' }} />
+                        <div style={{ position: 'absolute', bottom: '4px', width: '4px', height: '4px', borderRadius: '50%', background: 'var(--primary-color)' }} />
                     )}
                 </button>
             );
@@ -721,7 +701,7 @@ export default function Schedule({ activities, setActivities, participants, grou
             )}
 
             <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-                <div ref={schedScrollRef} onScroll={schedOnScroll} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: isMobile ? '1.25rem' : '2.5rem', background: 'transparent', overflowY: 'auto' }} className="no-scrollbar">
+                <div ref={schedScrollRef} onScroll={schedOnScroll} style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, padding: isMobile ? '1.25rem' : '2.5rem', background: 'transparent', overflowY: 'auto', overflowX: 'hidden' }} className="no-scrollbar">
                     
                     {(!canViewActivities && !canViewMenus) ? (
                         <div style={{ textAlign: 'center', padding: '4rem 1rem', color: 'var(--text-muted)', fontWeight: 800 }}>
@@ -732,43 +712,36 @@ export default function Schedule({ activities, setActivities, participants, grou
                             {/* Date Header Card */}
                             <div className="card-glass" style={{
                                 padding: isMobile ? '0.85rem' : '1.5rem 2rem', marginBottom: isMobile ? '1.25rem' : '3rem', borderLeft: isMobile ? 'none' : '8px solid var(--primary-color)',
-                                display: 'flex', flexDirection: 'column', gap: isMobile ? '0.7rem' : 0
+                                display: 'flex', flexDirection: 'column', gap: isMobile ? '0.7rem' : 0,
+                                position: 'relative', zIndex: 20
                             }}>
                                 {isMobile ? (
                                     <>
                                         {/* Stepper : ‹ date › centré */}
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <button aria-label="Précédent" onClick={() => navigateDay(-1)} className="btn-icon" style={{ width: '40px', height: '40px', flexShrink: 0, background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><ChevronLeft size={18} /></button>
-                                            <h2 onClick={goToToday} title="Revenir à aujourd'hui" style={{ margin: 0, flex: 1, textAlign: 'center', fontSize: '1.05rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.03em', color: 'var(--text-main)', textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                            <button aria-label="Jour précédent" onClick={() => navigateDay(-1)} style={{ width: '42px', height: '42px', flexShrink: 0, borderRadius: '14px', background: 'var(--bg-secondary)', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronLeft size={20} strokeWidth={2.5} /></button>
+                                            <h2 onClick={goToToday} title="Revenir à aujourd'hui" style={{ margin: 0, flex: 1, textAlign: 'center', fontSize: '1.15rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.03em', color: 'var(--text-main)', textTransform: 'capitalize', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: 'pointer' }}>
                                                 {scheduleView === 'week'
                                                     ? `Sem. ${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} – ${addDays(weekStart, 6).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
                                                     : currentDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'long' })}
                                             </h2>
-                                            <button aria-label="Suivant" onClick={() => navigateDay(1)} className="btn-icon" style={{ width: '40px', height: '40px', flexShrink: 0, background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)' }}><ChevronRight size={18} /></button>
+                                            <button aria-label="Jour suivant" onClick={() => navigateDay(1)} style={{ width: '42px', height: '42px', flexShrink: 0, borderRadius: '14px', background: 'var(--bg-secondary)', border: 'none', color: 'var(--text-main)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><ChevronRight size={20} strokeWidth={2.5} /></button>
                                         </div>
-                                        {scheduleView === 'day' && dayActivities.length > 0 && (
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
-                                                <span style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', whiteSpace: 'nowrap', letterSpacing: '0.02em' }}>{doneCount}/{dayActivities.length} faits</span>
-                                                <div style={{ height: '5px', flex: 1, background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
-                                                    <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary-color)', borderRadius: '10px', transition: 'width 1s' }} />
-                                                </div>
-                                            </div>
-                                        )}
-                                        {/* Vue + menu ⋯ + ajout */}
+                                        {/* Vue (Jour/Semaine) + menu ⋯ */}
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '12px', padding: '3px', flex: 1 }}>
+                                            <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '13px', padding: '3px', flex: 1, minWidth: 0 }}>
                                                 {[['day', 'Jour', <CalendarIcon size={13} strokeWidth={2} key="d" />], ['week', 'Semaine', <LayoutGrid size={13} strokeWidth={2} key="w" />]].map(([v, label, icon]) => (
-                                                    <button key={v} onClick={() => setScheduleView(v)} style={{ flex: 1, padding: '0.45rem 0.5rem', borderRadius: '9px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', whiteSpace: 'nowrap', background: scheduleView === v ? 'white' : 'transparent', color: scheduleView === v ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: scheduleView === v ? 'var(--shadow-sm)' : 'none' }}>
+                                                    <button key={v} onClick={() => setScheduleView(v)} style={{ flex: 1, minWidth: 0, padding: '0.5rem 0.4rem', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '5px', whiteSpace: 'nowrap', background: scheduleView === v ? 'var(--surface-color)' : 'transparent', color: scheduleView === v ? 'var(--primary-color)' : 'var(--text-muted)', boxShadow: scheduleView === v ? 'var(--shadow-sm)' : 'none', transition: 'all 0.25s' }}>
                                                         {icon} {label}
                                                     </button>
                                                 ))}
                                             </div>
                                             <div style={{ position: 'relative', flexShrink: 0 }}>
-                                                <button aria-label="Plus d'options" onClick={() => setSchedMenuOpen(o => !o)} className="btn-icon" style={{ width: '40px', height: '40px', background: schedMenuOpen ? 'var(--primary-light)' : 'var(--surface-color)', border: '1.5px solid var(--glass-border)', color: schedMenuOpen ? 'var(--primary-color)' : 'var(--text-main)' }}><MoreHorizontal size={18} strokeWidth={2} /></button>
+                                                <button aria-label="Plus d'options" onClick={() => setSchedMenuOpen(o => !o)} style={{ width: '42px', height: '42px', borderRadius: '14px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', background: schedMenuOpen ? 'var(--primary-light)' : 'var(--bg-secondary)', border: 'none', color: schedMenuOpen ? 'var(--primary-color)' : 'var(--text-main)', transition: 'all 0.2s' }}><MoreHorizontal size={19} strokeWidth={2} /></button>
                                                 {schedMenuOpen && (
                                                     <>
                                                         <div onClick={() => setSchedMenuOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 40 }} />
-                                                        <div className="card-glass animate-scale-in" style={{ position: 'absolute', top: '46px', right: 0, zIndex: 41, width: '230px', padding: '0.5rem', borderRadius: '18px', boxShadow: '0 20px 50px oklch(20% 0 0 / 0.18)' }}>
+                                                        <div className="animate-scale-in" style={{ position: 'absolute', top: '46px', right: 0, zIndex: 41, width: '230px', maxWidth: 'calc(100vw - 1.8rem)', padding: '0.5rem', borderRadius: '18px', background: 'var(--surface-color)', border: '1.5px solid var(--glass-border)', boxShadow: '0 20px 50px oklch(20% 0 0 / 0.22)' }}>
                                                             {groups.length > 0 && (
                                                                 <div style={{ padding: '0.35rem 0.4rem 0.5rem' }}>
                                                                     <div style={{ fontSize: '10px', fontWeight: '950', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '5px' }}>Filtrer par groupe</div>
@@ -787,29 +760,21 @@ export default function Schedule({ activities, setActivities, participants, grou
                                                     </>
                                                 )}
                                             </div>
-                                            {canEditActivities && (
-                                                <button onClick={openNewForm} className="btn btn-primary" style={{ flexShrink: 0, height: '40px', padding: '0 0.9rem', fontWeight: '950', gap: '0.4rem', borderRadius: '14px', fontSize: '0.82rem', display: 'flex', alignItems: 'center' }}>
-                                                    <Plus size={16} strokeWidth={2} /> Activité
-                                                </button>
-                                            )}
                                         </div>
+                                        {canEditActivities && (
+                                            <button onClick={openNewForm} className="btn btn-primary" style={{ width: '100%', height: '46px', padding: 0, fontWeight: '950', gap: '0.5rem', borderRadius: '14px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                <Plus size={19} strokeWidth={2.5} /> Nouvelle activité
+                                            </button>
+                                        )}
                                     </>
                                 ) : (
-                                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', width: '100%' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: '1rem', width: '100%', flexWrap: 'wrap' }}>
                                         <div>
                                             <h2 style={{ margin: 0, fontSize: '1.75rem', fontWeight: '800', fontFamily: 'Bricolage Grotesque, sans-serif', letterSpacing: '-0.05em', color: 'var(--text-main)', textTransform: 'capitalize' }}>
                                                 {scheduleView === 'week'
                                                     ? `Semaine du ${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} au ${addDays(weekStart, 6).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`
                                                     : currentDateLabel}
                                             </h2>
-                                            {scheduleView === 'day' && dayActivities.length > 0 && (
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                                                    <div style={{ height: '6px', width: '180px', background: 'var(--bg-secondary)', borderRadius: '10px', overflow: 'hidden' }}>
-                                                        <div style={{ width: `${progress}%`, height: '100%', background: 'var(--primary-color)', borderRadius: '10px', transition: 'width 1s' }} />
-                                                    </div>
-                                                    <span style={{ fontSize: '10px', fontWeight: '950', color: 'var(--primary-color)' }}>{doneCount} / {dayActivities.length} FAITS</span>
-                                                </div>
-                                            )}
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
                                             <div style={{ display: 'flex', gap: '3px', background: 'oklch(0% 0 0 / 0.05)', borderRadius: '12px', padding: '3px' }}>
@@ -841,7 +806,7 @@ export default function Schedule({ activities, setActivities, participants, grou
 
                             {/* Vue semaine : 7 colonnes, glisser une activité d'un jour à l'autre = replanifier */}
                             {scheduleView === 'week' ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(7, minmax(0, 1fr))', gap: '0.5rem' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(7, minmax(0, 1fr))', gap: '0.6rem' }}>
                                     {weekDays.map(({ date, ds, items }) => {
                                         const isToday = ds === formatDate(new Date());
                                         const isSel = ds === formatDate(currentDate);
@@ -850,9 +815,9 @@ export default function Schedule({ activities, setActivities, participants, grou
                                                 onDragOver={canEditActivities ? (e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'inset 0 0 0 2px var(--primary-color)'; } : undefined}
                                                 onDragLeave={(e) => { e.currentTarget.style.boxShadow = 'none'; }}
                                                 onDrop={canEditActivities ? (e) => { e.preventDefault(); e.currentTarget.style.boxShadow = 'none'; const id = e.dataTransfer.getData('text/plain'); if (id) handleMoveActivity(id, ds); } : undefined}
-                                                style={{ background: 'var(--surface-color)', border: `1.5px solid ${isSel ? 'var(--primary-color)' : 'var(--glass-border)'}`, borderRadius: '16px', padding: '0.5rem', minHeight: '130px', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                                style={{ background: 'var(--surface-color)', border: `1.5px solid ${isSel ? 'var(--primary-color)' : 'var(--glass-border)'}`, borderRadius: '16px', padding: '0.65rem 0.6rem', minHeight: '130px', display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
                                                 <button onClick={() => { setCurrentDate(new Date(date)); setScheduleView('day'); }} title="Ouvrir cette journée"
-                                                    style={{ border: 'none', background: isToday ? 'oklch(58% 0.2 var(--brand-hue) / 0.1)' : 'transparent', cursor: 'pointer', textAlign: 'left', padding: '0.3rem 0.4rem', borderRadius: '9px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    style={{ border: 'none', background: isToday ? 'color-mix(in oklch, var(--primary-color) 9%, transparent)' : 'transparent', cursor: 'pointer', textAlign: 'left', padding: '0.3rem 0.4rem', borderRadius: '9px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <span style={{ fontWeight: '950', fontSize: '0.8rem', textTransform: 'capitalize', color: isToday ? 'var(--primary-color)' : 'var(--text-main)' }}>
                                                         {date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}
                                                     </span>
@@ -862,9 +827,9 @@ export default function Schedule({ activities, setActivities, participants, grou
                                                     <div key={a.id} draggable={canEditActivities}
                                                         onDragStart={(e) => { e.dataTransfer.setData('text/plain', a.id); }}
                                                         onClick={() => canEditActivities && handleEdit(a)}
-                                                        style={{ borderLeft: `3px solid ${a.color || DEFAULT_COLOR.value}`, background: a.done ? 'var(--bg-secondary)' : 'oklch(98% 0.005 250)', borderRadius: '8px', padding: '5px 7px', cursor: canEditActivities ? 'grab' : 'default', opacity: a.done ? 0.55 : 1 }}>
-                                                        <div style={{ fontSize: '0.68rem', fontWeight: '900', color: 'var(--text-muted)' }}>{a.startTime || a.time || '—'}</div>
-                                                        <div style={{ fontSize: '0.78rem', fontWeight: '850', color: 'var(--text-main)', lineHeight: 1.2, textDecoration: a.done ? 'line-through' : 'none', wordBreak: 'break-word' }}>{a.title}</div>
+                                                        style={{ border: '1px solid var(--glass-border)', borderLeft: `4px solid ${a.color || DEFAULT_COLOR.value}`, background: isActivityPast(a, nowMs) ? 'var(--bg-secondary)' : 'var(--surface-color)', borderRadius: '10px', padding: '0.5rem 0.6rem', display: 'flex', flexDirection: 'column', gap: '3px', cursor: canEditActivities ? 'grab' : 'default', opacity: isActivityPast(a, nowMs) ? 0.55 : 1 }}>
+                                                        <div style={{ fontSize: '0.7rem', fontWeight: '900', color: 'var(--text-muted)', letterSpacing: '0.01em' }}>{a.startTime || a.time || '—'}</div>
+                                                        <div style={{ fontSize: '0.82rem', fontWeight: '850', color: 'var(--text-main)', lineHeight: 1.3, overflowWrap: 'break-word' }}>{a.title}</div>
                                                     </div>
                                                 ))}
                                                 {items.length === 0 && <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', opacity: 0.4, textAlign: 'center', padding: '0.75rem 0' }}>—</div>}
@@ -884,9 +849,9 @@ export default function Schedule({ activities, setActivities, participants, grou
                                 <div style={{ paddingLeft: '20px' }}>
                                     {dayActivities.map((activity, idx) => (
                                         <ActivityCard key={activity.id} activity={activity} index={idx}
-                                            onEdit={handleEdit} onDelete={handleDelete} onToggleDone={handleToggleDone}
+                                            onEdit={handleEdit} onDelete={handleDelete}
                                             onDuplicate={handleDuplicate} onShowNonTested={showNonTested} hasConflict={conflictIds.has(activity.id)}
-                                            isMobile={isMobile} canEdit={canEditActivities} participants={participants} />
+                                            isMobile={isMobile} canEdit={canEditActivities} participants={participants} now={nowMs} />
                                     ))}
                                 </div>
                             )}
@@ -901,8 +866,8 @@ export default function Schedule({ activities, setActivities, participants, grou
                 {/* Sidebar Calendar */}
                 {!isMobile && (
                     <div style={{ 
-                        width: '320px', 
-                        borderLeft: '1.5px solid var(--glass-border)', 
+                        width: '320px', flexShrink: 0,
+                        borderLeft: '1.5px solid var(--glass-border)',
                         background: 'rgba(255, 255, 255, 0.45)', 
                         backdropFilter: 'blur(10px)',
                         display: 'flex', flexDirection: 'column', 
@@ -938,21 +903,21 @@ export default function Schedule({ activities, setActivities, participants, grou
             {isFormOpen && (
                 <div className="modal-overlay animate-fade-in" onClick={(e) => e.target === e.currentTarget && setIsFormOpen(false)} style={{ zIndex: 1000, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }}>
                     <div className="modal-content animate-scale-in" style={{ width: '100%', maxWidth: '560px', borderRadius: '32px', padding: '0', overflow: 'hidden' }}>
-                        <div style={{ padding: '1.5rem 2rem', background: 'var(--primary-gradient)', color: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ width: '42px', height: '42px', background: 'rgba(255,255,255,0.2)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                    <Plus size={24} />
+                        <div style={{ padding: '1.5rem 2rem', background: 'var(--surface-color)', color: 'var(--text-main)', borderBottom: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+                                <div style={{ width: '40px', height: '40px', background: 'var(--primary-color)', color: 'white', borderRadius: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                    <Plus size={22} strokeWidth={2.5} />
                                 </div>
-                                <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.25rem', letterSpacing: '-0.02em' }}>
-                                    {editingId ? 'Modifier l\'activité' : 'Nouvelle Activité'}
+                                <h3 style={{ margin: 0, fontWeight: '800', fontSize: '1.2rem', letterSpacing: '-0.02em', color: 'var(--text-main)' }}>
+                                    {editingId ? 'Modifier l\'activité' : 'Nouvelle activité'}
                                 </h3>
                             </div>
-                            <button aria-label="Fermer" onClick={() => setIsFormOpen(false)} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '12px', width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'white' }}>
+                            <button aria-label="Fermer" onClick={() => setIsFormOpen(false)} style={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '12px', width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text-main)', flexShrink: 0 }}>
                                 <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} style={{ padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', maxHeight: '80vh', overflowY: 'auto' }} className="no-scrollbar">
+                        <form onSubmit={handleSubmit} style={{ padding: isMobile ? '1.5rem' : '2rem', display: 'flex', flexDirection: 'column', gap: isMobile ? '1.25rem' : '1.5rem', flex: 1, minHeight: 0, overflowY: 'auto' }} className="no-scrollbar">
                             <div>
                                 <label className="form-label">Titre de l'activité</label>
                                 <div style={{ position: 'relative' }}>

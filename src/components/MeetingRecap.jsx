@@ -7,9 +7,9 @@ import { v4 as uuidv4 } from 'uuid';
 import SectionHeader from './common/SectionHeader';
 
 const PRIORITY_CONFIG = {
-    normal:    { label: 'Normal',    color: 'oklch(58% 0.10 var(--brand-hue))', icon: <Circle size={13} /> },
-    important: { label: 'Important', color: 'oklch(58% 0.15 75)',                icon: <Star size={13} /> },
-    urgent:    { label: 'Urgent',    color: 'oklch(58% 0.20 25)',                icon: <Zap size={13} /> },
+    normal:    { label: 'Normal',    color: 'var(--accent-color)', icon: <Circle size={13} /> },
+    important: { label: 'Important', color: 'var(--warning-color)',                icon: <Star size={13} /> },
+    urgent:    { label: 'Urgent',    color: 'var(--danger-color)',                icon: <Zap size={13} /> },
 };
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -250,7 +250,7 @@ export default function MeetingRecap({ canEdit = true, meetingRecaps = [], setMe
             <style>{`
                 .btn-icon-ref { border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: var(--text-muted); transition: all 0.2s; }
                 .btn-icon-ref:hover { color: var(--primary-color); }
-                .btn-icon-ref.danger:hover { color: var(--danger-color); background: oklch(62% 0.18 20 / 0.1); }
+                .btn-icon-ref.danger:hover { color: var(--danger-color); background: color-mix(in oklch, var(--danger-color) 10%, transparent); }
             `}</style>
         </div>
     );

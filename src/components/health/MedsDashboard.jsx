@@ -45,7 +45,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
         return set;
     }, [children]);
 
-    // Chantier 7 — memoized derived lists
+    // Memoized derived lists
     const childrenWithMeds = useMemo(() =>
         children.filter(c => getMedicationsList(c).length > 0 || getSiBesoinList(c).length > 0),
         [children]
@@ -71,7 +71,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
             newSlot = {};
             meds.forEach(m => newSlot[m] = true);
             newSlot[medName] = false;
-        } else if (typeof currentSlot === 'object') {
+        } else if (typeof currentSlot === 'object' && currentSlot) {
             newSlot = { ...currentSlot, [medName]: !currentSlot[medName] };
         } else {
             newSlot = { [medName]: true };
@@ -176,7 +176,7 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
 
                 {/* Viewing a past day */}
                 {!isToday && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.25rem', borderRadius: '16px', background: 'oklch(96% 0.06 80)', border: '1.5px solid oklch(80% 0.14 85 / 0.5)', color: 'oklch(45% 0.12 70)', fontWeight: '850', fontSize: '0.85rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1.25rem', borderRadius: '16px', background: 'color-mix(in oklch, var(--warning-color) 12%, white)', border: '1.5px solid color-mix(in oklch, var(--warning-color) 50%, transparent)', color: 'var(--warning-color)', fontWeight: '850', fontSize: '0.85rem' }}>
                         <History size={16} strokeWidth={2} />
                         Vous consultez un jour passé.
                     </div>
@@ -354,8 +354,8 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
 
                                 {/* PRN meds */}
                                 {siBesoinList.length > 0 && (
-                                    <div style={{ padding: '0.5rem 1.5rem 1.5rem', background: 'oklch(62% 0.22 145 / 0.03)' }}>
-                                        <div style={{ fontSize: '0.65rem', fontWeight: '950', color: 'oklch(52% 0.22 145)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0.5rem 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <div style={{ padding: '0.5rem 1.5rem 1.5rem', background: 'color-mix(in oklch, var(--success-color) 3%, transparent)' }}>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: '950', color: 'var(--success-color)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0.5rem 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
                                             <AlertCircle size={10} strokeWidth={2} /> En cas de besoin (PRN)
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -365,19 +365,19 @@ const MedsDashboard = ({ children, updateParticipantHealth, canEdit, isMobile, g
                                                 return (
                                                     <div key={idx} onClick={() => toggleSiBesoin(child, activeSlot, prnKey)} style={{
                                                         display: 'flex', alignItems: 'center', gap: '0.75rem', minHeight: '44px',
-                                                        padding: '0.6rem 0.8rem', background: isMedDone ? 'oklch(62% 0.22 145 / 0.15)' : 'var(--surface-color)',
+                                                        padding: '0.6rem 0.8rem', background: isMedDone ? 'color-mix(in oklch, var(--success-color) 15%, transparent)' : 'var(--surface-color)',
                                                         borderRadius: '12px', cursor: canEdit ? 'pointer' : 'default',
-                                                        border: `1.5px solid ${isMedDone ? 'oklch(52% 0.22 145)' : 'var(--glass-border)'}`
+                                                        border: `1.5px solid ${isMedDone ? 'var(--success-color)' : 'var(--glass-border)'}`
                                                     }}>
                                                         <div style={{
                                                             width: '20px', height: '20px', borderRadius: '6px', flexShrink: 0,
-                                                            border: `2px solid ${isMedDone ? 'oklch(52% 0.22 145)' : 'var(--glass-border)'}`,
-                                                            background: isMedDone ? 'oklch(52% 0.22 145)' : 'var(--surface-color)',
+                                                            border: `2px solid ${isMedDone ? 'var(--success-color)' : 'var(--glass-border)'}`,
+                                                            background: isMedDone ? 'var(--success-color)' : 'var(--surface-color)',
                                                             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
                                                         }}>
                                                             {isMedDone && <Check size={14} strokeWidth={4} />}
                                                         </div>
-                                                        <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isMedDone ? 'oklch(42% 0.22 145)' : 'var(--text-main)' }}>{med}</span>
+                                                        <span style={{ fontSize: '0.85rem', fontWeight: '800', color: isMedDone ? 'var(--success-color)' : 'var(--text-main)' }}>{med}</span>
                                                     </div>
                                                 );
                                             })}

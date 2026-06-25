@@ -92,7 +92,7 @@ function PrintContent({ date, destination, startTime, endTime, selectedChildren,
     );
 }
 
-export default function ExitSheet({ participants, groups, canEdit = true, exitSheets = [], setExitSheets, isMobile }) {
+export default function ExitSheet({ participants = [], groups = [], canEdit = true, exitSheets = [], setExitSheets, isMobile }) {
     const ui = useUi();
     const printRef = useRef(null);
     const [destination, setDestination] = useState('');
@@ -311,7 +311,7 @@ export default function ExitSheet({ participants, groups, canEdit = true, exitSh
                                                             border: 'none', cursor: 'pointer', transition: 'all 0.2s',
                                                             background: sel ? 'var(--primary-gradient)' : 'rgba(255, 255, 255, 0.55)',
                                                             color: sel ? 'white' : 'var(--text-main)',
-                                                            boxShadow: sel ? '0 4px 10px oklch(58% 0.18 var(--brand-hue) / 0.2)' : 'none'
+                                                            boxShadow: sel ? '0 4px 10px color-mix(in oklch, var(--accent-color) 20%, transparent)' : 'none'
                                                         }}
                                                     >
                                                         {sel && <CheckSquare size={13} strokeWidth={2} />}

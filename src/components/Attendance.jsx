@@ -156,7 +156,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                     key={child.id}
                                     className="attendance-card"
                                     style={{
-                                        background: child.isPresent ? 'oklch(62% 0.18 145 / 0.05)' : 'var(--surface-color)',
+                                        background: child.isPresent ? 'color-mix(in oklch, var(--success-color) 5%, transparent)' : 'var(--surface-color)',
                                         border: `1.5px solid ${child.isPresent ? 'var(--success-color)' : 'var(--glass-border)'}`,
                                         borderRadius: '20px',
                                         padding: isMobile ? '0.6rem' : '0.75rem 1rem',
@@ -229,7 +229,7 @@ export default function Attendance({ participants, setParticipants, groups, canE
                                             display: 'flex', alignItems: 'center', justifyContent: 'center',
                                             cursor: 'pointer',
                                             transition: 'all 0.25s var(--ease-out-expo)',
-                                            boxShadow: child.isPresent ? '0 4px 16px oklch(62% 0.18 145 / 0.4)' : 'none',
+                                            boxShadow: child.isPresent ? '0 4px 16px color-mix(in oklch, var(--success-color) 40%, transparent)' : 'none',
                                             flexShrink: 0
                                         }}
                                         aria-label={child.isPresent ? 'Marquer absent' : 'Marquer présent'}

@@ -198,7 +198,7 @@ const ItemRow = ({ item, index, onDelete, onPatch, canEdit, onTakePhoto, onUploa
             <div className="animate-fade-in" style={{
                 '--i': index, animationDelay: `calc(var(--i) * 30ms)`,
                 padding: '0.75rem', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '0.625rem',
-                background: returned ? 'oklch(62% 0.18 145 / 0.06)' : 'var(--surface-color)', border: `1.5px solid ${returned ? 'var(--success-color)' : 'var(--glass-border)'}`, borderRadius: '18px', marginBottom: '8px'
+                background: returned ? 'color-mix(in oklch, var(--success-color) 6%, transparent)' : 'var(--surface-color)', border: `1.5px solid ${returned ? 'var(--success-color)' : 'var(--glass-border)'}`, borderRadius: '18px', marginBottom: '8px'
             }}>
                 {thumb}
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -737,7 +737,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                                     <div key={g.child.id}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
                                             <div style={{ fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>{childNameById[g.child.id]}</div>
-                                            <span style={{ fontSize: '0.72rem', fontWeight: '900', color: 'var(--danger-color)', background: 'oklch(62% 0.18 20 / 0.1)', padding: '2px 8px', borderRadius: '8px' }}>{g.items.length} à rendre</span>
+                                            <span style={{ fontSize: '0.72rem', fontWeight: '900', color: 'var(--danger-color)', background: 'color-mix(in oklch, var(--danger-color) 10%, transparent)', padding: '2px 8px', borderRadius: '8px' }}>{g.items.length} à rendre</span>
                                             {canEdit && <button onClick={() => markGroupReturned(g.items)} style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '10px', border: 'none', cursor: 'pointer', fontWeight: '900', fontSize: '0.74rem', background: 'var(--success-color)', color: 'white' }}><Check size={14} strokeWidth={2} /> Tout rendu</button>}
                                         </div>
                                         <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
@@ -786,7 +786,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                     </div>
                     {!isActionPanelCollapsed && (
                         <ControlHub 
-                            newItem={newItem} setNewItem={setNewItem} saveItem={saveItem} batchEntries={batchEntries} setBatchEntries={setBatchEntries} 
+                            newItem={newItem} setNewItem={setNewItem} saveItem={saveItem} batchEntries={batchEntries} 
                             handleBatchFiles={handleBatchFiles} processBatchImport={processBatchImport} isProcessingBatch={isProcessingBatch}
                             canSearchAI={canSearchAI} aiResults={aiResults} isSearchingAi={isSearchingAi} runAiSearch={runAiSearch} CATEGORIES={CATEGORIES}
                             onScanObject={() => requestCapture(photo => handleUploadAction('quick-add', photo))}
@@ -811,7 +811,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
                                 <button className="btn-icon-ref" onClick={() => setIsControlHubOpen(false)}><X size={24} /></button>
                             </div>
                             <ControlHub
-                                newItem={newItem} setNewItem={setNewItem} saveItem={saveItem} batchEntries={batchEntries} setBatchEntries={setBatchEntries}
+                                newItem={newItem} setNewItem={setNewItem} saveItem={saveItem} batchEntries={batchEntries}
                                 handleBatchFiles={handleBatchFiles} processBatchImport={processBatchImport} isProcessingBatch={isProcessingBatch}
                                 canSearchAI={canSearchAI} aiResults={aiResults} isSearchingAi={isSearchingAi} runAiSearch={runAiSearch} CATEGORIES={CATEGORIES}
                                 onScanObject={() => requestCapture(photo => handleUploadAction('quick-add', photo))}
@@ -832,7 +832,7 @@ export default function Inventory({ participants = [], canEdit = true, canSearch
 }
 
 const ControlHub = ({
-    newItem, setNewItem, saveItem, batchEntries, setBatchEntries, handleBatchFiles,
+    newItem, setNewItem, saveItem, batchEntries, handleBatchFiles,
     processBatchImport, isProcessingBatch, canSearchAI, aiResults, isSearchingAi,
     runAiSearch, CATEGORIES, onScanObject, onScanSearch,
     selectedChildId, onRefresh, actorHeaders, childNameById = {}

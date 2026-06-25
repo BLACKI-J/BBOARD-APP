@@ -1,49 +1,8 @@
 /* App.css - Styles extraits pour une meilleure structure */
 
-.hidden-desktop {
-    display: none !important;
-}
-
-@media (min-width: 769px) {
-    .hidden-desktop {
-        display: none !important;
-    }
-}
-
-.nav-drawer {
-    position: fixed;
-    top: 0;
-    right: 0;
-    height: 100%;
-    width: 280px;
-    background: white;
-    z-index: 70;
-    transform: translateX(100%);
-    transition: transform var(--transition-normal);
-    box-shadow: var(--shadow-xl);
-}
-
-.nav-drawer.open {
-    transform: translateX(0);
-}
-
-@media (min-width: 769px) {
-    .nav-drawer {
-        display: none;
-    }
-}
-
-.mobile-only {
-    display: none !important;
-}
-
 @media (max-width: 768px) {
     .desktop-only {
         display: none !important;
-    }
-
-    .mobile-only {
-        display: block !important;
     }
 }
 

@@ -141,7 +141,7 @@ export function UiProvider({ children }) {
                 <DialogShell onClose={onCancelDialog}>
                     <div style={{ padding: '2.5rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.25rem' }}>
-                            <div style={{ background: dialog.danger ? 'oklch(62% 0.18 20 / 0.1)' : 'var(--primary-light)', padding: '0.625rem', borderRadius: '12px', color: dialog.danger ? 'var(--danger-color)' : 'var(--primary-color)', display: 'flex' }}>
+                            <div style={{ background: dialog.danger ? 'color-mix(in oklch, var(--danger-color) 10%, transparent)' : 'var(--primary-light)', padding: '0.625rem', borderRadius: '12px', color: dialog.danger ? 'var(--danger-color)' : 'var(--primary-color)', display: 'flex' }}>
                                 {dialog.danger ? <AlertTriangle size={20} strokeWidth={2.5} /> : <Sparkles size={20} strokeWidth={2.5} />}
                             </div>
                             <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: '950', color: 'var(--text-main)', fontFamily: 'Bricolage Grotesque' }}>{dialog.title}</h3>

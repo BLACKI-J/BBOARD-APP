@@ -110,7 +110,7 @@ export default function Login({ staffUsers, onLogin, connectionStatus }) {
                                     className="profile-item"
                                 >
                                     <div style={{
-                                        width: '40px', height: '40px', background: user.role === 'direction' ? 'var(--primary-gradient)' : 'oklch(62% 0.18 200)',
+                                        width: '40px', height: '40px', background: user.role === 'direction' ? 'var(--primary-gradient)' : 'var(--info-color)',
                                         borderRadius: '12px', display: 'flex', alignItems: 'center',
                                         justifyContent: 'center', color: 'white', fontWeight: '950',
                                         fontSize: '0.9rem'

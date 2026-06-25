@@ -38,9 +38,9 @@ const HealthTextField = ({ value, placeholder, onCommit }) => {
 const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {SECTIONS.map(sec => (
-            <div key={sec.id} style={{ background: 'var(--surface-color)', borderRadius: '18px', border: `1.5px solid color-mix(in oklch, ${sec.color} 22%, transparent)`, overflow: 'hidden' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.75rem 1rem', background: `color-mix(in oklch, ${sec.color} 8%, white)`, color: `color-mix(in oklch, ${sec.color} 75%, black)`, fontSize: '0.75rem', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1px solid color-mix(in oklch, ${sec.color} 18%, transparent)` }}>
-                    <span style={{ display: 'inline-flex', color: sec.color }}>{sec.icon}</span> {sec.label}
+            <div key={sec.id} style={{ background: 'var(--surface-color)', borderRadius: '18px', border: `1.5px solid color-mix(in oklch, ${sec.color} 22%, transparent)`, borderLeft: `4px solid ${sec.color}`, overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.7rem 1rem', background: `color-mix(in oklch, ${sec.color} 10%, white)`, color: `color-mix(in oklch, ${sec.color} 78%, black)`, fontSize: '0.75rem', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em', borderBottom: `1px solid color-mix(in oklch, ${sec.color} 18%, transparent)` }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '26px', height: '26px', borderRadius: '8px', background: `color-mix(in oklch, ${sec.color} 18%, white)`, color: sec.color, flexShrink: 0 }}>{sec.icon}</span> {sec.label}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.625rem', padding: '0.875rem 1rem' }}>
                     {sec.fields.map(f => {
@@ -52,7 +52,7 @@ const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
                                 {canEdit ? (
                                     f.type === 'select' ? (
                                         <select value={val} onChange={e => updateParticipantHealth(child.id, f.key, e.target.value)}
-                                            style={{ width: '100%', fontSize: '0.85rem', fontWeight: '800', padding: '8px 10px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'var(--bg-main)', cursor: 'pointer', minHeight: '42px', color: val === 'OUI' ? 'oklch(55% 0.18 145)' : val === 'NON' ? 'var(--text-muted)' : 'var(--text-main)' }}>
+                                            style={{ width: '100%', fontSize: '0.85rem', fontWeight: '800', padding: '8px 10px', borderRadius: '10px', border: '1.5px solid var(--glass-border)', background: 'var(--bg-main)', cursor: 'pointer', minHeight: '42px', color: val === 'OUI' ? 'var(--success-color)' : val === 'NON' ? 'var(--text-muted)' : 'var(--text-main)' }}>
                                             <option value="">—</option>
                                             {f.options.map(o => <option key={o} value={o}>{o}</option>)}
                                         </select>
@@ -61,7 +61,7 @@ const InfosPanel = ({ child, updateParticipantHealth, canEdit }) => (
                                             onCommit={(v) => updateParticipantHealth(child.id, f.key, v)} />
                                     )
                                 ) : (
-                                    <div style={{ fontSize: '0.88rem', fontWeight: isEmpty ? '600' : '800', color: isEmpty ? 'var(--text-softer)' : (val === 'OUI' ? 'oklch(55% 0.18 145)' : 'var(--text-main)'), fontStyle: isEmpty ? 'italic' : 'normal', padding: '7px 0' }}>
+                                    <div style={{ fontSize: '0.88rem', fontWeight: isEmpty ? '600' : '800', color: isEmpty ? 'var(--text-softer)' : (val === 'OUI' ? 'var(--success-color)' : 'var(--text-main)'), fontStyle: isEmpty ? 'italic' : 'normal', padding: '7px 0' }}>
                                         {isEmpty ? 'Non renseigné' : val}
                                     </div>
                                 )}
@@ -95,7 +95,7 @@ const ChildHealthDetail = ({ child, groups, onBack, updateParticipantHealth, can
 
             {/* Dossier sanitaire reçu (déplacé depuis le formulaire Annuaire) */}
             {canEdit ? (
-                <label style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem 1.25rem', background: child.healthDocProvided ? 'oklch(62% 0.18 145 / 0.08)' : 'var(--surface-color)', borderRadius: '16px', border: `1px solid ${child.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)'}`, cursor: 'pointer' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem 1.25rem', background: child.healthDocProvided ? 'color-mix(in oklch, var(--success-color) 8%, transparent)' : 'var(--surface-color)', borderRadius: '16px', border: `1px solid ${child.healthDocProvided ? 'var(--success-color)' : 'var(--glass-border)'}`, cursor: 'pointer' }}>
                     <input type="checkbox" checked={!!child.healthDocProvided} onChange={e => updateParticipantHealth(child.id, 'healthDocProvided', e.target.checked)}
                         style={{ width: '24px', height: '24px', flexShrink: 0, accentColor: 'var(--success-color)', cursor: 'pointer' }} />
                     <div>

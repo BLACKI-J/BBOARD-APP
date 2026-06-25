@@ -257,7 +257,7 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', padding: '1.75rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px solid var(--glass-border)' }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '1rem', color: 'var(--text-main)' }}>
-                                        <Coins size={22} color="oklch(71% 0.19 45)" /> ARGENT DE POCHE
+                                        <Coins size={22} color="var(--warning-color)" /> ARGENT DE POCHE
                                     </div>
                                     <div style={{ padding: '0.5rem 1rem', borderRadius: '12px', background: 'white', border: '1.5px solid var(--glass-border)', fontWeight: '950', color: pocketMoney.current < 0 ? 'var(--danger-color)' : 'var(--success-color)' }}>
                                         Restant : {Number(pocketMoney.current || 0).toFixed(2)} €
@@ -284,8 +284,8 @@ const ParticipantForm = ({ isOpen, onClose, formData, setFormData, onSubmit, edi
                                                     <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '700' }}>{new Date(tx.date).toLocaleDateString()}</div>
                                                 </div>
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                                    <span style={{ fontWeight: '950', color: 'var(--danger-color)' }}>-{tx.amount.toFixed(2)} €</span>
-                                                    <button type="button" aria-label="Supprimer la dépense" onClick={() => removePocketExpense(tx.id)} style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: 'none', color: 'var(--danger-color)', width: '40px', height: '40px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                                    <span style={{ fontWeight: '950', color: 'var(--danger-color)' }}>-{Number(tx.amount || 0).toFixed(2)} €</span>
+                                                    <button type="button" aria-label="Supprimer la dépense" onClick={() => removePocketExpense(tx.id)} style={{ background: 'color-mix(in oklch, var(--danger-color) 5%, transparent)', border: 'none', color: 'var(--danger-color)', width: '40px', height: '40px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                         <Trash2 size={16} strokeWidth={2} />
                                                     </button>
                                                 </div>

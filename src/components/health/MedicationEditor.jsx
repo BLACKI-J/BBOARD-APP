@@ -82,8 +82,8 @@ const MedicationEditor = ({ child, updateField, canEdit }) => {
 
             {/* Filet de récupération : anciens traitements (ivMed*) saisis avant la refonte */}
             {canEdit && legacyIv.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', padding: '1.25rem', borderRadius: '18px', background: 'oklch(96% 0.06 75)', border: '1.5px solid oklch(82% 0.12 75)' }}>
-                    <div style={{ fontWeight: '900', fontSize: '0.85rem', color: 'oklch(45% 0.12 75)' }}>Anciens traitements détectés</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem', padding: '1.25rem', borderRadius: '18px', background: 'color-mix(in oklch, var(--warning-color) 12%, white)', border: '1.5px solid color-mix(in oklch, var(--warning-color) 28%, white)' }}>
+                    <div style={{ fontWeight: '900', fontSize: '0.85rem', color: 'var(--warning-color)' }}>Anciens traitements détectés</div>
                     <div style={{ fontSize: '0.8rem', fontWeight: '650', color: 'var(--text-main)', lineHeight: 1.5 }}>
                         Des traitements ont été saisis dans l'ancien format. Récupérez-les dans le nouveau système (rien n'est perdu) :
                     </div>
@@ -148,7 +148,7 @@ const MedicationEditor = ({ child, updateField, canEdit }) => {
                                     <div style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)' }}>{med.name}</div>
                                     {canEdit && (
                                         <button type="button" onClick={() => removeMed(idx)}
-                                            style={{ background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)', border: 'none', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                            style={{ background: 'color-mix(in oklch, var(--danger-color) 10%, transparent)', color: 'var(--danger-color)', border: 'none', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                             <Trash2 size={16} strokeWidth={2} />
                                         </button>
                                     )}
@@ -170,7 +170,7 @@ const MedicationEditor = ({ child, updateField, canEdit }) => {
                                     <div style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)' }}>{med}</div>
                                     {canEdit && (
                                         <button type="button" onClick={() => removeLegacy(idx)}
-                                            style={{ background: 'oklch(62% 0.2 28 / 0.1)', color: 'var(--danger-color)', border: 'none', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+                                            style={{ background: 'color-mix(in oklch, var(--danger-color) 10%, transparent)', color: 'var(--danger-color)', border: 'none', borderRadius: '10px', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
                                             <Trash2 size={16} strokeWidth={2} />
                                         </button>
                                     )}

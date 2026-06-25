@@ -61,6 +61,7 @@ const emptyPermissions = () => ({
     viewAttendance: false, editAttendance: false,
     viewInventory: false, editInventory: false,
     viewHealth: false, editHealth: false,
+    viewRecap: false, editRecap: false,
     searchInventoryAI: false, viewSettings: false,
     manageUsers: false, manageAccess: false, viewLogs: false
 });
@@ -734,7 +735,7 @@ export default function Settings({
                             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 400px', gap: '2rem' }}>
                                 <div className="glass-card" style={{ padding: isMobile ? '1.25rem' : '2rem', borderRadius: isMobile ? '22px' : '32px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '2rem' }}>
-                                        <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '8px', borderRadius: '10px', color: 'var(--danger-color)' }}><ShieldAlert size={20} strokeWidth={2} /></div>
+                                        <div style={{ background: 'color-mix(in oklch, var(--danger-color) 10%, transparent)', padding: '8px', borderRadius: '10px', color: 'var(--danger-color)' }}><ShieldAlert size={20} strokeWidth={2} /></div>
                                         <h4 style={{ margin: 0, fontSize: '1.1rem', fontWeight: '800', color: 'var(--text-main)' }}>Points de Vigilance</h4>
                                     </div>
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -745,9 +746,9 @@ export default function Settings({
                                             </div>
                                         ) : (
                                             vigilance.map((msg, i) => (
-                                                <div key={i} style={{ padding: '1rem 1.25rem', background: 'oklch(62% 0.18 20 / 0.05)', borderRadius: '16px', border: '1.5px solid oklch(62% 0.18 20 / 0.1)', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                                <div key={i} style={{ padding: '1rem 1.25rem', background: 'color-mix(in oklch, var(--danger-color) 5%, transparent)', borderRadius: '16px', border: '1.5px solid color-mix(in oklch, var(--danger-color) 10%, transparent)', display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
                                                     <AlertCircle size={18} style={{ color: 'var(--danger-color)', flexShrink: 0, marginTop: '2px' }} />
-                                                    <span style={{ fontSize: '0.95rem', fontWeight: '850', color: 'oklch(20% 0.05 20)' }}>{msg}</span>
+                                                    <span style={{ fontSize: '0.95rem', fontWeight: '850', color: 'var(--danger-color)' }}>{msg}</span>
                                                 </div>
                                             ))
                                         )}
@@ -841,11 +842,11 @@ export default function Settings({
                                                             {rolesList.filter(r => r.id !== 'child').map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
                                                         </select>
                                                         {user.hasPin === false ? (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'oklch(95% 0.05 28)', color: 'var(--danger-color)' }}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'color-mix(in oklch, var(--danger-color) 12%, white)', color: 'var(--danger-color)' }}>
                                                                 <AlertCircle size={10} strokeWidth={2} /> Aucun PIN
                                                             </span>
                                                         ) : user.hasPin === true ? (
-                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'oklch(95% 0.06 145)', color: 'oklch(46% 0.16 145)' }}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '0.64rem', fontWeight: '950', padding: '3px 7px', borderRadius: '7px', background: 'color-mix(in oklch, var(--success-color) 12%, white)', color: 'var(--success-color)' }}>
                                                                 <CheckCircle2 size={10} strokeWidth={2} /> PIN défini
                                                             </span>
                                                         ) : null}
@@ -1263,7 +1264,7 @@ export default function Settings({
                     {/* MAINTENANCE TAB */}
                     {activeTab === 'maintenance' && (
                         <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.25rem', borderRadius: '18px', background: backupStale ? 'oklch(96% 0.06 75)' : 'var(--bg-secondary)', border: `1.5px solid ${backupStale ? 'oklch(82% 0.12 75)' : 'var(--glass-border)'}`, fontWeight: '850', fontSize: '0.85rem', color: 'var(--text-main)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.25rem', borderRadius: '18px', background: backupStale ? 'color-mix(in oklch, var(--warning-color) 12%, white)' : 'var(--bg-secondary)', border: `1.5px solid ${backupStale ? 'color-mix(in oklch, var(--warning-color) 28%, white)' : 'var(--glass-border)'}`, fontWeight: '850', fontSize: '0.85rem', color: 'var(--text-main)' }}>
                                 <CalendarClock size={18} style={{ color: backupStale ? 'var(--warning-color)' : 'var(--text-muted)', flexShrink: 0 }} />
                                 {lastBackup ? (
                                     <span>Dernière sauvegarde : <b>{new Date(lastBackup).toLocaleDateString('fr-FR')}</b>{backupAge > 0 ? ` (il y a ${backupAge} j)` : ' (aujourd\'hui)'}.{backupStale ? ' Pensez à exporter une archive.' : ''}</span>
@@ -1386,7 +1387,7 @@ export default function Settings({
                 .btn-maintenance:hover { transform: translateY(-4px); box-shadow: 0 16px 32px var(--shadow-color); background: white; border: 1.5px solid var(--primary-color); }
                 .btn-maintenance.outline { background: white; border: 2px dashed var(--glass-border); color: var(--text-muted); }
                 .btn-maintenance.outline:hover { border-color: var(--primary-color); color: var(--primary-color); background: var(--primary-light); }
-                .btn-maintenance.danger { background: oklch(62% 0.18 20 / 0.1); color: var(--danger-color); }
+                .btn-maintenance.danger { background: color-mix(in oklch, var(--danger-color) 10%, transparent); color: var(--danger-color); }
                 .btn-maintenance.danger:hover { background: var(--danger-color); color: white; border: none; }
             `}</style>
         </div>

@@ -222,7 +222,7 @@ const ParticipantTable = ({ participants, selectedParticipants, toggleSelection,
                 
                 .table-row-hover { transition: all 0.3s var(--ease-out-expo); }
                 .table-row-hover:hover { background: white !important; transform: scale(1.002); }
-                .row-selected { background: oklch(58% 0.2 var(--brand-hue) / 0.05) !important; }
+                .row-selected { background: var(--primary-light) !important; }
                 
                 td { padding: 1.25rem; vertical-align: middle; border-bottom: 1.5px solid var(--glass-border); }
             `}</style>

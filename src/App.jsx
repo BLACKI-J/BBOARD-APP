@@ -709,7 +709,7 @@ export default function App() {
         return (
             <div style={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-main)', padding: '2rem' }}>
                 <div className="card-glass animate-scale-in" style={{ padding: '3rem', background: 'white', borderRadius: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem', border: '2px solid var(--danger-color)', maxWidth: '400px', textAlign: 'center' }}>
-                    <div style={{ width: '64px', height: '64px', background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger-color)' }}>
+                    <div style={{ width: '64px', height: '64px', background: 'color-mix(in oklch, var(--danger-color) 10%, transparent)', borderRadius: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--danger-color)' }}>
                         <AlertCircle size={32} strokeWidth={3} />
                     </div>
                     <h2 style={{ fontSize: '1.5rem', fontWeight: '950', color: 'var(--text-main)', margin: 0 }}>Serveur injoignable</h2>
@@ -856,8 +856,8 @@ export default function App() {
                                     </div>
                                     <div style={{ maxHeight: '350px', overflowY: 'auto', padding: '0.75rem' }} className="no-scrollbar">
                                         {healthAlerts.length === 0 ? <p style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)', fontWeight: '850', fontSize: '0.9rem' }}>Tout est sous contrôle.</p> : healthAlerts.map(a => (
-                                            <div key={a.id} style={{ padding: '1rem', borderRadius: '16px', background: a.type === 'birthday' ? 'oklch(62% 0.15 82 / 0.08)' : 'oklch(62% 0.18 20 / 0.05)', marginBottom: '0.5rem', display: 'flex', gap: '0.75rem' }}>
-                                                <AlertCircle size={16} style={{ color: a.type === 'birthday' ? 'oklch(62% 0.15 82)' : 'var(--danger-color)', flexShrink: 0 }} strokeWidth={3} />
+                                            <div key={a.id} style={{ padding: '1rem', borderRadius: '16px', background: a.type === 'birthday' ? 'color-mix(in oklch, var(--warning-color) 8%, transparent)' : 'color-mix(in oklch, var(--danger-color) 5%, transparent)', marginBottom: '0.5rem', display: 'flex', gap: '0.75rem' }}>
+                                                <AlertCircle size={16} style={{ color: a.type === 'birthday' ? 'var(--warning-color)' : 'var(--danger-color)', flexShrink: 0 }} strokeWidth={3} />
                                                 <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: '850', lineHeight: '1.4', color: 'var(--text-main)' }}>{a.message}</p>
                                             </div>
                                         ))}
@@ -889,7 +889,7 @@ export default function App() {
                                     <div style={{ maxHeight: '250px', overflowY: 'auto' }} className="no-scrollbar">
                                         {staffUsers.map(u => (
                                             <button key={u.id} onClick={() => { if (activeUserId === u.id) setIsUserSwitcherOpen(false); else handleLogout(); }} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem', border: 'none', background: activeUserId === u.id ? 'var(--primary-light)' : 'transparent', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', transition: 'all 0.2s' }}>
-                                                <div style={{ width: '28px', height: '28px', background: u.role === 'direction' ? 'var(--primary-gradient)' : 'oklch(62% 0.18 200)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '0.75rem' }}>{(u.firstName || '?')[0]}</div>
+                                                <div style={{ width: '28px', height: '28px', background: u.role === 'direction' ? 'var(--primary-gradient)' : 'var(--info-color)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: '950', fontSize: '0.75rem' }}>{(u.firstName || '?')[0]}</div>
                                                 <div style={{ flex: 1 }}>
                                                     <div style={{ fontSize: '0.85rem', fontWeight: '950', color: 'var(--text-main)' }}>{u.firstName}</div>
                                                     <div style={{ fontSize: '8px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{u.role}</div>
@@ -899,7 +899,7 @@ export default function App() {
                                         ))}
                                         <div style={{ margin: '0.75rem 0', height: '1.5px', background: 'var(--glass-border)', opacity: 0.5 }} />
                                         <button onClick={handleLogout} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 0.75rem', border: 'none', background: 'transparent', borderRadius: '12px', cursor: 'pointer', textAlign: 'left', color: 'var(--danger-color)', fontWeight: '950' }}>
-                                            <div style={{ width: '28px', height: '28px', background: 'oklch(62% 0.18 20 / 0.1)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <div style={{ width: '28px', height: '28px', background: 'color-mix(in oklch, var(--danger-color) 10%, transparent)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                                 <Zap size={14} />
                                             </div>
                                             <div style={{ fontSize: '0.85rem' }}>Déconnexion</div>

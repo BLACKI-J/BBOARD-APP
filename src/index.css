@@ -3,19 +3,18 @@
 
 :root {
   /* Mono graphite palette (OKLCH) */
-  --brand-hue: 245;    /* bleu Instagram (#0095F6) */
+  --primary-color: oklch(32% 0.014 255);     /* graphite presque noir */
+  --primary-hover: oklch(25% 0.014 255);     /* graphite pressé */
+  --primary-light: oklch(94% 0.004 255);     /* gris très clair (états actifs) */
 
-  --primary-color: oklch(65% 0.17 245);      /* bleu Instagram #0095F6 */
-  --primary-hover: oklch(58% 0.16 245);      /* bleu pressé */
-  --primary-light: oklch(96% 0.025 245);     /* bleu très clair (états actifs) */
+  --secondary-color: oklch(50% 0.005 255);   /* gris froid */
+  --cta-color: oklch(32% 0.014 255);         /* CTA = graphite */
 
-  --secondary-color: oklch(54% 0.004 250);   /* gris IG #737373 */
-  --cta-color: oklch(65% 0.17 245);          /* CTA = bleu IG */
-
-  --danger-color: oklch(57% 0.20 28);        /* statut (gardé) */
-  --warning-color: oklch(78% 0.14 75);       /* statut (gardé) */
-  --success-color: oklch(58% 0.13 150);      /* statut vert (gardé) */
-  --accent-color: oklch(58% 0.21 350);       /* magenta dégradé IG */
+  --danger-color: oklch(55% 0.13 28);        /* brique sobre (désaturé) */
+  --warning-color: oklch(73% 0.10 70);       /* ambre doux (désaturé) */
+  --success-color: oklch(53% 0.08 155);      /* sapin sobre (désaturé) */
+  --info-color: oklch(52% 0.05 250);         /* ardoise (info) */
+  --accent-color: oklch(46% 0.02 255);       /* gris ardoise (accent neutre) */
 
   /* Cool neutral greys + near-black text */
   --text-main: oklch(22% 0.008 250);         /* noir profond */
@@ -48,7 +47,7 @@
   --glass-border: oklch(91% 0.003 250 / 0.8);
   --glass-blur: 16px;
   /* Frange réfractive « Liquid Glass » (aberration chromatique cyan↔magenta) */
-  --refract: inset 1.6px 1.6px 1.2px -1px rgba(70, 200, 255, 0.55), inset -1.6px -1.6px 1.2px -1px rgba(255, 90, 210, 0.5);
+  --refract: inset 1.4px 1.4px 1px -1px rgba(255, 255, 255, 0.6), inset -1.4px -1.4px 1px -1px rgba(255, 255, 255, 0.42);
 
   /* ── Liquid Glass (iOS 26) — réservé au CHROME flottant (nav, modales,
      barres, boutons d'action). Verre épais + reflet spéculaire en haut +
@@ -59,7 +58,7 @@
   --lg-saturate: 130%;
   --lg-border: oklch(91% 0.003 250 / 0.7);
   --lg-gloss: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.12) 16%, transparent 46%);
-  --lg-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 1.6px 1.6px 1.2px -1px rgba(70, 200, 255, 0.4), inset -1.6px -1.6px 1.2px -1px rgba(255, 90, 210, 0.36), inset 0 0 0 1px rgba(255, 255, 255, 0.25), inset 0 -1px 0 oklch(20% 0 0 / 0.05);
+  --lg-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 1.6px 1.6px 1.2px -1px rgba(255, 255, 255, 0.4), inset -1.6px -1.6px 1.2px -1px rgba(255, 255, 255, 0.34), inset 0 0 0 1px rgba(255, 255, 255, 0.25), inset 0 -1px 0 oklch(20% 0 0 / 0.05);
   --lg-drop: 0 8px 28px oklch(20% 0 0 / 0.08);
 
   /* Elevation & Depth — ombres neutres discrètes */
@@ -68,9 +67,6 @@
   --shadow-lg: 0 16px 40px oklch(20% 0 0 / 0.10);
   --shadow-color: oklch(20% 0 0 / 0.10);
   --shadow-glass: 0 4px 16px oklch(20% 0 0 / 0.06);
-
-  /* Couleur d'identité par section (teinte OKLCH) — en-têtes, accents, badges */
-  --sec-fei: 25;           /* rouge */
 
   --radius-md: 0.875rem;
   --radius-lg: 1.25rem;
@@ -83,10 +79,8 @@
   --transition-normal: 350ms var(--ease-out-expo);
   --transition-slow: 600ms var(--ease-out-expo);
 
-  /* Dégradé primaire — bleu Instagram #0095F6 (boutons pleins) */
-  --primary-gradient: linear-gradient(180deg, oklch(68% 0.17 245) 0%, oklch(60% 0.17 245) 100%);
-  /* Dégradé signature Instagram — orange→rose→violet→bleu (accents : icônes d'en-tête) */
-  --ig-gradient: linear-gradient(125deg, #feda75 0%, #fa7e1e 18%, #d62976 42%, #962fbf 68%, #4f5bd5 100%);
+  /* Dégradé primaire graphite (boutons pleins) */
+  --primary-gradient: linear-gradient(180deg, oklch(34% 0.014 255) 0%, oklch(26% 0.014 255) 100%);
   --sidebar-width: 250px;
 }
 
@@ -138,7 +132,7 @@ body::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
 }
 
-h1, h2, h3, h4, .font-sora {
+h1, h2, h3, h4 {
   font-family: 'Bricolage Grotesque', 'Hanken Grotesk', sans-serif;
   letter-spacing: -0.032em;
   line-height: 1.08;
@@ -146,9 +140,6 @@ h1, h2, h3, h4, .font-sora {
   font-optical-sizing: auto;
   text-wrap: balance;
 }
-
-/* Chiffres alignés (stats premium) */
-.tabular-nums { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
 
 button {
   cursor: pointer;
@@ -194,27 +185,27 @@ button {
 .btn-primary {
   background: var(--primary-gradient);
   color: var(--text-on-primary);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 24px oklch(58% 0.18 var(--brand-hue) / 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 10px 24px oklch(30% 0.01 255 / 0.22);
   border: 1px solid oklch(100% 0 0 / 0.1);
 }
 
 .btn-primary:hover {
   filter: saturate(1.1);
   transform: translateY(-2px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 14px 32px oklch(58% 0.18 var(--brand-hue) / 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 14px 32px oklch(30% 0.01 255 / 0.26);
 }
 
 .btn-danger {
   background: var(--danger-color);
   color: white;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 10px 24px oklch(57% 0.21 28 / 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 10px 24px oklch(55% 0.12 28 / 0.22);
   border: 1px solid oklch(100% 0 0 / 0.1);
 }
 
 .btn-danger:hover {
   filter: saturate(1.1);
   transform: translateY(-2px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 14px 32px oklch(57% 0.21 28 / 0.32);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 14px 32px oklch(55% 0.12 28 / 0.28);
 }
 
 .btn-glass {
@@ -256,46 +247,6 @@ button {
     0 20px 48px oklch(20% 0 0 / 0.10);
 }
 
-.glass-pill {
-  background: rgba(255, 255, 255, 0.4);
-  backdrop-filter: blur(8px);
-  border: 1px solid var(--glass-border);
-  padding: 0.4rem 1rem;
-  border-radius: 100px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  color: var(--text-main);
-}
-
-.section-header-modern {
-  margin-bottom: 2rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.section-header-modern h2 {
-  font-size: 2rem;
-  letter-spacing: -0.05em;
-  color: var(--text-main);
-}
-
-.badge-oklch {
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-size: 10px;
-  font-weight: 950;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.hover-glow:hover {
-  box-shadow: 0 0 20px oklch(58% 0.18 var(--brand-hue) / 0.2);
-}
-
 .btn-glass:hover {
   background: var(--glass-bg-hover);
   transform: translateY(-1.5px);
@@ -325,7 +276,6 @@ button {
 }
 
 /* ── Liquid Glass utilitaire (chrome uniquement) ──────────────────────────── */
-.liquid-glass,
 .liquid-glass-strong {
   position: relative;
   background: var(--lg-gloss), var(--lg-bg);
@@ -340,7 +290,6 @@ button {
 /* Repli sans backdrop-filter (vieux navigateurs) : voile plus opaque pour
    garder la lisibilité du texte placé dessus. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .liquid-glass { background: rgba(255, 255, 255, 0.9); }
   .liquid-glass-strong { background: rgba(255, 255, 255, 0.96); }
 }
 
@@ -442,7 +391,7 @@ body.ui-reduce-motion .glass-tilt-on { transition: none !important; will-change:
   color: white;
   flex-shrink: 0;
   transform: rotate(-3deg);
-  box-shadow: 0 6px 16px oklch(40% 0.08 45 / 0.18);
+  box-shadow: 0 6px 16px oklch(35% 0.01 255 / 0.16);
 }
 .section-head .sh-title {
   margin: 0;
@@ -491,7 +440,7 @@ body.ui-reduce-motion .glass-tilt-on { transition: none !important; will-change:
 .input-field:focus {
   background: var(--surface-color);
   border-color: var(--primary-color);
-  box-shadow: 0 0 0 4px oklch(58% 0.18 var(--brand-hue) / 0.1);
+  box-shadow: 0 0 0 4px oklch(45% 0.02 255 / 0.16);
 }
 
 .input-label {
@@ -552,7 +501,7 @@ body.ui-reduce-motion .glass-tilt-on { transition: none !important; will-change:
 .glass-input:focus {
   border-color: var(--primary-color);
   background: white;
-  box-shadow: 0 0 0 4px oklch(58% 0.18 var(--brand-hue) / 0.1), 0 8px 20px oklch(20% 0.02 55 / 0.06);
+  box-shadow: 0 0 0 4px oklch(45% 0.02 255 / 0.16), 0 8px 20px oklch(20% 0.01 255 / 0.06);
 }
 
 .glass-input::placeholder {
@@ -697,141 +646,10 @@ select.glass-input {
   z-index: 100;
   transition: width var(--transition-slow) var(--ease-out-expo);
   flex-shrink: 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset -1px 0 0 rgba(255, 255, 255, 0.3), 4px 0 30px oklch(40% 0.06 45 / 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset -1px 0 0 rgba(255, 255, 255, 0.3), 4px 0 30px oklch(35% 0.01 255 / 0.1);
 }
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .nav-sidebar { background: rgba(255, 255, 255, 0.96); }
-}
-
-.sidebar-brand {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm);
-  margin-bottom: var(--space-xl);
-}
-
-.brand-logo {
-  background: linear-gradient(180deg, #ffffff, oklch(95% 0.02 58));
-  padding: var(--space-2xs);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-  display: flex;
-  flex-shrink: 0;
-}
-
-.brand-name {
-  font-size: var(--text-base);
-  font-weight: 900;
-  letter-spacing: -0.02em;
-  color: var(--text-main);
-}
-
-.nav-items-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2xs);
-  flex: 1;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-md);
-  transition: all var(--transition-normal);
-  width: 100%;
-  text-align: left;
-  color: #334155;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.nav-item:hover {
-  background: rgba(37, 99, 235, 0.08);
-  color: var(--primary-color);
-}
-
-.nav-item.active {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.14), rgba(37, 99, 235, 0.04));
-  color: var(--primary-color);
-  font-weight: 900;
-  border: 1px solid rgba(37, 99, 235, 0.2);
-  box-shadow: inset 3px 0 0 var(--primary-color);
-}
-
-.nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.nav-label {
-  font-size: var(--text-sm);
-  letter-spacing: -0.01em;
-  white-space: nowrap;
-}
-
-.settings-btn {
-  margin-top: auto;
-}
-
-/* ─── PARTICIPANTS SIDEBAR (ONLY FOR SEATMAP) ─── */
-.participants-sidebar {
-  width: 320px;
-  height: 100%;
-  background: rgba(255, 255, 255, 0.84);
-  border-right: 1px solid var(--border-color);
-  flex-shrink: 0;
-  z-index: 50;
-  transition: transform var(--transition-slow) var(--ease-out-expo);
-}
-
-.participants-sidebar.open {
-  transform: translateX(0);
-}
-
-/* ─── MOBILE LOGIC ─── */
-.mobile-overlay {
-  position: fixed;
-  inset: 0;
-  background: oklch(0% 0 0 / 0.4);
-  backdrop-filter: blur(4px);
-  z-index: 999; /* Below sidebar (1000) */
-}
-
-/* ─── MOBILE BOTTOM DRAWER ─── */
-.bottom-drawer {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--surface-color);
-  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  box-shadow: 0 -10px 40px rgba(0,0,0,0.15);
-  transform: translateY(100%);
-  transition: transform 0.4s var(--ease-out-expo);
-  z-index: 1100;
-  max-height: 90vh;
-  overflow-y: auto;
-  padding: var(--space-lg);
-  padding-bottom: calc(var(--space-xl) + env(safe-area-inset-bottom));
-}
-
-.bottom-drawer.open {
-  transform: translateY(0);
-}
-
-.drawer-handle {
-  width: 40px;
-  height: 4px;
-  background: var(--border-color);
-  border-radius: 10px;
-  margin: 0 auto var(--space-md);
 }
 
 @media (max-width: 1024px) {
@@ -846,23 +664,6 @@ select.glass-input {
   .nav-sidebar.open {
     transform: translateX(0);
   }
-
-  .participants-sidebar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100% !important;
-    height: 80vh;
-    z-index: 1000;
-    transform: translateY(100%);
-    border-right: none;
-    border-top: 1px solid var(--border-color);
-    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  }
-
-  .participants-sidebar.open {
-    transform: translateY(0);
-  }
 }
 
 /* ─── VISIBILITY UTILITIES ─── */
@@ -870,58 +671,10 @@ select.glass-input {
   display: flex !important;
 }
 
-.mobile-only {
-  display: none !important;
-}
-
 @media (max-width: 1024px) {
   .desktop-only {
     display: none !important;
   }
-  
-  .mobile-only {
-    display: flex !important;
-  }
-}
-
-.main-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  background: transparent;
-  position: relative;
-  height: 100%;
-  overflow: hidden;
-}
-
-.workspace-area {
-  padding: 1.1rem 1.25rem 1.25rem;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.content-header {
-  position: relative;
-  background: rgba(255, 255, 255, 0.62) !important;
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(148, 163, 184, 0.2) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.68);
-}
-
-.sidebar-overlay {
-  display: none;
-}
-
-/* Glassmorphism Surface */
-.glass-surface {
-  background: var(--glass-bg);
-  backdrop-filter: blur(var(--glass-blur));
-  -webkit-backdrop-filter: blur(var(--glass-blur));
-  border-bottom: 1px solid var(--glass-border);
 }
 
 /* Impeccable Motion Blobs */
@@ -983,10 +736,6 @@ select.glass-input {
 
 .animate-scale-in {
   animation: scaleIn var(--transition-fast) ease-out;
-}
-
-.transition-fluid {
-  transition: all var(--transition-fluid);
 }
 
 @keyframes fadeIn {
@@ -1106,95 +855,12 @@ select.glass-input {
 
 /* Mobile Responsive */
 @media (max-width: 768px) {
-  .app-container {
-    flex-direction: column;
-  }
-
-  /* ── Sidebar wrapper as bottom drawer on mobile ── */
-  .sidebar-wrapper {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    width: 100% !important;
-    height: 78vh;
-    transform: translateY(100%);
-    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-    z-index: 50;
-    border-radius: 20px 20px 0 0;
-    overflow: hidden;
-    box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
-  }
-
-  .sidebar-wrapper.open {
-    transform: translateY(0);
-  }
-
-  /* The aside fills the wrapper completely */
-  .sidebar-wrapper .sidebar {
-    width: 100%;
-    height: 100%;
-    border-right: none;
-    border-radius: 20px 20px 0 0;
-    overflow: hidden;
-  }
-
-  .sidebar-overlay {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(2px);
-    z-index: 40;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-  }
-
-  .sidebar-overlay.open {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .content-header {
-    padding: 0.75rem 1rem !important;
-    gap: 0.5rem !important;
-  }
-
-  .content-header h1 {
-    font-size: 1.25rem !important;
-  }
-
-  .workspace-area {
-    padding: 0.5rem;
-  }
-
   /* Responsive Modals */
   .modal-content {
-    width: 95% !important;
+    width: 94% !important;
     max-width: none !important;
     flex-direction: column !important;
-    max-height: 95vh !important;
-  }
-
-  /* Form rows in modals */
-  .form-row-aligned {
-    grid-template-columns: 1fr !important;
-    gap: 0.5rem !important;
-  }
-
-  .form-row-aligned label {
-    text-align: left !important;
-    margin-bottom: -0.25rem;
-  }
-
-  .form-row-aligned>.role-selector,
-  .form-row-aligned>textarea,
-  .form-row-aligned>.input-field {
-    grid-column: 1 !important;
+    max-height: 86vh !important;
   }
 
   /* Modal Sidebar */
@@ -1215,475 +881,9 @@ select.glass-input {
   }
 }
 
-/* SeatMap Specific Styles */
-.seat-map-container {
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
-  flex: 1;
-  min-height: 0;
-  padding: 1rem;
-}
-
-.seat-map-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  background: white;
-  padding: 1rem;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-}
-
-.mode-switcher {
-  display: flex;
-  background: var(--bg-secondary);
-  padding: 0.25rem;
-  border-radius: var(--radius-md);
-}
-
-.mode-btn {
-  padding: 0.5rem 1rem;
-  border-radius: calc(var(--radius-md) - 2px);
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
-  font-weight: 500;
-  transition: all var(--transition-normal);
-}
-
-.mode-btn.active {
-  background: white;
-  color: var(--primary-color);
-  box-shadow: var(--shadow-sm);
-}
-
-.vehicle-area {
-  flex: 1;
-  overflow-y: auto;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: 2rem;
-  background: var(--bg-secondary);
-  border-radius: var(--radius-lg);
-  border: 1px dashed var(--border-color);
-  gap: 3rem;
-  flex-wrap: wrap;
-}
-
-.vehicle-card {
-  background: white;
-  padding: 2rem;
-  border-radius: 2rem;
-  box-shadow: var(--shadow-lg);
-  position: relative;
-  transition: transform var(--transition-normal);
-}
-
-.van-layout {
-  width: 360px;
-  min-height: 580px;
-  border-top: 6px solid var(--secondary-color);
-}
-
-.bus-layout {
-  width: 440px;
-  border-top: 8px solid var(--primary-color);
-}
-
-.seat-row {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-}
-
-.seat-group {
-  display: flex;
-  gap: 0.5rem;
-}
-
-/* Seat Styles */
-/* --- SEATMAP OVERHAUL: 3D & LIQUID GLASS --- */
-.vehicle-container-3d {
-  perspective: 2000px;
-  padding: var(--space-2xl);
-  display: flex;
-  padding: 60px 20px 120px;
-  perspective: 2500px;
-  perspective-origin: 50% 0%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 600px;
-}
-
-/* --- FLAT ISOMETRIC (Liquid Glass V2) --- */
-.vehicle-container-3d {
-  padding: 40px 20px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  min-height: 80vh;
-  gap: 40px;
-  flex-wrap: wrap;
-}
-
-.vehicle-shell {
-  position: relative;
-  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s ease;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 32px;
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 20px 50px rgba(15, 23, 42, 0.08),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-}
-
-.vehicle-shell:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 30px 70px rgba(15, 23, 42, 0.12);
-}
-
-.vehicle-roof {
-  display: none; /* Hide 3D roof in flat mode */
-}
-
-.bus-roof { height: 50px; border-radius: 40px 40px 15px 15px; }
-
-/* Shadows of vehicles on the floor */
-.vehicle-shell::after {
-  content: '';
-  position: absolute;
-  bottom: -40px;
-  left: 10%;
-  width: 80%;
-  height: 40px;
-  background: radial-gradient(ellipse at center, rgba(15, 23, 42, 0.12) 0%, transparent 80%);
-  transform: translateZ(-50px) rotateX(90deg);
-  filter: blur(15px);
-  pointer-events: none;
-}
-
-/* Participant Dock (Premium Floating Tray) */
-.participant-tray {
-  position: fixed;
-  bottom: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90%;
-  max-width: 850px;
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 24px;
-  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
-  padding: 16px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  animation: slide-up-dock 0.6s var(--ease-out-expo);
-}
-
-@keyframes slide-up-dock {
-  from { transform: translate(-50%, 120%); opacity: 0; }
-  to { transform: translate(-50%, 0); opacity: 1; }
-}
-
-.tray-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 0 8px;
-}
-
-.tray-scroller {
-  display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding: 8px 4px 12px;
-  scrollbar-width: none;
-}
-
-.tray-scroller::-webkit-scrollbar { display: none; }
-
-.tray-item {
-  flex-shrink: 0;
-  background: white;
-  padding: 10px 16px;
-  border-radius: 14px;
-  font-size: 13px;
-  font-weight: 800;
-  color: #1e293b;
-  border: 1px solid rgba(148, 163, 184, 0.15);
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.05);
-  cursor: grab;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  user-select: none;
-}
-
-.tray-item:hover {
-  transform: translateY(-4px) scale(1.05);
-  background: var(--primary-color);
-  color: white;
-  box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2);
-}
-
-.tray-item:active { cursor: grabbing; transform: scale(0.95); }
-
-/* Seat Glow and Interactive Effects */
-.seat-glow {
-  position: absolute;
-  inset: -6px;
-  border-radius: 16px;
-  border: 2px solid var(--primary-color);
-  box-shadow: 0 0 25px rgba(37, 99, 235, 0.4);
-  opacity: 0;
-  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  pointer-events: none;
-  z-index: 2;
-}
-
-/* Additional interactive states for participants in seats */
-.seat.occupied {
-  transform: translateY(-2px);
-}
-
-.seat.occupied:hover {
-  transform: translateY(-5px) scale(1.02);
-  z-index: 10;
-}
-
-.seat-label {
-  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
-}
-
-.seat.empty:hover {
-  border-color: #6366f1;
-  background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
-  transform: scale(1.05);
-}
-
-.seat.occupied {
-  color: white;
-  transform: translateY(-3px);
-  cursor: pointer;
-}
-
-.seat.occupied:hover {
-  transform: translateY(-5px) scale(1.05);
-  filter: brightness(1.08);
-}
-
-.seat.driver {
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #64748b, #334155);
-  border: 2.5px solid #475569;
-  color: white;
-  width: 56px;
-  height: 56px;
-  font-size: 0.65rem;
-  font-weight: 700;
-  box-shadow: 0 4px 12px rgba(51, 65, 85, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
-}
-
-.seat.drag-over {
-  transform: scale(1.15) translateY(-5px) !important;
-  border-color: #6366f1 !important;
-  border-style: solid !important;
-  background: linear-gradient(135deg, #eef2ff, #e0e7ff) !important;
-  box-shadow: 0 15px 30px rgba(99, 102, 241, 0.4) !important;
-  z-index: 50;
-}
-
-.seat.drag-over .seat-glow {
-  opacity: 1;
-  animation: pulse-glow 1s infinite;
-}
-
-.seat-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-align: center;
-  z-index: 2;
-  line-height: 1.2;
-  padding: 0 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 56px;
-}
-
-.seat-sublabel {
-  font-size: 0.6rem;
-  opacity: 0.75;
-  z-index: 2;
-}
-
-.seat-back {
-  position: absolute;
-  top: 0;
-  width: 100%;
-  height: 14px;
-  background: rgba(0, 0, 0, 0.18);
-  border-radius: 12px 12px 0 0;
-}
-
-
-/* Hide mobile van tabs on desktop */
-.van-tabs {
-  display: none;
-}
-
-/* ── SeatMap Responsive ─────────────────────────────────────── */
-
-
 @media (max-width: 768px) {
   .desktop-only {
     display: none !important;
-  }
-
-  .mobile-only {
-    display: flex !important;
-  }
-
-  .nav-drawer {
-    display: block;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: var(--sidebar-width);
-    height: 100%;
-    background: var(--surface-color);
-    z-index: 1000;
-    transform: translateX(-100%);
-    transition: transform var(--transition-normal);
-    box-shadow: var(--shadow-lg);
-  }
-
-  .nav-drawer.open {
-    transform: translateX(0);
-  }
-
-  .sidebar-nav {
-    width: 100% !important;
-    height: 100%;
-    border-right: none;
-  }
-
-  /* Swipe hint hidden when tabs are shown */
-  .swipe-hint {
-    display: none !important;
-  }
-
-  /* Van tabs bar — shown only on mobile */
-  .van-tabs {
-    display: flex !important;
-    gap: 0.5rem;
-    padding: 0.75rem 1rem 0.5rem;
-    background: white;
-    border-bottom: 1px solid oklch(95% 0.02 58);
-  }
-
-  /* Vehicle area: vertical stack, no horizontal scroll */
-  .vehicle-area {
-    display: flex !important;
-    flex-direction: column !important;
-    overflow-x: hidden !important;
-    overflow-y: visible !important;
-    padding: 1rem !important;
-    gap: 0 !important;
-    scroll-snap-type: none !important;
-    align-items: center !important;
-    flex-wrap: nowrap !important;
-  }
-
-  /* Hide inactive van */
-  .van-tab-hidden {
-    display: none !important;
-  }
-
-  /* Active van card: fill width, no scale */
-  .van-tab-item {
-    width: 100% !important;
-    max-width: 360px !important;
-    flex: none !important;
-    transform: none !important;
-    margin-bottom: 0 !important;
-    scroll-snap-align: none !important;
-  }
-
-  /* Controls */
-  .seat-map-controls {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 0;
-    gap: 0;
-    overflow: hidden;
-  }
-
-  .mobile-controls-toggle {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-    padding: 0.75rem;
-    background: var(--bg-secondary);
-    border: none;
-    border-bottom: 1px solid var(--border-color);
-    width: 100%;
-    color: var(--text-main);
-    font-weight: 600;
-    font-size: 0.9rem;
-    cursor: pointer;
-  }
-
-  .controls-content {
-    display: flex;
-    flex-direction: column;
-    gap: 0.625rem;
-    padding: 0.75rem;
-    transition: max-height 0.3s ease-in-out, opacity 0.3s ease-in-out;
-    max-height: 500px;
-    opacity: 1;
-  }
-
-  .controls-collapsed .controls-content {
-    max-height: 0;
-    opacity: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    pointer-events: none;
-  }
-
-  .seat-map-controls>div.controls-content {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .mode-switcher {
-    width: 100%;
-  }
-
-  .mode-btn {
-    flex: 1;
-    text-align: center;
-    font-size: 0.85rem;
-    padding: 0.5rem;
-  }
-
-  .seat-map-controls>div:last-child {
-    justify-content: center !important;
   }
 
   .hide-mobile {
@@ -1691,71 +891,14 @@ select.glass-input {
   }
 }
 
-@media (max-width: 480px) {
-
-  .van-tab-item,
-  .vehicle-wrapper {
-    width: 100% !important;
-    transform: none !important;
-    margin-bottom: 0 !important;
-  }
-
-  .van-layout,
-  .bus-layout {
-    width: 100% !important;
-    max-width: 320px !important;
-  }
-
-  .seat {
-    width: 56px !important;
-    height: 56px !important;
-  }
-
-  .seat-label {
-    font-size: 0.65rem !important;
-  }
-}
-
-/* ---- Global Visual Upgrade ---- */
-.workspace-area > .animate-fade-in,
-.workspace-area > div {
-  border-radius: 16px;
-}
-
-.page-shell {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.36));
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
-}
-
-.workspace-area .card,
-.workspace-area .seat-map-controls,
-.workspace-area .es-page-header,
-.workspace-area .directory-header {
-  border-radius: 16px !important;
-}
-
-.workspace-area .directory-container,
-.workspace-area .seat-map-container,
-.workspace-area .incident-sheet-container,
-.workspace-area .attendance-page,
-.workspace-area .schedule-shell,
-.workspace-area .meeting-recap {
-  background: rgba(255, 255, 255, 0.42);
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  border-radius: 16px;
-}
-
 body.ui-solid {
   --glass-bg: rgba(255, 255, 255, 0.95);
   --glass-border: rgba(148, 163, 184, 0.25);
 }
 
-body.ui-solid .glass-surface,
 body.ui-solid .card-glass,
 body.ui-solid .glass-card,
 body.ui-solid .premium-card,
-body.ui-solid .liquid-glass,
 body.ui-solid .liquid-glass-strong {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
@@ -1772,10 +915,6 @@ body.ui-compact {
   --space-xl: 1.55rem;
 }
 
-body.ui-compact .workspace-area {
-  padding: 0.8rem 0.95rem 0.95rem;
-}
-
 body.ui-reduce-motion * {
   animation: none !important;
   transition: none !important;
@@ -1789,78 +928,8 @@ body.ui-high-contrast {
 
 body.ui-high-contrast .card,
 body.ui-high-contrast .input-field,
-body.ui-high-contrast .btn-outline,
 body.ui-high-contrast .btn-secondary {
   border-color: #8aa0bd !important;
-}
-
-@media (max-width: 1024px) {
-  .workspace-area {
-    padding: 0.72rem;
-  }
-}
-
-/* --- RECAP RESPONSIVE --- */
-.recap-main-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.8fr) minmax(0, 0.7fr);
-}
-
-@media (max-width: 1024px) {
-  .recap-main-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* --- SETTINGS RESPONSIVE --- */
-.settings-layout {
-  display: flex;
-  gap: var(--space-lg);
-  flex: 1;
-  min-height: 0;
-}
-
-.settings-sidebar {
-  width: 220px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  overflow-y: auto;
-  flex-shrink: 0;
-}
-
-@media (max-width: 768px) {
-  .settings-layout {
-    flex-direction: column;
-  }
-  .settings-sidebar {
-    width: 100%;
-    flex-direction: row;
-    overflow-x: auto;
-    padding-bottom: 8px;
-  }
-  .settings-sidebar > button {
-    width: auto;
-    white-space: nowrap;
-    flex-shrink: 0;
-  }
-}
-
-/* --- MENUS RESPONSIVE --- */
-.menus-layout {
-  display: flex;
-  gap: 1.5rem;
-  flex: 1;
-  min-height: 0;
-}
-
-@media (max-width: 1024px) {
-  .menus-layout {
-    flex-direction: column;
-  }
-  .menus-allergies-sidebar {
-    width: 100% !important;
-  }
 }
 
 /* --- PRINT / EXPORT PDF STYLES --- */
@@ -1870,33 +939,14 @@ body.ui-high-contrast .btn-secondary {
     color: black !important;
   }
 
-  /* Masquer tous les éléments UI inutiles à l'impression */
-  .content-header,
-  .sidebar-wrapper,
-  .nav-drawer,
-  .mobile-only,
+  /* Masquer les éléments UI inutiles à l'impression */
   .dh-actions,
   button,
   ::-webkit-scrollbar {
     display: none !important;
   }
 
-  /* Étendre la zone de contenu */
-  .main-content,
-  .workspace-area,
-  .sc-inner,
-  .directory-container {
-    padding: 0 !important;
-    margin: 0 !important;
-    height: auto !important;
-    overflow: visible !important;
-    box-shadow: none !important;
-    background: white !important;
-  }
-
   /* Éviter les sauts de page cassés dans les listes et tableaux */
-  .sc-activity-card,
-  .directory-card,
   tr {
     page-break-inside: avoid;
     break-inside: avoid;
@@ -1907,29 +957,17 @@ body.ui-high-contrast .btn-secondary {
 
 /* Layout */
 .u-flex       { display: flex; }
-.u-flex-col   { display: flex; flex-direction: column; }
-.u-flex-center { display: flex; align-items: center; justify-content: center; }
 .u-flex-between { display: flex; align-items: center; justify-content: space-between; }
 .u-items-center { align-items: center; }
-.u-flex-wrap  { flex-wrap: wrap; }
 .u-justify-end { justify-content: flex-end; }
-.u-flex-1     { flex: 1; }
-.u-gap-xs  { gap: var(--space-xs); }
 .u-gap-sm  { gap: var(--space-sm); }
 .u-gap-md  { gap: var(--space-md); }
-.u-gap-lg  { gap: var(--space-lg); }
 
 /* Text utilities */
 .u-text-xs   { font-size: var(--text-xs); }
 .u-text-sm   { font-size: var(--text-sm); }
-.u-font-heavy { font-weight: 950; }
 .u-font-bold  { font-weight: 800; }
 .u-text-muted { color: var(--text-muted); }
-.u-text-primary { color: var(--primary-color); }
-.u-uppercase  { text-transform: uppercase; }
-.u-tracking-wide { letter-spacing: 0.05em; }
-.u-truncate   { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.u-m-0   { margin: 0; }
 
 /* Form label */
 .u-label {
@@ -1942,23 +980,13 @@ body.ui-high-contrast .btn-secondary {
   margin-bottom: 0.5rem;
 }
 
-/* Status badges */
-.badge-success { display: inline-flex; align-items: center; gap: 4px; background: oklch(96% 0.04 145); color: oklch(45% 0.18 145); padding: 3px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 900; }
-.badge-danger  { display: inline-flex; align-items: center; gap: 4px; background: oklch(95% 0.05 20); color: var(--danger-color); padding: 3px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 900; }
-.badge-info    { display: inline-flex; align-items: center; gap: 4px; background: oklch(95% 0.05 40); color: var(--primary-color); padding: 3px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 900; }
-.badge-warning { display: inline-flex; align-items: center; gap: 4px; background: oklch(97% 0.05 85); color: oklch(55% 0.15 85); padding: 3px 10px; border-radius: 8px; font-size: 0.72rem; font-weight: 900; }
-
 /* Table utilities */
-.u-th { padding: 0.875rem 1.5rem; font-size: 0.7rem; font-weight: 950; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; white-space: nowrap; }
-.u-td { padding: 0.875rem 1.5rem; font-size: 0.88rem; color: var(--text-main); border-bottom: 1px solid var(--glass-border); }
 .u-section-title { font-size: 0.72rem; font-weight: 950; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
 .u-table-wrap { overflow-x: auto; border-radius: 24px; border: 1.5px solid var(--glass-border); background: white; box-shadow: var(--shadow-sm); }
 .u-table { width: 100%; border-collapse: collapse; text-align: left; }
 
 /* Shared health-table row/input affordances (used by OverviewTable + InfoVacSection) */
 .hover-row:hover { background: rgba(0,0,0,0.015); }
-.inline-input:hover { border-color: var(--glass-border) !important; background: white; }
-.inline-input:focus { border-color: var(--primary-color) !important; background: white; outline: none; }
 
 /* Shared icon button (used by App topbar, SyncStatus, Directory, Inventory, MeetingRecap) */
 .btn-icon-ref {

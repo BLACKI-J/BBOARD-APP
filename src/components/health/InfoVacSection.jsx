@@ -9,7 +9,7 @@ import ChildHealthDetail from './ChildHealthDetail';
 // Anneau de complétion (SVG). Couleur selon le taux : rouge < 40, ambre < 80, vert ≥ 80.
 const CompletionRing = ({ pct }) => {
     const r = 15, circ = 2 * Math.PI * r, offset = circ * (1 - pct / 100);
-    const color = pct >= 80 ? 'oklch(58% 0.13 145)' : pct >= 40 ? 'oklch(70% 0.14 75)' : 'oklch(60% 0.16 28)';
+    const color = pct >= 80 ? 'var(--success-color)' : pct >= 40 ? 'var(--warning-color)' : 'var(--danger-color)';
     return (
         <span style={{ position: 'relative', width: '38px', height: '38px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }} title={`Fiche complétée à ${pct}%`}>
             <svg width="38" height="38" style={{ transform: 'rotate(-90deg)' }}>
@@ -23,10 +23,10 @@ const CompletionRing = ({ pct }) => {
 
 // Tonalité d'une réponse rapide (résumé d'un coup d'œil).
 const TONES = {
-    good: { bg: 'color-mix(in oklch, oklch(58% 0.13 145) 12%, white)', fg: 'oklch(45% 0.13 145)', bd: 'color-mix(in oklch, oklch(58% 0.13 145) 28%, transparent)' },
-    warn: { bg: 'color-mix(in oklch, oklch(72% 0.14 75) 16%, white)',  fg: 'oklch(50% 0.13 70)',  bd: 'color-mix(in oklch, oklch(72% 0.14 75) 32%, transparent)' },
-    bad:  { bg: 'color-mix(in oklch, oklch(60% 0.16 28) 12%, white)',  fg: 'oklch(50% 0.18 28)',  bd: 'color-mix(in oklch, oklch(60% 0.16 28) 30%, transparent)' },
-    med:  { bg: 'color-mix(in oklch, oklch(56% 0.14 285) 12%, white)', fg: 'oklch(47% 0.15 285)', bd: 'color-mix(in oklch, oklch(56% 0.14 285) 28%, transparent)' },
+    good: { bg: 'color-mix(in oklch, var(--success-color) 12%, white)', fg: 'var(--success-color)', bd: 'color-mix(in oklch, var(--success-color) 28%, transparent)' },
+    warn: { bg: 'color-mix(in oklch, var(--warning-color) 16%, white)',  fg: 'var(--warning-color)',  bd: 'color-mix(in oklch, var(--warning-color) 32%, transparent)' },
+    bad:  { bg: 'color-mix(in oklch, var(--danger-color) 12%, white)',  fg: 'var(--danger-color)',  bd: 'color-mix(in oklch, var(--danger-color) 30%, transparent)' },
+    med:  { bg: 'color-mix(in oklch, var(--accent-color) 12%, white)', fg: 'var(--accent-color)', bd: 'color-mix(in oklch, var(--accent-color) 28%, transparent)' },
     neutral: { bg: 'var(--bg-secondary)', fg: 'var(--text-muted)', bd: 'var(--glass-border)' },
 };
 const valueTone = (v) => {
@@ -73,8 +73,11 @@ const ChildCard = ({ child, groups, onOpen }) => {
             onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 16px 36px oklch(20% 0 0 / 0.14)'; }}
             onMouseOut={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = ''; }}>
 
+            {/* Accent couleur du groupe */}
+            <div style={{ height: '5px', width: '100%', background: `linear-gradient(90deg, ${groupColor}, color-mix(in oklch, ${groupColor} 45%, white))` }} />
+
             {/* 1) En-tête */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1.1rem 1.1rem 0.9rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', padding: '1rem 1.1rem 0.9rem' }}>
                 <span style={{ display: 'inline-flex', borderRadius: '50%', flexShrink: 0, boxShadow: `0 0 0 2px var(--surface-color), 0 0 0 4px color-mix(in oklch, ${groupColor} 55%, transparent), 0 4px 12px oklch(40% 0 0 / 0.16)` }}>
                     <Avatar participant={child} size={50} />
                 </span>
@@ -140,7 +143,7 @@ const ChildCard = ({ child, groups, onOpen }) => {
                                 return (
                                     <div key={i} style={{ minWidth: 0 }}>
                                         <div style={{ fontSize: '0.6rem', fontWeight: '900', letterSpacing: '0.03em', textTransform: 'uppercase', color: 'var(--text-softer)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{row.label}</div>
-                                        <div style={{ fontSize: '0.85rem', fontWeight: '800', color: yes ? 'oklch(50% 0.13 145)' : 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{yes ? 'Oui' : row.value}</div>
+                                        <div style={{ fontSize: '0.85rem', fontWeight: '800', color: yes ? 'var(--success-color)' : 'var(--text-main)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{yes ? 'Oui' : row.value}</div>
                                     </div>
                                 );
                             })}

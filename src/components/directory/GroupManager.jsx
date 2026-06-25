@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, Plus, Trash2, LayoutGrid } from 'lucide-react';
 
-const GroupManager = ({ isOpen, onClose, groups, setGroups, participants, setParticipants, newGroupData, setNewGroupData, onAddGroup, onDeleteGroup, canEdit }) => {
+const GroupManager = ({ isOpen, onClose, groups, newGroupData, setNewGroupData, onAddGroup, onDeleteGroup, canEdit }) => {
     if (!isOpen) return null;
 
     return (

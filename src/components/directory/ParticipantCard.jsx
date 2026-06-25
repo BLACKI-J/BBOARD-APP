@@ -5,7 +5,7 @@ import { RoleBadge, GroupBadge } from '../common/Badges';
 import HealthIndicators from '../common/HealthIndicators';
 import { getAge } from '../../utils/participantUtils';
 
-const ParticipantCard = ({ participant, index, isSelected, toggleSelection, handleViewDetails, handleEdit, handleDelete, groups, isMobile, canEdit }) => {
+const ParticipantCard = ({ participant, index, isSelected, toggleSelection, handleViewDetails, handleEdit, handleDelete, groups, canEdit }) => {
     const age = getAge(participant.birthDate);
     
     return (
@@ -42,7 +42,7 @@ const ParticipantCard = ({ participant, index, isSelected, toggleSelection, hand
 
             {/* Top Bar Indicators */}
             {participant.pocketMoney?.current > 0 && (
-                <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '4px', background: 'oklch(70% 0.16 142 / 0.12)', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '950', color: 'var(--success-color)' }}>
+                <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '4px', background: 'color-mix(in oklch, var(--success-color) 12%, transparent)', padding: '4px 10px', borderRadius: '100px', fontSize: '11px', fontWeight: '950', color: 'var(--success-color)' }}>
                     <Coins size={12} /> {participant.pocketMoney.current}€
                 </div>
             )}

@@ -181,7 +181,7 @@ export default function HealthCenter({ participants = [], patchParticipant, grou
                     />
                 ) : activeTab === 'registre' ? (
                     <RegistreInfi
-                        children={children} groups={groups}
+                        children={children}
                         staff={(participants || []).filter(p => p.role !== 'child')}
                         updateParticipantHealth={updateParticipantHealth} isMobile={isMobile}
                         showMeds={can('viewHealthRegistreMeds')} canEditMeds={canEdit && can('editHealthRegistreMeds')}

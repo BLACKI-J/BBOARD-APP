@@ -147,7 +147,7 @@ export default function WebcamPhotoCapture({ isOpen, onPhotoCaptured, onClose })
                 </div>
 
                 {error ? (
-                    <div style={{ padding: '2.5rem 1.5rem', background: 'oklch(62% 0.2 28 / 0.05)', color: 'var(--danger-color)', borderRadius: '24px', textAlign: 'center', border: '1.5px solid oklch(62% 0.2 28 / 0.1)', width: '100%' }}>
+                    <div style={{ padding: '2.5rem 1.5rem', background: 'color-mix(in oklch, var(--danger-color) 5%, transparent)', color: 'var(--danger-color)', borderRadius: '24px', textAlign: 'center', border: '1.5px solid color-mix(in oklch, var(--danger-color) 10%, transparent)', width: '100%' }}>
                         <AlertCircle size={40} style={{ margin: '0 auto 1.25rem', opacity: 0.8 }} />
                         <p style={{ margin: '0 0 1.5rem 0', fontWeight: '850', fontSize: '0.95rem' }}>{error}</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>

@@ -3,7 +3,7 @@ import { Users, User, Shield, Trash2, Plus, Download, Upload, Printer, FileSprea
 import { StatBadge } from '../common/Badges';
 import SectionHeader from '../common/SectionHeader';
 
-const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleExportCsv, handleImport, handleImportCsv, openTrombiModal, hasSelection, isMobile, canEdit }) => {
+const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupManager, openNewForm, handleExport, handleExportCsv, handleImport, handleImportCsv, openTrombiModal, isMobile, canEdit }) => {
     return (
         <div className="directory-header dh-wrap" style={{
             padding: isMobile ? '0.75rem 1rem' : '2.5rem 2.5rem 1.5rem',
@@ -42,7 +42,7 @@ const DirectoryHeader = ({ stats, selectedCount, handleBulkDelete, openGroupMana
                 marginBottom: '4px'
             }}>
                 {selectedCount > 0 ? (
-                    <button className="btn btn-danger animate-fade-in" onClick={handleBulkDelete} style={{ gap: '0.625rem', padding: '0.75rem 1.25rem', borderRadius: '16px', fontWeight: '950', boxShadow: '0 12px 24px oklch(60% 0.2 28 / 0.25)' }}>
+                    <button className="btn btn-danger animate-fade-in" onClick={handleBulkDelete} style={{ gap: '0.625rem', padding: '0.75rem 1.25rem', borderRadius: '16px', fontWeight: '950', boxShadow: '0 12px 24px oklch(55% 0.12 28 / 0.22)' }}>
                         <Trash2 size={18} strokeWidth={2} /> Supprimer ({selectedCount})
                     </button>
                 ) : (

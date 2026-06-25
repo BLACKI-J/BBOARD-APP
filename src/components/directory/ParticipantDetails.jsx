@@ -75,7 +75,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                         
                         {/* Sécurité médicale = allergies + régime uniquement (les remarques ont leur propre bloc neutre) */}
                         {(viewingParticipant.allergies || viewingParticipant.diet) ? (
-                            <div style={{ background: 'oklch(62% 0.2 28 / 0.05)', border: '1.5px solid oklch(62% 0.2 28 / 0.15)', borderRadius: '24px', padding: '1.5rem', color: 'var(--danger-color)' }}>
+                            <div style={{ background: 'color-mix(in oklch, var(--danger-color) 5%, transparent)', border: '1.5px solid color-mix(in oklch, var(--danger-color) 15%, transparent)', borderRadius: '24px', padding: '1.5rem', color: 'var(--danger-color)' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontWeight: '950', fontSize: '0.85rem', marginBottom: '1rem' }}>
                                     <ShieldAlert size={20} strokeWidth={2} /> SÉCURITÉ MÉDICALE
                                 </div>
@@ -168,7 +168,7 @@ const ParticipantDetails = ({ viewingParticipant, setViewingParticipant, handleE
                                                 {Number(viewingParticipant.pocketMoney.current || 0).toFixed(2)} €
                                             </div>
                                         </div>
-                                        <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'oklch(71% 0.19 45 / 0.1)', color: 'oklch(71% 0.19 45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <div style={{ width: '48px', height: '48px', borderRadius: '16px', background: 'color-mix(in oklch, var(--warning-color) 10%, transparent)', color: 'var(--warning-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                             <Coins size={24} />
                                         </div>
                                     </div>

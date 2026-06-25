@@ -488,7 +488,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                     setParticipants([...safeParticipants, ...toAdd]);
                     ui.toast(`Import terminé : ${toAdd.length} ajouté${toAdd.length > 1 ? 's' : ''}${skipped ? `, ${skipped} ignoré${skipped > 1 ? 's' : ''}` : ''}.`, { type: 'success' });
                 }
-            } catch (err) {
+            } catch {
                 ui.alert({ title: 'Erreur', message: 'Impossible de lire le fichier CSV.' });
             }
         };
@@ -547,7 +547,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                 } else {
                     ui.alert({ title: 'Import invalide', message: 'Le fichier doit contenir un tableau JSON, ou un objet avec une clé "participants".' });
                 }
-            } catch (err) {
+            } catch {
                 ui.alert({ title: 'Erreur', message: 'Erreur lors de la lecture du JSON.' });
             }
         };
@@ -695,7 +695,6 @@ export default function Directory({ participants = [], setParticipants, groups =
                     handleImport={handleImport}
                     handleImportCsv={handleImportCsv}
                     openTrombiModal={openTrombiModal}
-                    hasSelection={selectedParticipants.length > 0}
                     isMobile={isMobile}
                     canEdit={canEdit}
                 />
@@ -764,7 +763,6 @@ export default function Directory({ participants = [], setParticipants, groups =
                                         handleEdit={handleEdit}
                                         handleDelete={handleDelete}
                                         groups={safeGroups}
-                                        isMobile={isMobile}
                                         canEdit={canEdit}
                                     />
                                 ))}
@@ -794,9 +792,6 @@ export default function Directory({ participants = [], setParticipants, groups =
                 isOpen={isGroupManagerOpen}
                 onClose={() => setIsGroupManagerOpen(false)}
                 groups={safeGroups}
-                setGroups={setGroups}
-                participants={safeParticipants}
-                setParticipants={setParticipants}
                 newGroupData={newGroupData}
                 setNewGroupData={setNewGroupData}
                 onAddGroup={handleAddGroup}
@@ -881,7 +876,7 @@ export default function Directory({ participants = [], setParticipants, groups =
                     background: white; border: 1.5px solid var(--glass-border); color: var(--text-muted); transition: all 0.2s; cursor: pointer;
                 }
                 .btn-icon-ref:hover { border-color: var(--primary-color); color: var(--primary-color); transform: translateY(-2px); }
-                .btn-icon-ref.danger:hover { border-color: var(--danger-color); color: var(--danger-color); background: oklch(62% 0.2 28 / 0.05); }
+                .btn-icon-ref.danger:hover { border-color: var(--danger-color); color: var(--danger-color); background: color-mix(in oklch, var(--danger-color) 5%, transparent); }
 
                 .badge-pill {
                    padding: 0.5rem 1rem; border-radius: 30px; font-size: 0.8rem; font-weight: 900;

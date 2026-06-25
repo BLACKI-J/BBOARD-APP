@@ -96,11 +96,11 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
     };
 
     return (
-        <div style={{ height: '100%', overflow: 'hidden', display: 'flex', flexDirection: 'column', background: 'transparent' }}>
-            <div style={{ flex: 1, display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1fr) 340px', gap: isMobile ? '1.5rem' : '2.5rem', overflow: isMobile ? 'visible' : 'hidden', padding: isMobile ? '0.75rem 0' : '1.5rem 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', background: 'transparent' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: isMobile ? '1.5rem' : '2.5rem', padding: isMobile ? '0.75rem 0' : '1.5rem 0' }}>
 
                 {/* Repas du jour */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: isMobile ? 'visible' : 'hidden' }}>
+                <div style={{ flex: '3 1 380px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div className="card-glass" style={{ padding: isMobile ? '1.25rem' : '1.5rem 2rem', display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                         <SectionHeader icon={Utensils} title={`Menu du ${currentDayName}`} subtitle="Synchronisé entre tous les appareils" />
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
@@ -114,7 +114,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                         </div>
                     </div>
 
-                    <div style={{ flex: 1, overflowY: isMobile ? 'visible' : 'auto', paddingRight: isMobile ? '0' : '0.5rem' }} className="no-scrollbar">
+                    <div style={{ paddingRight: isMobile ? '0' : '0.5rem' }} className="no-scrollbar">
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px, 100%), 1fr))', gap: '1.5rem' }}>
                             {MEALS.map((m, idx) => (
                                 <div key={m.id} className="card-glass animate-fade-in" style={{
@@ -142,9 +142,6 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                             isMobile={isMobile}
                                             onCommit={v => handleChange(m.id, v)}
                                         />
-                                        <div style={{ position: 'absolute', bottom: '1.25rem', right: '1.25rem', opacity: 0.4 }}>
-                                            <ChefHat size={20} strokeWidth={2} />
-                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -153,10 +150,10 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                 </div>
 
                 {/* Sidebar allergies */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', overflow: isMobile ? 'visible' : 'hidden' }}>
-                    <div className="card-glass" style={{ flex: 1, padding: isMobile ? '1.25rem' : '2rem', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                <div style={{ flex: '1 1 300px', minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                    <div className="card-glass" style={{ flex: 1, padding: isMobile ? '1.25rem' : '2rem', display: 'flex', flexDirection: 'column' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', marginBottom: '2rem' }}>
-                            <div style={{ background: 'oklch(62% 0.18 20 / 0.1)', padding: '0.625rem', borderRadius: '12px', color: 'var(--danger-color)', display: 'flex' }}>
+                            <div style={{ background: 'color-mix(in oklch, var(--danger-color) 10%, transparent)', padding: '0.625rem', borderRadius: '12px', color: 'var(--danger-color)', display: 'flex' }}>
                                 <AlertCircle size={20} strokeWidth={2} />
                             </div>
                             <div>
@@ -164,7 +161,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                 <div style={{ fontSize: '10px', fontWeight: '900', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Données Cruciales</div>
                             </div>
                         </div>
-                        <div style={{ flex: 1, overflowY: 'auto', paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="no-scrollbar">
+                        <div style={{ paddingRight: '0.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }} className="no-scrollbar">
                             {childrenWithAllergies.length === 0 ? (
                                 <div style={{ textAlign: 'center', padding: '4rem 1.5rem', background: 'var(--bg-secondary)', borderRadius: '24px', border: '1.5px dashed var(--glass-border)' }}>
                                     <Wheat size={40} strokeWidth={1.5} style={{ margin: '0 auto 1.25rem', color: 'var(--text-muted)', opacity: 0.3 }} />
@@ -173,7 +170,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                             ) : childrenWithAllergies.map((child, idx) => {
                                 const groupName = groups.find(g => g.id === child.group)?.name;
                                 return (
-                                <div key={child.id} className="animate-fade-in" style={{ '--i': idx, animationDelay: `calc(var(--i) * 40ms)`, padding: '1.25rem', background: 'oklch(62% 0.18 20 / 0.04)', border: '1.5px solid oklch(62% 0.18 20 / 0.08)', borderRadius: '20px' }}>
+                                <div key={child.id} className="animate-fade-in" style={{ '--i': idx, animationDelay: `calc(var(--i) * 40ms)`, padding: '1.25rem', background: 'color-mix(in oklch, var(--danger-color) 4%, transparent)', border: '1.5px solid color-mix(in oklch, var(--danger-color) 8%, transparent)', borderRadius: '20px' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                                         <div style={{ fontWeight: '950', color: 'var(--danger-color)', fontSize: '0.95rem' }}>
                                             {child.firstName} <span style={{ textTransform: 'uppercase', fontSize: '0.85em', opacity: 0.7 }}>{child.lastName}</span>
@@ -182,7 +179,7 @@ export default function Menus({ participants, currentDate, isMobile, menus = {},
                                             <div style={{ fontSize: '9px', fontWeight: '950', background: 'var(--surface-color)', padding: '2px 8px', borderRadius: '6px', color: 'var(--text-muted)', border: '1px solid var(--glass-border)' }}>{groupName}</div>
                                         )}
                                     </div>
-                                    <div style={{ background: 'var(--surface-color)', padding: '0.75rem 1rem', borderRadius: '14px', border: '1.5px solid oklch(62% 0.18 20 / 0.1)', color: 'oklch(20% 0.05 20)', fontSize: '0.85rem', fontWeight: '800', lineHeight: '1.5' }}>
+                                    <div style={{ background: 'var(--surface-color)', padding: '0.75rem 1rem', borderRadius: '14px', border: '1.5px solid color-mix(in oklch, var(--danger-color) 10%, transparent)', color: 'var(--danger-color)', fontSize: '0.85rem', fontWeight: '800', lineHeight: '1.5' }}>
                                         {child.allergies}
                                     </div>
                                 </div>

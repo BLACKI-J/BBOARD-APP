@@ -112,13 +112,6 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
         }));
     };
 
-    const toggleArrayFlag = (section, label) => {
-        setForm(prev => ({
-            ...prev,
-            [section]: { ...(prev[section] || {}), [label]: !prev[section]?.[label] }
-        }));
-    };
-
     const toggleEventType = (type) => {
         setForm(prev => ({
             ...prev,
@@ -217,7 +210,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                             }}>
                                 {/* Icon + titre compact sur mobile */}
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', minWidth: 0, flex: 1 }}>
-                                    <div style={{ background: 'oklch(62% 0.2 var(--sec-fei))', borderRadius: '14px', padding: '10px', color: 'white', display: 'flex', flexShrink: 0 }}>
+                                    <div style={{ background: 'var(--danger-color)', borderRadius: '14px', padding: '10px', color: 'white', display: 'flex', flexShrink: 0 }}>
                                         <AlertTriangle size={isMobile ? 18 : 22} strokeWidth={2} />
                                     </div>
                                     <div style={{ minWidth: 0 }}>
@@ -237,7 +230,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                         title={saveStatus === 'saved' ? 'Enregistré' : 'Enregistrer'}
                                         style={{
                                             width: '44px', height: '44px', borderRadius: '12px',
-                                            background: saveStatus === 'saved' ? 'oklch(95% 0.08 145)' : 'white',
+                                            background: saveStatus === 'saved' ? 'color-mix(in oklch, var(--success-color) 12%, white)' : 'white',
                                             color: saveStatus === 'saved' ? 'var(--success-color)' : 'var(--text-main)',
                                             opacity: canEdit ? 1 : 0.4,
                                             cursor: canEdit ? 'pointer' : 'not-allowed', flexShrink: 0
@@ -262,7 +255,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                         title="Imprimer"
                                         style={{
                                             height: '40px', padding: '0 0.875rem', borderRadius: '12px',
-                                            border: 'none', background: 'oklch(62% 0.2 var(--sec-fei))',
+                                            border: 'none', background: 'var(--primary-color)',
                                             color: 'white', fontWeight: '950', fontSize: '0.82rem',
                                             display: 'flex', alignItems: 'center', gap: '0.4rem',
                                             cursor: 'pointer', flexShrink: 0
@@ -319,8 +312,8 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                     key={key} type="button" onClick={() => setForm(prev => ({ ...prev, severity: key }))}
                                                     className={`severity-btn ${isActive ? 'active' : ''}`}
                                                     style={{
-                                                        flex: '1 1 90px',
-                                                        padding: 'clamp(0.75rem, 3vw, 1.25rem) 0.5rem', borderRadius: '18px', 
+                                                        flex: '1 1 130px',
+                                                        padding: 'clamp(0.85rem, 3vw, 1.25rem) 0.6rem', borderRadius: '18px',
                                                         border: '2px solid', 
                                                         borderColor: isActive ? severityColors[key] : 'var(--glass-border)',
                                                         background: isActive ? `oklch(from ${severityColors[key]} l c h / 0.1)` : 'var(--bg-secondary)', 
@@ -334,11 +327,17 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                         boxShadow: isActive ? `0 0 15px ${severityColors[key]}` : '0 2px 8px oklch(0% 0 0 / 0.1)',
                                                         transition: 'all 0.3s'
                                                     }} />
-                                                    <div style={{ 
-                                                        fontSize: '11px', fontWeight: '950', 
-                                                        color: isActive ? 'var(--text-main)' : 'var(--text-muted)', 
-                                                        textTransform: 'uppercase', letterSpacing: '0.05em' 
-                                                    }}>{label.split(' - ')[0]}</div>
+                                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                                                        <div style={{
+                                                            fontSize: '11px', fontWeight: '950',
+                                                            color: isActive ? 'var(--text-main)' : 'var(--text-muted)',
+                                                            textTransform: 'uppercase', letterSpacing: '0.05em'
+                                                        }}>{label.split(' - ')[0]}</div>
+                                                        <div style={{
+                                                            fontSize: '10px', fontWeight: '800', lineHeight: 1.3, textAlign: 'center',
+                                                            color: isActive ? 'var(--text-muted)' : 'var(--text-softer)'
+                                                        }}>{label.split(' - ')[1]}</div>
+                                                    </div>
                                                 </button>
                                             );
                                         })}
@@ -355,10 +354,10 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                     className="event-type-card"
                                                     style={{ 
                                                         display: 'flex', alignItems: 'center', gap: '1.25rem', padding: '1rem 1.5rem', borderRadius: '16px', cursor: 'pointer',
-                                                        background: isSelected ? 'oklch(58% 0.2 var(--brand-hue) / 0.08)' : 'var(--bg-secondary)',
+                                                        background: isSelected ? 'color-mix(in oklch, var(--accent-color) 8%, transparent)' : 'var(--bg-secondary)',
                                                         border: '2px solid', borderColor: isSelected ? 'var(--primary-color)' : 'transparent', 
                                                         transition: 'all 0.25s',
-                                                        boxShadow: isSelected ? '0 4px 15px oklch(58% 0.2 var(--brand-hue) / 0.15)' : 'none'
+                                                        boxShadow: isSelected ? '0 4px 15px color-mix(in oklch, var(--accent-color) 15%, transparent)' : 'none'
                                                     }}>
                                                     <div style={{ 
                                                         width: '24px', height: '24px', borderRadius: '8px', 
@@ -425,12 +424,12 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                 </button>
                                             </div>
                                         </div>
-                                        <div style={{ background: 'oklch(58% 0.2 var(--brand-hue) / 0.03)', padding: '1.5rem', borderRadius: '20px', border: '1px solid oklch(58% 0.2 var(--brand-hue) / 0.1)' }}>
+                                        <div style={{ background: 'color-mix(in oklch, var(--accent-color) 3%, transparent)', padding: '1.5rem', borderRadius: '20px', border: '1px solid color-mix(in oklch, var(--accent-color) 10%, transparent)' }}>
                                             <div className="fei-label" style={{ marginBottom: '1.25rem', fontSize: '11px', color: 'var(--primary-color)' }}>Personnes concernées</div>
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                                                 {form.concerned.map((row, i) => (
                                                     <div key={`con-${i}`} style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', position: 'relative' }}>
-                                                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '14px', border: '1px solid oklch(58% 0.2 var(--brand-hue) / 0.1)', boxShadow: '0 2px 8px oklch(58% 0.2 var(--brand-hue) / 0.05)' }}>
+                                                        <div style={{ display: 'flex', gap: '0.5rem', background: 'var(--surface-color)', padding: '0.5rem', borderRadius: '14px', border: '1px solid color-mix(in oklch, var(--accent-color) 10%, transparent)', boxShadow: '0 2px 8px color-mix(in oklch, var(--accent-color) 5%, transparent)' }}>
                                                             <input className="glass-input" 
                                                                 style={{ flex: 1, padding: '0.5rem 0.75rem', borderRadius: '10px', fontSize: '0.85rem', border: 'none', background: 'transparent' }} 
                                                                 placeholder="Prénom Nom"
@@ -445,7 +444,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                                 }}
                                                                 onBlur={() => setTimeout(() => setAutocomplete({ section: null, index: null, results: [] }), 200)}
                                                             />
-                                                            <select className="glass-input" style={{ width: '130px', padding: '0.5rem', borderRadius: '10px', fontSize: '0.8rem', background: 'oklch(58% 0.2 var(--brand-hue) / 0.05)', border: 'none', fontWeight: '800', color: 'var(--primary-color)' }} value={row.role} onChange={e => updatePerson('concerned', i, 'role', e.target.value)}>
+                                                            <select className="glass-input" style={{ width: '130px', padding: '0.5rem', borderRadius: '10px', fontSize: '0.8rem', background: 'color-mix(in oklch, var(--accent-color) 5%, transparent)', border: 'none', fontWeight: '800', color: 'var(--primary-color)' }} value={row.role} onChange={e => updatePerson('concerned', i, 'role', e.target.value)}>
                                                                 {ROLE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
                                                             </select>
                                                             <button onClick={() => removePerson('concerned', i)} aria-label="Supprimer" style={{ background: 'transparent', border: 'none', color: 'var(--danger-color)', cursor: 'pointer', padding: '0.875rem', display: 'flex', alignItems: 'center', opacity: 0.85 }}>
@@ -464,7 +463,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                                         )}
                                                     </div>
                                                 ))}
-                                                <button onClick={() => addPerson('concerned')} style={{ width: '100%', padding: '0.6rem', background: 'oklch(58% 0.2 var(--brand-hue) / 0.02)', border: '1.5px dashed oklch(58% 0.2 var(--brand-hue) / 0.15)', borderRadius: '12px', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.85rem', fontWeight: '800', opacity: 0.8 }}>
+                                                <button onClick={() => addPerson('concerned')} style={{ width: '100%', padding: '0.6rem', background: 'color-mix(in oklch, var(--accent-color) 2%, transparent)', border: '1.5px dashed color-mix(in oklch, var(--accent-color) 15%, transparent)', borderRadius: '12px', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.85rem', fontWeight: '800', opacity: 0.8 }}>
                                                     <Plus size={16} /> Ajouter une personne
                                                 </button>
                                             </div>
@@ -486,13 +485,13 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                                         </button>
                                     </div>
                                     {rewriteError && (
-                                        <div style={{ marginTop: '-0.5rem', padding: '0.75rem 1rem', borderRadius: '12px', background: 'oklch(95% 0.05 28)', color: 'var(--danger-color)', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                        <div style={{ marginTop: '-0.5rem', padding: '0.75rem 1rem', borderRadius: '12px', background: 'color-mix(in oklch, var(--danger-color) 12%, white)', color: 'var(--danger-color)', fontWeight: '800', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                             <AlertTriangle size={16} strokeWidth={2} /> {rewriteError}
                                         </div>
                                     )}
                                     {aiDraft && (
-                                        <div style={{ padding: '1.25rem', borderRadius: '20px', background: 'oklch(97% 0.03 272)', border: '1.5px solid oklch(80% 0.08 272)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '950', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'oklch(45% 0.18 272)' }}>
+                                        <div style={{ padding: '1.25rem', borderRadius: '20px', background: 'color-mix(in oklch, var(--accent-color) 12%, white)', border: '1.5px solid var(--accent-color)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: '950', fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--accent-color)' }}>
                                                 <Sparkles size={15} /> Proposition reformulée
                                             </div>
                                             <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', color: 'var(--text-main)', lineHeight: 1.5 }}>{aiDraft}</div>
@@ -567,8 +566,8 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
             <style>{`
                 .no-print .fei-page { margin-bottom: 3rem; box-shadow: 0 20px 50px oklch(0% 0 0 / 0.25); border-radius: 4px; border: 1px solid var(--glass-border); }
                 .fei-label { font-size: 11px; font-weight: 950; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 0.5rem; display: block; }
-                .fei-input:focus { border-color: var(--primary-color) !important; background: white !important; box-shadow: 0 0 0 3px oklch(58% 0.2 var(--brand-hue) / 0.15) !important; }
-                .custom-textarea:focus { border-color: var(--primary-color) !important; background: white !important; box-shadow: 0 0 0 3px oklch(58% 0.2 var(--brand-hue) / 0.15) !important; outline: none; }
+                .fei-input:focus { border-color: var(--primary-color) !important; background: white !important; box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent-color) 15%, transparent) !important; }
+                .custom-textarea:focus { border-color: var(--primary-color) !important; background: white !important; box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent-color) 15%, transparent) !important; outline: none; }
                 
                 .severity-btn:hover { border-color: var(--text-muted) !important; }
                 .severity-btn.active:hover { border-color: currentColor !important; }
@@ -576,7 +575,7 @@ export default function IncidentSheet({ defaultRewriteMode = 'detaille', canEdit
                 .event-type-card:hover { border-color: var(--primary-color) !important; transform: translateY(-2px); }
 
                 .btn-magic {
-                    background: linear-gradient(135deg, oklch(58% 0.2 270), oklch(62% 0.18 310), oklch(58% 0.2 270));
+                    background: linear-gradient(135deg, var(--accent-color), color-mix(in oklch, var(--accent-color) 85%, white), var(--accent-color));
                     background-size: 200% auto;
                     transition: all 0.5s ease;
                 }

@@ -6,14 +6,14 @@ export const SECTIONS = [
     {
         // Champs partagés avec l'Annuaire (mêmes clés `allergies` / `diet`) :
         // une seule source de vérité, éditable depuis la fiche ET l'annuaire.
-        id: 'alimentaire', label: 'Allergies & régime', icon: <UtensilsCrossed size={15} />, color: 'oklch(58% 0.14 25)',
+        id: 'alimentaire', label: 'Allergies & régime', icon: <UtensilsCrossed size={15} />, color: 'oklch(57% 0.15 30)',
         fields: [
             { key: 'allergies', label: 'Allergies connues',    type: 'text', placeholder: 'Ex : arachides, lactose…' },
             { key: 'diet',      label: 'Régime alimentaire',   type: 'text', placeholder: 'Ex : sans porc, végétarien…' },
         ],
     },
     {
-        id: 'activites', label: 'Activités', icon: <Dribbble size={15} />, color: 'oklch(60% 0.13 240)',
+        id: 'activites', label: 'Activités', icon: <Dribbble size={15} />, color: 'oklch(60% 0.11 215)',
         fields: [
             { key: 'ivBaignade',      label: 'Baignade',            type: 'select', options: ['OUI','NON','Avec surveillance'] },
             { key: 'ivNage',          label: 'Sait nager',          type: 'select', options: ['OUI','NON','Notions'] },
@@ -23,7 +23,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'hygiene', label: 'Hygiène', icon: <Bath size={15} />, color: 'oklch(62% 0.12 195)',
+        id: 'hygiene', label: 'Hygiène', icon: <Bath size={15} />, color: 'oklch(57% 0.10 245)',
         fields: [
             { key: 'ivDouche',      label: 'Douche',       type: 'select', options: ['Autonome','Suivi partiel','Avec aide','Surveillance adulte'] },
             { key: 'ivEssuyer',     label: "S'essuyer",    type: 'select', options: ['Autonome','Avec aide','RAS'] },
@@ -33,7 +33,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'sommeil', label: 'Sommeil', icon: <Moon size={15} />, color: 'oklch(56% 0.14 285)',
+        id: 'sommeil', label: 'Sommeil', icon: <Moon size={15} />, color: 'oklch(55% 0.12 290)',
         fields: [
             { key: 'ivSommeilHeures', label: 'Heures',        type: 'text', placeholder: 'Ex: 20h30 → 7h' },
             { key: 'ivSommeilRituel', label: 'Rituel',        type: 'text', placeholder: 'Ex: Doudou, lecture…' },
@@ -41,7 +41,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'repas', label: 'Repas', icon: <UtensilsCrossed size={15} />, color: 'oklch(64% 0.13 70)',
+        id: 'repas', label: 'Repas', icon: <UtensilsCrossed size={15} />, color: 'oklch(67% 0.12 65)',
         fields: [
             { key: 'ivRegime',     label: 'Régime',          type: 'text',   placeholder: 'Standard, végétarien…' },
             { key: 'ivAllergie',   label: 'Aliment interdit',type: 'text',   placeholder: 'Ex: Arachides…' },
@@ -51,7 +51,7 @@ export const SECTIONS = [
         ],
     },
     {
-        id: 'sante', label: 'Santé', icon: <Activity size={15} />, color: 'oklch(58% 0.13 145)',
+        id: 'sante', label: 'Santé', icon: <Activity size={15} />, color: 'oklch(55% 0.11 155)',
         fields: [
             { key: 'ivEnuresie',     label: 'Énurésie',     type: 'select', options: ['NON','OUI'] },
             { key: 'ivEncopresie',   label: 'Encoprésie',   type: 'select', options: ['NON','OUI'] },
@@ -71,7 +71,7 @@ const isEmptySummaryValue = (v) => !v || v === '' || v === '--' || v === 'NON' |
 
 // Mêmes infos mais REGROUPÉES par section (carte « tout visible ») : on ne garde
 // que les sections ayant au moins un champ renseigné. (key conservé → filtrage aval)
-export const getSummaryBySection = (child) => SECTIONS
+const getSummaryBySection = (child) => SECTIONS
     .map(sec => ({
         id: sec.id, label: sec.label, color: sec.color, icon: sec.icon,
         rows: sec.fields
@@ -81,7 +81,7 @@ export const getSummaryBySection = (child) => SECTIONS
     .filter(sec => sec.rows.length > 0);
 
 // Alertes médicales = flags OUI à signaler en priorité (bandeau rouge de la carte).
-export const ALERT_FIELDS = [
+const ALERT_FIELDS = [
     { key: 'ivEnuresie',    label: 'Énurésie' },
     { key: 'ivEncopresie',  label: 'Encoprésie' },
     { key: 'ivChangesJour', label: 'Changes jour' },

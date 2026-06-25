@@ -449,7 +449,7 @@ const SuiviPassage = ({ children, staff = [], updateParticipantHealth, canEdit, 
 };
 
 // ─── RegistreInfi Container ─────────────────────────────────────────────────
-const RegistreInfi = ({ children, groups, staff = [], updateParticipantHealth, isMobile,
+const RegistreInfi = ({ children, staff = [], updateParticipantHealth, isMobile,
     showMeds = true, canEditMeds = true, showPassages = true, canEditPassages = true }) => {
     const TABS = [
         ...(showMeds ? [{ id: 'meds', label: 'Administration & Traitements', icon: <Pill size={15} /> }] : []),
@@ -486,9 +486,9 @@ const RegistreInfi = ({ children, groups, staff = [], updateParticipantHealth, i
             )}
 
             {activeSection === 'meds' && showMeds
-                ? <RegistreMeds children={children} groups={groups} staff={staff} updateParticipantHealth={updateParticipantHealth} canEdit={canEditMeds} isMobile={isMobile} />
+                ? <RegistreMeds children={children} staff={staff} updateParticipantHealth={updateParticipantHealth} canEdit={canEditMeds} isMobile={isMobile} />
                 : activeSection === 'passage' && showPassages
-                ? <SuiviPassage children={children} groups={groups} staff={staff} updateParticipantHealth={updateParticipantHealth} canEdit={canEditPassages} isMobile={isMobile} />
+                ? <SuiviPassage children={children} staff={staff} updateParticipantHealth={updateParticipantHealth} canEdit={canEditPassages} isMobile={isMobile} />
                 : null
             }
         </div>

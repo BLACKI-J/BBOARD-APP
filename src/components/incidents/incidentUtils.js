@@ -40,10 +40,10 @@ export const severityLabels = {
 
 export const severityColors = {
     white: 'var(--text-muted)',
-    blue: 'oklch(62% 0.18 232)',
-    green: 'oklch(62% 0.18 145)',
-    yellow: 'oklch(71% 0.19 45)',
-    red: 'oklch(62% 0.18 25)'
+    blue: 'oklch(52% 0.05 250)',
+    green: 'oklch(53% 0.08 155)',
+    yellow: 'oklch(73% 0.10 70)',
+    red: 'oklch(55% 0.13 28)'
 };
 
 export const eventChecked = (data, label) => data.eventTypes?.includes(label);

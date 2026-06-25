@@ -126,14 +126,14 @@ export default function NightLog({ nightLogs = [], setNightLogs, children = [], 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
             {/* ── Sélecteur de nuit ── */}
             <div className="glass-card" style={{ padding: '0.875rem 1rem', borderRadius: '18px', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap' }}>
-                <span style={{ width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in oklch, oklch(56% 0.14 285) 14%, white)', color: 'oklch(50% 0.15 285)' }}>
+                <span style={{ width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: 'color-mix(in oklch, var(--accent-color) 14%, white)', color: 'var(--accent-color)' }}>
                     <Moon size={20} strokeWidth={2.2} />
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: '0.66rem', fontWeight: '950', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>Nuit du</div>
                     <div style={{ fontWeight: '900', fontSize: '1rem', color: 'var(--text-main)', textTransform: 'capitalize' }}>{fmtNight(nightDate)}</div>
                 </div>
-                <span style={{ fontSize: '0.75rem', fontWeight: '900', color: rondesDone === NIGHT_SLOTS.length ? 'oklch(50% 0.13 145)' : 'var(--text-muted)' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: '900', color: rondesDone === NIGHT_SLOTS.length ? 'var(--success-color)' : 'var(--text-muted)' }}>
                     {rondesDone}/{NIGHT_SLOTS.length} rondes · {passages.length} passage{passages.length > 1 ? 's' : ''}
                 </span>
                 <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
@@ -149,7 +149,7 @@ export default function NightLog({ nightLogs = [], setNightLogs, children = [], 
             {/* ── Rondes (créneaux 2 h) ── */}
             <div className="glass-card" style={{ padding: isMobile ? '1rem' : '1.25rem', borderRadius: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.875rem' }}>
-                    <Clock size={17} strokeWidth={2.2} style={{ color: 'oklch(50% 0.15 285)' }} />
+                    <Clock size={17} strokeWidth={2.2} style={{ color: 'var(--accent-color)' }} />
                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '900', color: 'var(--text-main)' }}>Rondes de nuit</h4>
                     <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)' }}>21h30 → 7h30, toutes les 2 h</span>
                 </div>
@@ -158,12 +158,12 @@ export default function NightLog({ nightLogs = [], setNightLogs, children = [], 
                         const e = rondeBySlot[slot];
                         const isNoting = noteSlot === slot;
                         return (
-                            <div key={slot} style={{ ...card, padding: '0.6rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', borderColor: e ? (e.status === 'RAS' ? 'color-mix(in oklch, oklch(58% 0.13 145) 35%, transparent)' : 'color-mix(in oklch, oklch(72% 0.14 75) 35%, transparent)') : 'var(--glass-border)' }}>
+                            <div key={slot} style={{ ...card, padding: '0.6rem 0.75rem', display: 'flex', alignItems: 'center', gap: '0.75rem', flexWrap: 'wrap', borderColor: e ? (e.status === 'RAS' ? 'color-mix(in oklch, var(--success-color) 35%, transparent)' : 'color-mix(in oklch, var(--warning-color) 35%, transparent)') : 'var(--glass-border)' }}>
                                 <span style={{ fontWeight: '950', fontSize: '0.95rem', color: 'var(--text-main)', width: '52px', flexShrink: 0 }}>{slot}</span>
                                 {e ? (
                                     <>
                                         {e.status === 'RAS' ? (
-                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem', fontWeight: '900', padding: '3px 10px', borderRadius: '100px', background: 'color-mix(in oklch, oklch(58% 0.13 145) 14%, white)', color: 'oklch(45% 0.13 145)' }}><Check size={13} strokeWidth={3} /> RAS</span>
+                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '0.78rem', fontWeight: '900', padding: '3px 10px', borderRadius: '100px', background: 'color-mix(in oklch, var(--success-color) 14%, white)', color: 'var(--success-color)' }}><Check size={13} strokeWidth={3} /> RAS</span>
                                         ) : (
                                             <span style={{ flex: 1, minWidth: 0, fontSize: '0.86rem', fontWeight: '700', color: 'var(--text-main)' }}>{e.note}</span>
                                         )}
@@ -198,7 +198,7 @@ export default function NightLog({ nightLogs = [], setNightLogs, children = [], 
             {/* ── Passages (toilettes / réveils) ── */}
             <div className="glass-card" style={{ padding: isMobile ? '1rem' : '1.25rem', borderRadius: '20px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.875rem' }}>
-                    <Droplets size={17} strokeWidth={2.2} style={{ color: 'oklch(55% 0.12 240)' }} />
+                    <Droplets size={17} strokeWidth={2.2} style={{ color: 'var(--accent-color)' }} />
                     <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: '900', color: 'var(--text-main)' }}>Passages & réveils</h4>
                     <span style={{ fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)' }}>qui · quand · pourquoi</span>
                 </div>
@@ -247,7 +247,7 @@ export default function NightLog({ nightLogs = [], setNightLogs, children = [], 
                                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontWeight: '850', fontSize: '0.86rem', color: 'var(--text-main)' }}>
                                         {child && <Avatar participant={child} size={22} />} {p.childName || '—'}
                                     </span>
-                                    <span style={{ fontSize: '0.74rem', fontWeight: '900', padding: '2px 9px', borderRadius: '100px', background: 'color-mix(in oklch, oklch(55% 0.12 240) 12%, white)', color: 'oklch(45% 0.13 240)' }}>{p.reason}</span>
+                                    <span style={{ fontSize: '0.74rem', fontWeight: '900', padding: '2px 9px', borderRadius: '100px', background: 'color-mix(in oklch, var(--accent-color) 12%, white)', color: 'var(--accent-color)' }}>{p.reason}</span>
                                     {p.note && <span style={{ fontSize: '0.8rem', fontWeight: '600', color: 'var(--text-muted)', minWidth: 0 }}>· {p.note}</span>}
                                     <span style={{ flex: 1 }} />
                                     <span style={{ fontSize: '0.66rem', fontWeight: '700', color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: '4px', whiteSpace: 'nowrap' }}><User size={11} /> {p.author}</span>

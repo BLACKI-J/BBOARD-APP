@@ -22,8 +22,8 @@ const HealthIndicators = ({ participant = {}, expanded = false }) => {
             {hasAllergies && (
                 <div style={{
                     display:'flex', alignItems: 'center', gap: '0.5rem',
-                    color: 'var(--danger-color)', background: 'oklch(62% 0.2 28 / 0.08)',
-                    padding: '0.25rem 0.75rem', borderRadius: '10px', border: '1.2px solid oklch(62% 0.2 28 / 0.15)',
+                    color: 'var(--danger-color)', background: 'color-mix(in oklch, var(--danger-color) 8%, transparent)',
+                    padding: '0.25rem 0.75rem', borderRadius: '10px', border: '1.2px solid color-mix(in oklch, var(--danger-color) 15%, transparent)',
                     fontSize: '0.75rem', fontWeight: '900'
                 }}>
                     <ShieldAlert size={14} strokeWidth={2} />
@@ -43,8 +43,8 @@ const HealthIndicators = ({ participant = {}, expanded = false }) => {
                     )}
                     {isSwimmer && (
                         <div style={{
-                            background: 'oklch(62% 0.18 145 / 0.1)', padding: '2px 8px', borderRadius: '6px',
-                            fontSize: '10px', fontWeight: '950', color: 'oklch(62% 0.18 145)', border: '1px solid oklch(62% 0.18 145 / 0.2)'
+                            background: 'color-mix(in oklch, var(--success-color) 10%, transparent)', padding: '2px 8px', borderRadius: '6px',
+                            fontSize: '10px', fontWeight: '950', color: 'var(--success-color)', border: '1px solid color-mix(in oklch, var(--success-color) 20%, transparent)'
                         }}>
                             NAGEUR OK
                         </div>
