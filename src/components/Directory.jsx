@@ -680,10 +680,10 @@ export default function Directory({ participants = [], setParticipants, groups =
     }), [safeParticipants]);
 
     return (
-        <div style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden', position: 'relative' }}>
-            <div style={{ maxWidth: '1600px', width: '96%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
+        <div className="dir-print-flow" style={{ height: '100%', display: 'flex', flexDirection: 'column', background: 'transparent', overflow: 'hidden', position: 'relative' }}>
+            <div className="dir-print-flow" style={{ maxWidth: '1600px', width: '96%', margin: '0 auto', display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}>
 
-            <div style={{overflow:'hidden', maxHeight: isScrolled ? '0' : '300px', opacity: isScrolled ? 0 : 1, transition:'max-height 0.3s ease,opacity 0.2s', pointerEvents: isScrolled ? 'none' : 'auto'}}>
+            <div className="dir-print-header" style={{overflow:'hidden', maxHeight: isScrolled ? '0' : '300px', opacity: isScrolled ? 0 : 1, transition:'max-height 0.3s ease,opacity 0.2s', pointerEvents: isScrolled ? 'none' : 'auto'}}>
                 <DirectoryHeader
                     stats={stats}
                     selectedCount={selectedParticipants.length}

@@ -826,7 +826,7 @@ export default function App() {
                     boxShadow: isMobile ? '0 12px 30px oklch(20% 0 0 / 0.16)' : 'inset 0 1px 0 rgba(255,255,255,0.9)',
                     opacity: navHidden ? 0 : 1,
                     transform: navHidden ? 'translateY(-12px)' : 'none',
-                    overflow: 'hidden',
+                    overflow: navHidden ? 'hidden' : 'visible',
                     zIndex: 100, transition: 'height 0.38s var(--ease-out-expo), margin 0.38s var(--ease-out-expo), opacity 0.28s ease, transform 0.38s var(--ease-out-expo)',
                     flexShrink: 0
                 }}>

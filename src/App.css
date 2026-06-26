@@ -13,91 +13,62 @@
         margin: 0.5cm;
     }
 
-    body * {
-        visibility: hidden;
-    }
-
-    .seat-map-container,
-    .seat-map-container * {
-        visibility: visible;
-    }
-
+    /* Masquer le chrome de l'app — on imprime le contenu visible. */
     .no-print,
-    .sidebar,
-    .sidebar-overlay,
-    .content-header,
-    .seat-map-controls,
-    button {
+    .nav-sidebar,
+    header,
+    nav,
+    button,
+    .morph-blob,
+    .morph-blob-2 {
         display: none !important;
     }
 
     html,
     body,
-    #root,
-    .app-container,
-    .main-content,
-    .workspace-area {
+    #root {
         background: white !important;
-        height: auto !important;
-        width: 100% !important;
         margin: 0 !important;
         padding: 0 !important;
-        overflow: visible !important;
-        display: block !important;
     }
 
-    .seat-map-container {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100% !important;
-        padding: 1cm !important;
+    /* Déclipper la chaîne de scroll → tout le contenu s'imprime (pas une seule page). */
+    html,
+    body,
+    #root,
+    .app-layout,
+    main,
+    .no-scrollbar {
+        height: auto !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .app-layout {
+        display: block !important;
     }
 
     .print-header {
         display: block !important;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
         text-align: center;
         width: 100%;
     }
 
-    .vehicle-area {
-        display: block !important;
-        text-align: center !important;
-        width: 100% !important;
+    /* Annuaire : déclipper les wrappers + forcer l'en-tête repliable visible à l'impression. */
+    .dir-print-flow {
+        overflow: visible !important;
+        height: auto !important;
     }
 
-    .vehicle-wrapper {
-        display: inline-block !important;
-        width: 45% !important;
-        margin: 0 2% 2rem 2% !important;
-        vertical-align: top !important;
-        break-inside: avoid !important;
-        page-break-inside: avoid !important;
-        transform: scale(0.85);
-        transform-origin: top center;
-    }
-
-    .vehicle-wrapper:nth-child(2n) {
-        break-after: page !important;
-        page-break-after: always !important;
-    }
-
-    .vehicle-wrapper:last-child {
-        break-after: auto !important;
-        page-break-after: auto !important;
+    .dir-print-header {
+        max-height: none !important;
+        overflow: visible !important;
+        opacity: 1 !important;
     }
 
     * {
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-    }
-
-    .print-notes {
-        display: block !important;
-    }
-
-    .edit-notes {
-        display: none !important;
     }
 }
